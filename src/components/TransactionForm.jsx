@@ -3,6 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, FileText, Paperclip, Plus, Trash2, X } fro
 import { useFinance } from '../context/FinanceContext';
 import { expenseCategories } from '../utils/categories';
 import { getLocalDateString } from '../utils/helpers';
+import { triggerHaptic } from '../utils/haptics';
 import { Button } from './ui/button';
 
 const MAX_INVOICE_SIZE = 10 * 1024 * 1024;
@@ -125,6 +126,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
       };
       if (transaction) await updateTransaction(transaction.id, movement);
       else await addTransaction(movement);
+      triggerHaptic();
       setAmount('');
       setDescription('');
       setInvoiceFile(null);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Paperclip, Trash2, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatDate } from '../utils/helpers';
+import { triggerHaptic } from '../utils/haptics';
 
 const TransactionItem = ({ transaction, layout = 'table' }) => {
   const { deleteTransaction, previewInvoice, downloadInvoice, setEditingTransaction } = useFinance();
@@ -14,6 +15,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
   const handleDelete = async () => {
     try {
       await deleteTransaction(transaction.id);
+      triggerHaptic();
     } catch (error) {
       setErrorMessage(`No se pudo eliminar el movimiento: ${error.message}`);
     }

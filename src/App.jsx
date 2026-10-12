@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MoonStar, SunMedium } from 'lucide-react';
+import { MoonStar, Plus, SunMedium } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import SummaryCards from './components/SummaryCards';
 import TransactionForm from './components/TransactionForm';
@@ -9,6 +9,7 @@ import Filters from './components/Filters';
 import ExportImportButtons from './components/ExportImportButtons';
 import { Button } from './components/ui/button';
 import ProfileSwitcher from './components/ProfileSwitcher';
+import { triggerHaptic } from './utils/haptics';
 
 const App = () => {
   const {
@@ -71,6 +72,7 @@ const App = () => {
         year: nextMonth.getFullYear(),
       };
     });
+    triggerHaptic();
   };
 
   return (
@@ -107,7 +109,7 @@ const App = () => {
             <Button
               size="default"
               onClick={() => setIsModalOpen(true)}
-              className="h-10"
+              className="hidden h-10 sm:inline-flex"
             >
               <span className="text-lg leading-none">+</span>
               Añadir movimiento
@@ -127,6 +129,18 @@ const App = () => {
           <ExportImportButtons />
         </div>
       </main>
+
+      {!isModalOpen && !editingTransaction && (
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          aria-label="Añadir movimiento"
+          title="Añadir movimiento"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex size-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-950/20 transition-transform hover:scale-105 hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 sm:hidden"
+        >
+          <Plus size={26} strokeWidth={2.5} />
+        </button>
+      )}
 
       {(isModalOpen || editingTransaction) && (
         <TransactionForm
