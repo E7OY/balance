@@ -5,7 +5,15 @@ import { formatCurrency } from '../utils/helpers';
 import { Card } from './ui/card';
 
 const SummaryCards = () => {
-  const { totalBalance, totalIncome, totalExpenses, transactions, monthlyTransactions, filters } = useFinance();
+  const {
+    totalBalance,
+    totalIncome,
+    totalExpenses,
+    transactions,
+    monthlyTransactions,
+    filters,
+    monthlyGoals,
+  } = useFinance();
   const previousMonthDate = new Date(filters.year, filters.month - 1, 1);
   const previousMonthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(previousMonthDate);
   const previousMonthTransactions = transactions.filter((transaction) => {
@@ -54,9 +62,24 @@ const SummaryCards = () => {
     ? `Este mes has gastado un ${Math.round(anomaly.delta)}% más en '${anomaly.category}' que el mes pasado.`
     : null;
 
+  const savingsGoal = monthlyGoals.savings;
+  const investmentGoal = monthlyGoals.investment;
+  const totalGoals = savingsGoal + investmentGoal;
+  const hasMonthlyGoals = totalGoals > 0;
   const savedPercentage = totalIncome > 0
     ? Math.max(0, Math.min(100, (totalBalance / totalIncome) * 100))
     : 0;
+  const reallySpendable = Math.max(0, totalBalance - totalGoals);
+  const positiveBalance = Math.max(0, totalBalance);
+  const availableForSavings = Math.min(savingsGoal, positiveBalance);
+  const availableForInvestment = Math.min(investmentGoal, Math.max(0, positiveBalance - availableForSavings));
+  const savingsWidth = positiveBalance > 0 ? (availableForSavings / positiveBalance) * 100 : 0;
+  const investmentWidth = positiveBalance > 0 ? (availableForInvestment / positiveBalance) * 100 : 0;
+  const spendableWidth = positiveBalance > 0 ? (reallySpendable / positiveBalance) * 100 : 0;
+  const consumedReserve = Math.min(totalGoals, Math.max(0, totalGoals - positiveBalance));
+  const formatIncomePercentage = (amount) => totalIncome > 0
+    ? `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format((amount / totalIncome) * 100)}%`
+    : '—';
 
   const dayCount = new Date(filters.year, filters.month + 1, 0).getDate();
   const dailyExpenses = Array.from({ length: dayCount }, (_, index) => {
@@ -105,29 +128,77 @@ const SummaryCards = () => {
       <section aria-label="Resumen del mes" className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-4 md:grid-cols-3">
         <Card as="article" className="col-span-2 p-4 sm:p-5 md:col-span-1">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Dinero disponible</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {hasMonthlyGoals ? 'Dinero Realmente Gastable' : 'Dinero disponible'}
+            </p>
             <span className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <Wallet size={18} />
             </span>
           </div>
-          <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:mt-5 sm:text-3xl">
-            {formatCurrency(totalBalance)}
+          <p className="privacy-sensitive mt-3 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:mt-5 sm:text-3xl">
+            {formatCurrency(hasMonthlyGoals ? reallySpendable : totalBalance)}
           </p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Ingresos menos gastos</p>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 sm:mt-5 sm:h-2">
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-[width]"
-              style={{ width: `${savedPercentage}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-            {totalIncome > 0
-              ? `${Math.round(savedPercentage)}% de tus ingresos sigue disponible`
-              : 'Añade tu sueldo para ver cuánto te queda'}
-          </p>
+          {hasMonthlyGoals ? (
+            <>
+              <p className="privacy-sensitive mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Saldo del mes: {formatCurrency(totalBalance)} menos tus metas
+              </p>
+              <div
+                className="mt-3 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 sm:mt-5 sm:h-2.5"
+                role="img"
+                aria-label={isAmountsHidden
+                  ? 'Distribución del saldo entre ahorro, inversión y dinero libre.'
+                  : `Distribución del saldo: ${formatCurrency(availableForSavings)} para ahorro, ${formatCurrency(availableForInvestment)} para inversión y ${formatCurrency(reallySpendable)} libres`}
+              >
+                <span className="h-full bg-emerald-500 transition-[width]" style={{ width: `${savingsWidth}%` }} />
+                <span className="h-full bg-violet-500 transition-[width]" style={{ width: `${investmentWidth}%` }} />
+                <span className="h-full bg-sky-500 transition-[width]" style={{ width: `${spendableWidth}%` }} />
+              </div>
+              <div className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                {[
+                  { label: 'Ahorro', amount: savingsGoal, color: 'bg-emerald-500' },
+                  { label: 'Inversión', amount: investmentGoal, color: 'bg-violet-500' },
+                  { label: 'Dinero libre', amount: reallySpendable, color: 'bg-sky-500' },
+                ].map(({ label, amount, color }) => (
+                  <p key={label} className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`size-2 shrink-0 rounded-full ${color}`} />
+                      {label}
+                    </span>
+                    <span className="privacy-sensitive text-right font-medium">
+                      {formatCurrency(amount)} ({formatIncomePercentage(amount)} de tus ingresos)
+                    </span>
+                  </p>
+                ))}
+              </div>
+              {totalBalance < totalGoals && (
+                <p
+                  role="alert"
+                  className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs leading-5 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+                >
+                  Tus gastos han consumido <span className="privacy-sensitive">{formatCurrency(consumedReserve)}</span> de la reserva prevista para ahorro e inversión.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="privacy-sensitive mt-1 text-sm text-slate-500 dark:text-slate-400">Ingresos menos gastos</p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 sm:mt-5 sm:h-2">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-[width]"
+                  style={{ width: `${savedPercentage}%` }}
+                />
+              </div>
+              <p className="privacy-sensitive mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                {totalIncome > 0
+                  ? `${Math.round(savedPercentage)}% de tus ingresos sigue disponible`
+                  : 'Añade tu sueldo para ver cuánto te queda'}
+              </p>
+            </>
+          )}
           <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400 sm:mt-3 sm:pt-3">
             {`Disponible en ${previousMonthLabel}: `}
-            <span className="font-medium text-slate-700 dark:text-slate-200">{formatCurrency(previousMonthTotals.balance)}</span>
+            <span className="privacy-sensitive font-medium text-slate-700 dark:text-slate-200">{formatCurrency(previousMonthTotals.balance)}</span>
           </p>
         </Card>
 
@@ -164,7 +235,7 @@ const SummaryCards = () => {
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 sm:mt-5">
-                <p className={`break-words text-xl font-semibold tracking-tight sm:text-3xl ${amountClass}`}>
+                <p className={`privacy-sensitive break-words text-xl font-semibold tracking-tight sm:text-3xl ${amountClass}`}>
                   {isIncome ? `+${formatCurrency(amount)}` : formatCurrency(amount)}
                 </p>
                 <span
@@ -181,7 +252,7 @@ const SummaryCards = () => {
               <p className="mt-1 hidden text-sm text-slate-500 dark:text-slate-400 sm:block">{note}</p>
               <p className="mt-2 border-t border-slate-100 pt-2 text-[11px] leading-4 text-slate-500 dark:border-slate-700 dark:text-slate-400 sm:mt-3 sm:pt-3 sm:text-xs">
                 {`${label === 'Gastos del mes' ? 'Gastaste' : 'Ingresaste'} en ${previousMonthLabel}: `}
-                <span className="font-medium text-slate-700 dark:text-slate-200">{formatCurrency(previousAmount)}</span>
+                <span className="privacy-sensitive font-medium text-slate-700 dark:text-slate-200">{formatCurrency(previousAmount)}</span>
               </p>
             </Card>
           );

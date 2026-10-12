@@ -19,8 +19,11 @@ const App = () => {
     setEditingTransaction,
     filters,
     setFilters,
+    isAmountsHidden,
+    setIsAmountsHidden,
   } = useFinance();
   const monthSwipeStart = useRef(null);
+  const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
   const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('balance-theme');
     if (storedTheme) return storedTheme;
@@ -33,6 +36,41 @@ const App = () => {
     root.style.colorScheme = theme;
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
+
+    const handleDeviceMotion = (event) => {
+      const acceleration = event.acceleration?.x;
+      const accelerationWithGravity = event.accelerationIncludingGravity?.x;
+      const lateralAcceleration = Number.isFinite(acceleration) ? acceleration : accelerationWithGravity;
+      if (!Number.isFinite(lateralAcceleration) || Math.abs(lateralAcceleration) < 4) return;
+
+      const now = Date.now();
+      const motion = motionState.current;
+      const direction = Math.sign(lateralAcceleration);
+      if (motion.direction && direction !== motion.direction) {
+        if (now - motion.startedAt > 1000) {
+          motion.reversals = 0;
+          motion.startedAt = now;
+        }
+        motion.reversals += 1;
+        if (motion.reversals >= 2 && now - motion.lastToggleAt > 1200) {
+          setIsAmountsHidden((hidden) => !hidden);
+          motion.lastToggleAt = now;
+          motion.reversals = 0;
+          motion.startedAt = now;
+          triggerHaptic();
+        }
+      } else if (!motion.direction) {
+        motion.startedAt = now;
+      }
+      motion.direction = direction;
+    };
+
+    window.addEventListener('devicemotion', handleDeviceMotion);
+    return () => window.removeEventListener('devicemotion', handleDeviceMotion);
+  }, [setIsAmountsHidden]);
 
   const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(
     new Date(filters.year, filters.month, 1),
@@ -76,7 +114,10 @@ const App = () => {
   };
 
   return (
-    <div className="app-shell min-h-screen bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-slate-50">
+    <div
+      className="app-shell min-h-screen bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-slate-50"
+      data-amounts-hidden={isAmountsHidden}
+    >
       <main
         className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-9 sm:px-6 lg:px-8"
         onTouchStart={handleTouchStart}

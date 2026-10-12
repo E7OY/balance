@@ -18,7 +18,7 @@ const chartColors = [
 ];
 
 const CategoryBreakdown = () => {
-  const { expenseBreakdown, totalExpenses } = useFinance();
+  const { expenseBreakdown, totalExpenses, isAmountsHidden } = useFinance();
   const circumference = 2 * Math.PI * 72;
   let offset = 0;
 
@@ -49,7 +49,9 @@ const CategoryBreakdown = () => {
               <svg
                 viewBox="0 0 200 200"
                 role="img"
-                aria-label={`Gráfico circular de gastos por categoría. Total: ${formatCurrency(totalExpenses)}.`}
+                aria-label={isAmountsHidden
+                  ? 'Gráfico circular de gastos por categoría.'
+                  : `Gráfico circular de gastos por categoría. Total: ${formatCurrency(totalExpenses)}.`}
                 className="size-full -rotate-90"
               >
                 <circle
@@ -82,7 +84,7 @@ const CategoryBreakdown = () => {
               </svg>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total gastado</span>
-                <span className="mt-1 max-w-[9rem] truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
+                <span className="privacy-sensitive mt-1 max-w-[9rem] truncate text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
                   {formatCurrency(totalExpenses)}
                 </span>
                 <span className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
@@ -102,7 +104,7 @@ const CategoryBreakdown = () => {
                   />
                   <span className="truncate font-medium text-slate-700 dark:text-slate-200">{item.category}</span>
                 </span>
-                <span className="shrink-0 text-right text-slate-600 dark:text-slate-300">
+                <span className="privacy-sensitive shrink-0 text-right text-slate-600 dark:text-slate-300">
                   {formatCurrency(item.amount)}
                   <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">
                     {item.percentage < 10 ? item.percentage.toFixed(1) : Math.round(item.percentage)}%

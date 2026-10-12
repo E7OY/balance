@@ -5,7 +5,7 @@ import { formatCurrency, formatDate } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
 
 const TransactionItem = ({ transaction, layout = 'table' }) => {
-  const { deleteTransaction, previewInvoice, downloadInvoice, setEditingTransaction } = useFinance();
+  const { deleteTransaction, previewInvoice, downloadInvoice, setEditingTransaction, isAmountsHidden } = useFinance();
   const [errorMessage, setErrorMessage] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -75,7 +75,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
               <p className="min-w-0 break-words text-[13px] font-medium leading-5 text-slate-900 dark:text-slate-100 sm:text-sm">
                 {description || transaction.category}
               </p>
-              <p className={`shrink-0 whitespace-nowrap text-[13px] font-semibold sm:text-sm ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+              <p className={`privacy-sensitive shrink-0 whitespace-nowrap text-[13px] font-semibold sm:text-sm ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                 {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
               </p>
             </div>
@@ -162,7 +162,10 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
         <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300">{transaction.category}</td>
         <td className="whitespace-nowrap px-4 py-3.5 text-slate-600 dark:text-slate-300">{transaction.paymentMethod || '—'}</td>
         <td className="whitespace-nowrap px-4 py-3.5 text-slate-500 dark:text-slate-400">{formatDate(transaction.date)}</td>
-        <td className={`whitespace-nowrap px-5 py-3.5 text-right font-medium sm:px-6 ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+        <td
+          aria-label={isAmountsHidden ? 'Importe oculto' : undefined}
+          className={`privacy-sensitive whitespace-nowrap px-5 py-3.5 text-right font-medium sm:px-6 ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}
+        >
           {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
         </td>
         <td className="sticky right-0 z-10 w-12 bg-white px-2 py-3.5 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] group-hover:bg-slate-50 dark:bg-slate-900 dark:group-hover:bg-slate-800">

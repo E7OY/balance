@@ -10,6 +10,11 @@ const PROFILES_KEY = 'financeProfiles';
 const ACTIVE_PROFILE_KEY = 'financeActiveProfile';
 
 const profileStorageKey = (profileId, key) => `finance:${profileId}:${key}`;
+const getGoalsMonthKey = (year, month) => `${year}-${String(month + 1).padStart(2, '0')}`;
+const normalizeMonthlyGoals = (goals) => ({
+  savings: Number.isFinite(Number(goals?.savings)) ? Math.max(0, Number(goals.savings)) : 0,
+  investment: Number.isFinite(Number(goals?.investment)) ? Math.max(0, Number(goals.investment)) : 0,
+});
 
 const loadProfileSetup = () => {
   const savedProfiles = getFromLocalStorage(PROFILES_KEY);
@@ -29,6 +34,15 @@ const loadProfileSetup = () => {
 
   const namespacedTransactions = getFromLocalStorage(profileStorageKey(activeProfileId, 'transactions'));
   const namespacedCategories = getFromLocalStorage(profileStorageKey(activeProfileId, 'customCategories'));
+  const savedGoals = getFromLocalStorage(profileStorageKey(activeProfileId, 'monthlyGoals'));
+  const initialGoalsMonthKey = getGoalsMonthKey(new Date().getFullYear(), new Date().getMonth());
+  const monthlyGoalsByMonth = savedGoals && typeof savedGoals === 'object'
+    ? (Object.hasOwn(savedGoals, 'savings') || Object.hasOwn(savedGoals, 'investment')
+      ? { [initialGoalsMonthKey]: normalizeMonthlyGoals(savedGoals) }
+      : Object.fromEntries(
+        Object.entries(savedGoals).map(([monthKey, goals]) => [monthKey, normalizeMonthlyGoals(goals)]),
+      ))
+    : {};
   const isDefaultProfile = activeProfileId === 'default';
   const legacyTransactions = isDefaultProfile ? getFromLocalStorage('transactions') : null;
   const legacyCategories = isDefaultProfile ? getFromLocalStorage('customCategories') : null;
@@ -46,6 +60,7 @@ const loadProfileSetup = () => {
     profiles,
     activeProfileId,
     transactions: Array.isArray(transactions) ? transactions : [],
+    monthlyGoalsByMonth,
     customCategories: {
       Ingreso: Array.isArray(categories?.Ingreso) ? categories.Ingreso : [],
       Gasto: Array.isArray(categories?.Gasto) ? categories.Gasto : [],
@@ -115,6 +130,8 @@ export const FinanceProvider = ({ children }) => {
     return initialProfileSetup.transactions;
   });
   const [customCategories, setCustomCategories] = useState(initialProfileSetup.customCategories);
+  const [monthlyGoalsByMonth, setMonthlyGoalsByMonth] = useState(initialProfileSetup.monthlyGoalsByMonth);
+  const [isAmountsHidden, setIsAmountsHidden] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [filters, setFilters] = useState({
@@ -134,6 +151,10 @@ export const FinanceProvider = ({ children }) => {
   }, [activeProfileId, customCategories]);
 
   useEffect(() => {
+    saveToLocalStorage(profileStorageKey(activeProfileId, 'monthlyGoals'), monthlyGoalsByMonth);
+  }, [activeProfileId, monthlyGoalsByMonth]);
+
+  useEffect(() => {
     saveToLocalStorage(PROFILES_KEY, profiles);
   }, [profiles]);
 
@@ -149,6 +170,12 @@ export const FinanceProvider = ({ children }) => {
       Ingreso: Array.isArray(storedCategories?.Ingreso) ? storedCategories.Ingreso : [],
       Gasto: Array.isArray(storedCategories?.Gasto) ? storedCategories.Gasto : [],
     });
+    const storedGoals = getFromLocalStorage(profileStorageKey(profileId, 'monthlyGoals'));
+    setMonthlyGoalsByMonth(storedGoals && typeof storedGoals === 'object'
+      ? (Object.hasOwn(storedGoals, 'savings') || Object.hasOwn(storedGoals, 'investment')
+        ? { [getGoalsMonthKey(filters.year, filters.month)]: normalizeMonthlyGoals(storedGoals) }
+        : storedGoals)
+      : {});
     setEditingTransaction(null);
     setIsModalOpen(false);
     setActiveProfileId(profileId);
@@ -167,11 +194,13 @@ export const FinanceProvider = ({ children }) => {
     setProfiles((previousProfiles) => [...previousProfiles, newProfile]);
     setTransactions([]);
     setCustomCategories({ Ingreso: [], Gasto: [] });
+    setMonthlyGoalsByMonth({});
     setEditingTransaction(null);
     setIsModalOpen(false);
     setActiveProfileId(id);
     saveToLocalStorage(profileStorageKey(id, 'transactions'), []);
     saveToLocalStorage(profileStorageKey(id, 'customCategories'), { Ingreso: [], Gasto: [] });
+    saveToLocalStorage(profileStorageKey(id, 'monthlyGoals'), {});
     saveToLocalStorage(ACTIVE_PROFILE_KEY, id);
     return newProfile;
   };
@@ -329,6 +358,15 @@ export const FinanceProvider = ({ children }) => {
     }, 0);
   }, [monthlyTransactions]);
 
+  const activeGoalsMonthKey = getGoalsMonthKey(filters.year, filters.month);
+  const monthlyGoals = monthlyGoalsByMonth[activeGoalsMonthKey] || { savings: 0, investment: 0 };
+  const setMonthlyGoals = (goals) => {
+    setMonthlyGoalsByMonth((previousGoals) => ({
+      ...previousGoals,
+      [activeGoalsMonthKey]: normalizeMonthlyGoals(goals),
+    }));
+  };
+
   const totalExpenses = useMemo(() => {
     return monthlyTransactions.reduce((acc, transaction) => {
       return transaction.type === 'Gasto'
@@ -449,6 +487,10 @@ export const FinanceProvider = ({ children }) => {
         profiles,
         activeProfile,
         activeProfileId,
+        monthlyGoals,
+        setMonthlyGoals,
+        isAmountsHidden,
+        setIsAmountsHidden,
         addProfile,
         switchProfile,
         addTransaction,
