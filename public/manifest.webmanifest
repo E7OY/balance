@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Balance | Finanzas personales",
+  "short_name": "Balance",
+  "description": "Controla tus ingresos y gastos personales con Balance.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
