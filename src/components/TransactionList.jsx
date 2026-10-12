@@ -44,23 +44,23 @@ const TransactionList = () => {
 
   return (
     <Card as="section" className="overflow-hidden">
-      <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex flex-row items-center justify-between gap-2 border-b border-slate-100 px-3 py-3 dark:border-slate-700 sm:gap-3 sm:px-5 sm:py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Movimientos del mes</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 sm:text-base">Movimientos del mes</h2>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 sm:mt-1 sm:text-sm">
             {sortedTransactions.length === 1
               ? '1 movimiento'
               : `${sortedTransactions.length} movimientos`}
           </p>
         </div>
-        <label className="flex h-9 items-center gap-2 self-start rounded-md border border-slate-200 bg-white px-2.5 text-slate-500 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus-within:border-slate-500 dark:focus-within:ring-slate-800 sm:self-auto">
+        <label className="flex h-8 shrink-0 items-center gap-1.5 self-start rounded-md border border-slate-200 bg-white px-2 text-slate-500 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus-within:border-slate-500 dark:focus-within:ring-slate-800 sm:h-9 sm:gap-2 sm:self-auto sm:px-2.5">
           <ArrowDownWideNarrow size={15} aria-hidden="true" />
           <span className="sr-only">Ordenar movimientos por</span>
           <select
             aria-label="Ordenar movimientos por"
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value)}
-            className="h-full min-w-28 bg-transparent text-sm text-slate-700 outline-none dark:text-slate-200"
+            className="h-full min-w-0 max-w-32 bg-transparent text-xs text-slate-700 outline-none dark:text-slate-200 sm:min-w-28 sm:text-sm"
           >
             <option value="relevance">Relevancia</option>
             <option value="date">Fecha</option>
@@ -89,7 +89,7 @@ const TransactionList = () => {
         </div>
       ) : (
         <>
-          <div className="space-y-2 p-3 xl:hidden">
+          <div className="space-y-1.5 p-2 sm:space-y-2 sm:p-3 xl:hidden">
             {sortedTransactions.map((transaction) => (
               <TransactionItem key={transaction.id} transaction={transaction} layout="card" />
             ))}
@@ -103,7 +103,9 @@ const TransactionList = () => {
                 <th scope="col" className="px-4 py-3">Método</th>
                 <th scope="col" className="px-4 py-3">Fecha</th>
                 <th scope="col" className="px-5 py-3 text-right sm:px-6">Importe</th>
-                <th scope="col" className="px-2 py-3"><span className="sr-only">Acciones</span></th>
+                <th scope="col" className="sticky right-0 z-20 w-12 bg-slate-50/95 px-2 py-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] dark:bg-slate-800/95">
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">

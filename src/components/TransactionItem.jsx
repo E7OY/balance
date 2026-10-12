@@ -62,29 +62,29 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
         aria-label={`Movimiento: ${description || transaction.category}. Selecciónalo para editar.`}
         onClick={openEditor}
         onKeyDown={handleRowKeyDown}
-        className="cursor-pointer rounded-lg border border-slate-100 bg-white p-3 shadow-sm transition-colors hover:border-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+        className="cursor-pointer rounded-lg border border-slate-100 bg-white p-2.5 shadow-sm transition-colors hover:border-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-slate-600 dark:hover:bg-slate-800 sm:p-3"
       >
-        <div className="flex items-start gap-3">
-          <span className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
+        <div className="flex items-start gap-2.5 sm:gap-3">
+          <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
             {isExpense ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <p className="min-w-0 break-words text-sm font-medium leading-5 text-slate-900 dark:text-slate-100">
+              <p className="min-w-0 break-words text-[13px] font-medium leading-5 text-slate-900 dark:text-slate-100 sm:text-sm">
                 {description || transaction.category}
               </p>
-              <p className={`shrink-0 whitespace-nowrap text-sm font-semibold ${isExpense ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-700 dark:text-emerald-400'}`}>
+              <p className={`shrink-0 whitespace-nowrap text-[13px] font-semibold sm:text-sm ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                 {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
               </p>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 sm:mt-2 sm:gap-x-2 sm:text-xs">
               <span>{transaction.category}</span>
               <span aria-hidden="true">·</span>
               <span>{transaction.paymentMethod || 'Sin método'}</span>
               <span aria-hidden="true">·</span>
               <span>{formatDate(transaction.date)}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="mt-1 flex items-center justify-between gap-2 sm:mt-2">
               <div>
                 {transaction.invoice && (
                   <button
@@ -123,7 +123,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
   return (
     <>
       <tr
-        className="hidden cursor-pointer transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/70 xl:table-row"
+        className="group hidden cursor-pointer transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/70 xl:table-row"
         tabIndex={0}
         aria-label={`Editar movimiento: ${description || transaction.category}`}
         onClick={openEditor}
@@ -160,10 +160,10 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
         <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300">{transaction.category}</td>
         <td className="whitespace-nowrap px-4 py-3.5 text-slate-600 dark:text-slate-300">{transaction.paymentMethod || '—'}</td>
         <td className="whitespace-nowrap px-4 py-3.5 text-slate-500 dark:text-slate-400">{formatDate(transaction.date)}</td>
-        <td className={`whitespace-nowrap px-5 py-3.5 text-right font-medium sm:px-6 ${isExpense ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-700 dark:text-emerald-400'}`}>
+        <td className={`whitespace-nowrap px-5 py-3.5 text-right font-medium sm:px-6 ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
           {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
         </td>
-        <td className="px-2 py-3.5">
+        <td className="sticky right-0 z-10 w-12 bg-white px-2 py-3.5 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] group-hover:bg-slate-50 dark:bg-slate-900 dark:group-hover:bg-slate-800">
           <button
             type="button"
             onClick={(event) => {
