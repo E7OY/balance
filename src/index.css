@@ -35,7 +35,36 @@ body {
 }
 
 html.dark body {
-  background-color: #020817;
+  background-color: #000;
+}
+
+html.dark .app-shell {
+  background-color: #000;
+}
+
+html.dark .app-shell [class~="dark:bg-slate-950"],
+html.dark .app-shell [class~="dark:bg-slate-950/60"] {
+  background-color: #000;
+}
+
+html.dark .app-shell [class~="dark:bg-slate-900"] {
+  background-color: #111;
+}
+
+html.dark .app-shell [class~="dark:bg-slate-800"],
+html.dark .app-shell [class~="dark:bg-slate-800/70"],
+html.dark .app-shell [class~="dark:bg-slate-800/80"] {
+  background-color: #1b1b1b;
+}
+
+html.dark .app-shell [class~="dark:hover:bg-slate-800"]:hover,
+html.dark .app-shell [class~="dark:hover:bg-slate-700"]:hover {
+  background-color: #292929;
+}
+
+html.dark .app-shell [class~="dark:border-slate-700"],
+html.dark .app-shell [class~="dark:border-slate-600"] {
+  border-color: #333;
 }
 
 button,
