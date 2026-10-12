@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Eye, EyeOff, Plus, Users, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { triggerHaptic } from '../utils/haptics';
 import { Button } from './ui/button';
 
 const ProfileSwitcher = () => {
@@ -76,6 +77,7 @@ const ProfileSwitcher = () => {
 
   const toggleAmountVisibility = () => {
     setIsAmountsHidden((hidden) => !hidden);
+    triggerHaptic();
     if (motionPermissionRequested.current) return;
 
     const requestPermission = window.DeviceMotionEvent?.requestPermission;
