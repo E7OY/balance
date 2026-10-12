@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowDownWideNarrow, ReceiptText } from 'lucide-react';
+import { ArrowDownWideNarrow, ChevronDown, ChevronUp, ReceiptText } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import TransactionItem from './TransactionItem';
 import { Card } from './ui/card';
@@ -22,6 +22,7 @@ const getRelevance = (transaction, searchTerm) => {
 const TransactionList = () => {
   const { filteredTransactions, setIsModalOpen, filters } = useFinance();
   const [sortBy, setSortBy] = useState('relevance');
+  const [showAllMobile, setShowAllMobile] = useState(false);
   const sortedTransactions = useMemo(() => {
     const transactions = [...filteredTransactions];
     const byNewest = (a, b) => b.date.localeCompare(a.date);
@@ -41,6 +42,8 @@ const TransactionList = () => {
       getRelevance(b, filters.searchTerm) - getRelevance(a, filters.searchTerm) || byNewest(a, b),
     );
   }, [filteredTransactions, filters.searchTerm, sortBy]);
+  const mobileTransactions = showAllMobile ? sortedTransactions : sortedTransactions.slice(0, 3);
+  const hiddenMobileCount = sortedTransactions.length - mobileTransactions.length;
 
   return (
     <Card as="section" className="overflow-hidden">
@@ -90,9 +93,21 @@ const TransactionList = () => {
       ) : (
         <>
           <div className="space-y-1.5 p-2 sm:space-y-2 sm:p-3 xl:hidden">
-            {sortedTransactions.map((transaction) => (
+            {mobileTransactions.map((transaction) => (
               <TransactionItem key={transaction.id} transaction={transaction} layout="card" />
             ))}
+            {sortedTransactions.length > 3 && (
+              <button
+                type="button"
+                aria-expanded={showAllMobile}
+                onClick={() => setShowAllMobile((isExpanded) => !isExpanded)}
+                className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+              >
+                {showAllMobile
+                  ? <>Mostrar menos <ChevronUp size={16} aria-hidden="true" /></>
+                  : <>Ver {hiddenMobileCount} {hiddenMobileCount === 1 ? 'movimiento más' : 'movimientos más'} <ChevronDown size={16} aria-hidden="true" /></>}
+              </button>
+            )}
           </div>
           <div className="hidden overflow-x-auto xl:block">
             <table className="w-full min-w-[620px] text-left text-sm">

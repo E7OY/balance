@@ -106,14 +106,16 @@ const App = () => {
               {theme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
             </button>
             <ProfileSwitcher />
-            <Button
-              size="default"
-              onClick={() => setIsModalOpen(true)}
-              className="hidden h-10 sm:inline-flex"
-            >
-              <span className="text-lg leading-none">+</span>
-              Añadir movimiento
-            </Button>
+            <div className="hidden lg:block">
+              <Button
+                size="default"
+                onClick={() => setIsModalOpen(true)}
+                className="h-10"
+              >
+                <span className="text-lg leading-none">+</span>
+                Añadir movimiento
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -136,7 +138,7 @@ const App = () => {
           onClick={() => setIsModalOpen(true)}
           aria-label="Añadir movimiento"
           title="Añadir movimiento"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex size-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-950/20 transition-transform hover:scale-105 hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 sm:hidden"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex size-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-950/20 transition-transform hover:scale-105 hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 lg:hidden"
         >
           <Plus size={26} strokeWidth={2.5} />
         </button>
