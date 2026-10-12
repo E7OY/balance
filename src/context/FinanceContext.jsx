@@ -488,6 +488,7 @@ export const FinanceProvider = ({ children }) => {
         activeProfile,
         activeProfileId,
         monthlyGoals,
+        monthlyGoalsByMonth,
         setMonthlyGoals,
         isAmountsHidden,
         setIsAmountsHidden,

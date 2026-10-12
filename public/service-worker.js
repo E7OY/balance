@@ -1,4 +1,4 @@
-const CACHE_NAME = 'balance-pwa-v1';
+const CACHE_NAME = 'balance-pwa-v2';
 const APP_SHELL = ['/manifest.webmanifest', '/pwa-icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -74,4 +74,63 @@ self.addEventListener('fetch', (event) => {
       }),
     );
   }
+});
+
+self.addEventListener('push', (event) => {
+  event.waitUntil((async () => {
+    let payload = {};
+    try {
+      payload = event.data?.json() || {};
+    } catch (error) {
+      console.error('La notificación push recibió datos JSON no válidos.', error);
+      payload = { body: event.data?.text() || '' };
+    }
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      payload = { body: typeof payload === 'string' ? payload : '' };
+    }
+
+    const notificationData = payload.data && typeof payload.data === 'object'
+      ? payload.data
+      : {};
+    await self.registration.showNotification(payload.title || 'Balance', {
+      body: payload.body || 'Tienes una actualización financiera.',
+      icon: payload.icon || '/pwa-icon.svg',
+      badge: payload.badge || '/pwa-icon.svg',
+      tag: payload.tag || 'balance-push',
+      data: {
+        url: notificationData.url || payload.url || '/',
+        action: notificationData.action || payload.action || 'dashboard',
+      },
+    });
+  })());
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const data = event.notification.data || {};
+    const action = event.action || data.action || 'dashboard';
+    let targetUrl;
+    try {
+      targetUrl = new URL(data.url || '/', self.location.origin);
+    } catch (error) {
+      console.error('La notificación contenía una URL no válida.', error);
+      targetUrl = new URL('/', self.location.origin);
+    }
+    if (targetUrl.origin !== self.location.origin) {
+      targetUrl.href = self.location.origin;
+    }
+    if (action === 'add') targetUrl.searchParams.set('action', 'add');
+
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clients) {
+      if (new URL(client.url).origin !== self.location.origin) continue;
+      if (action === 'add') {
+        client.postMessage({ type: 'OPEN_ADD_TRANSACTION' });
+      }
+      await client.focus();
+      return;
+    }
+    await self.clients.openWindow(targetUrl.href);
+  })());
 });

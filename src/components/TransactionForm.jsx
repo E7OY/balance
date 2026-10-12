@@ -4,6 +4,7 @@ import { useFinance } from '../context/FinanceContext';
 import { expenseCategories } from '../utils/categories';
 import { getLocalDateString } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
+import { getPushNotificationsEnabled, showAppNotification } from '../utils/pushNotifications';
 import { Button } from './ui/button';
 
 const MAX_INVOICE_SIZE = 10 * 1024 * 1024;
@@ -18,6 +19,9 @@ const TransactionForm = ({ transaction = null, onClose }) => {
     downloadInvoice,
     filters,
     allCategories,
+    monthlyGoalsByMonth,
+    transactions,
+    activeProfileId,
   } = useFinance();
   const today = new Date();
   const selectedMonthDate = new Date(filters.year, filters.month, 1);
@@ -125,7 +129,34 @@ const TransactionForm = ({ transaction = null, onClose }) => {
         ...(removeExistingInvoice && { removeInvoice: true }),
       };
       if (transaction) await updateTransaction(transaction.id, movement);
-      else await addTransaction(movement);
+      else {
+        await addTransaction(movement);
+        const targetMonth = date.slice(0, 7);
+        const targetMonthGoals = monthlyGoalsByMonth[targetMonth] || { savings: 0, investment: 0 };
+        const targetMonthBalance = transactions
+          .filter((item) => item.date?.slice(0, 7) === targetMonth)
+          .reduce((balance, item) => (
+            balance + (item.type === 'Ingreso' ? 1 : -1) * (Number(item.amount) || 0)
+          ), 0);
+        const freeBalance = Math.max(
+          0,
+          targetMonthBalance - targetMonthGoals.savings - targetMonthGoals.investment,
+        );
+        if (type === 'Gasto' && value > freeBalance) {
+          try {
+            if (getPushNotificationsEnabled(activeProfileId)) {
+              await showAppNotification({
+                title: 'Gasto por encima de tu dinero libre',
+                body: `El gasto de ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value)} supera tu saldo libre de ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(freeBalance)}.`,
+                tag: `balance-overspending-${activeProfileId}-${Date.now()}`,
+                action: 'dashboard',
+              });
+            }
+          } catch (notificationError) {
+            console.error('No se pudo mostrar la alerta de gasto excesivo.', notificationError);
+          }
+        }
+      }
       triggerHaptic();
       setAmount('');
       setDescription('');

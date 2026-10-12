@@ -1,6 +1,11 @@
-import React, { useRef, useState } from 'react';
-import { Eye, EyeOff, Plus, Users, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Bell, Eye, EyeOff, Plus, Users, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import {
+  getPushNotificationsEnabled,
+  requestPushNotificationPermission,
+  setPushNotificationsEnabled,
+} from '../utils/pushNotifications';
 import { triggerHaptic } from '../utils/haptics';
 import { Button } from './ui/button';
 
@@ -23,6 +28,14 @@ const ProfileSwitcher = () => {
   const [name, setName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [goalValues, setGoalValues] = useState({ savings: 0, investment: 0 });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    () => getPushNotificationsEnabled(activeProfile.id),
+  );
+  const [notificationPermission, setNotificationPermission] = useState(
+    () => ('Notification' in window ? Notification.permission : 'default'),
+  );
+  const [notificationError, setNotificationError] = useState('');
+  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -74,6 +87,59 @@ const ProfileSwitcher = () => {
 
   const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' })
     .format(new Date(filters.year, filters.month, 1));
+
+  useEffect(() => {
+    const refreshNotificationState = () => {
+      setNotificationsEnabled(getPushNotificationsEnabled(activeProfile.id));
+      setNotificationPermission('Notification' in window ? Notification.permission : 'default');
+    };
+    refreshNotificationState();
+    window.addEventListener('focus', refreshNotificationState);
+    return () => window.removeEventListener('focus', refreshNotificationState);
+  }, [activeProfile.id]);
+
+  const handleNotificationsToggle = async (event) => {
+    const enabled = event.target.checked;
+    setNotificationError('');
+    if (!enabled) {
+      try {
+        setPushNotificationsEnabled(activeProfile.id, false);
+        setNotificationsEnabled(false);
+      } catch (error) {
+        setNotificationError(error.message);
+      }
+      return;
+    }
+
+    setIsUpdatingNotifications(true);
+    try {
+      const permission = await requestPushNotificationPermission();
+      setNotificationPermission(permission);
+      if (permission === 'granted') {
+        setPushNotificationsEnabled(activeProfile.id, true);
+        setNotificationsEnabled(true);
+      } else {
+        setPushNotificationsEnabled(activeProfile.id, false);
+        setNotificationsEnabled(false);
+      }
+    } catch (error) {
+      setNotificationPermission('Notification' in window ? Notification.permission : 'default');
+      setNotificationError(error.message || 'No se pudieron activar las notificaciones.');
+    } finally {
+      setIsUpdatingNotifications(false);
+    }
+  };
+
+  const permissionLabel = notificationPermission === 'granted'
+    ? 'Concedido'
+    : notificationPermission === 'denied'
+      ? 'Denegado'
+      : 'Pendiente';
+  const permissionClass = notificationPermission === 'granted'
+    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
+    : notificationPermission === 'denied'
+      ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300'
+      : 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300';
 
   const toggleAmountVisibility = () => {
     setIsAmountsHidden((hidden) => !hidden);
@@ -279,6 +345,45 @@ const ProfileSwitcher = () => {
                 <Button type="submit">Guardar metas</Button>
               </div>
             </form>
+            <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-700">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    <Bell size={17} />
+                    Activar Notificaciones Push
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Recibe avisos de gastos que superan tu dinero libre y recordatorios de días sin gastos.
+                  </p>
+                </div>
+                <label className="relative mt-1 inline-flex shrink-0 cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label="Activar Notificaciones Push"
+                    checked={notificationsEnabled}
+                    disabled={isUpdatingNotifications || notificationPermission === 'denied'}
+                    onChange={handleNotificationsToggle}
+                    className="peer sr-only"
+                  />
+                  <span className="h-6 w-11 rounded-full bg-slate-300 transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-emerald-600 peer-checked:after:translate-x-5 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-60 dark:bg-slate-600" />
+                </label>
+              </div>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                Permiso del navegador:{' '}
+                <span className={`rounded-full px-2 py-1 font-medium ${permissionClass}`}>{permissionLabel}</span>
+              </p>
+              {notificationPermission === 'denied' && (
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  El permiso está bloqueado en el navegador. Cámbialo desde los ajustes del sitio para activarlo.
+                </p>
+              )}
+              {notificationError && (
+                <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">
+                  {notificationError}
+                </p>
+              )}
+            </div>
           </section>
         </div>
       )}

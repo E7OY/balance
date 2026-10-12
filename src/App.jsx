@@ -9,6 +9,12 @@ import Filters from './components/Filters';
 import ExportImportButtons from './components/ExportImportButtons';
 import { Button } from './components/ui/button';
 import ProfileSwitcher from './components/ProfileSwitcher';
+import {
+  claimDailyCheck,
+  getPushNotificationsEnabled,
+  releaseDailyCheck,
+  showAppNotification,
+} from './utils/pushNotifications';
 import { triggerHaptic } from './utils/haptics';
 
 const App = () => {
@@ -21,6 +27,8 @@ const App = () => {
     setFilters,
     isAmountsHidden,
     setIsAmountsHidden,
+    transactions,
+    activeProfileId,
   } = useFinance();
   const monthSwipeStart = useRef(null);
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
@@ -38,15 +46,78 @@ const App = () => {
   }, [theme]);
 
   useEffect(() => {
-    try {
-      const staleBiometricKeys = Object.keys(localStorage).filter((key) => (
-        /^finance:.*:biometricCredential$/.test(key)
+    const openAddTransaction = () => {
+      setIsModalOpen(true);
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+    };
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data?.type === 'OPEN_ADD_TRANSACTION') openAddTransaction();
+    };
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('action') === 'add') openAddTransaction();
+    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
+  }, [setIsModalOpen]);
+
+  useEffect(() => {
+    let isChecking = false;
+    let isDisposed = false;
+    let timer;
+
+    const getPreviousDate = () => {
+      const previousDate = new Date();
+      previousDate.setDate(previousDate.getDate() - 1);
+      return `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, '0')}-${String(previousDate.getDate()).padStart(2, '0')}`;
+    };
+
+    const checkPreviousDay = async () => {
+      if (isChecking || !('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!getPushNotificationsEnabled(activeProfileId)) return;
+      const date = getPreviousDate();
+      const hadExpenses = transactions.some((transaction) => (
+        transaction.type === 'Gasto' && transaction.date === date
       ));
-      staleBiometricKeys.forEach((key) => localStorage.removeItem(key));
-    } catch (error) {
-      console.error('No se pudieron limpiar las preferencias de bloqueo antiguas.', error);
-    }
-  }, []);
+      if (hadExpenses || !claimDailyCheck(activeProfileId, date)) return;
+
+      isChecking = true;
+      try {
+        await showAppNotification({
+          title: 'Día sin gastos',
+          body: `Ayer (${new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' }).format(new Date(`${date}T12:00:00`))}) no registraste ningún gasto. ¡Buen trabajo!`,
+          tag: `balance-no-spend-${activeProfileId}-${date}`,
+          action: 'dashboard',
+        });
+      } catch (error) {
+        releaseDailyCheck(activeProfileId, date);
+        console.error('No se pudo mostrar el recordatorio de día sin gastos.', error);
+      } finally {
+        isChecking = false;
+      }
+    };
+
+    const scheduleNextDayCheck = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+      timer = window.setTimeout(async () => {
+        await checkPreviousDay();
+        if (!isDisposed) scheduleNextDayCheck();
+      }, nextMidnight.getTime() - now.getTime());
+    };
+    scheduleNextDayCheck();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') checkPreviousDay();
+    };
+    const handleNotificationPreferenceChange = () => checkPreviousDay();
+    checkPreviousDay();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('balance:push-notifications-changed', handleNotificationPreferenceChange);
+    return () => {
+      isDisposed = true;
+      window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('balance:push-notifications-changed', handleNotificationPreferenceChange);
+    };
+  }, [activeProfileId, transactions]);
 
   useEffect(() => {
     if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
