@@ -1,11 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, Fingerprint, Plus, ShieldCheck, Users, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Eye, EyeOff, Plus, Users, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import {
-  getBiometricCredentialId,
-  registerBiometricCredential,
-  removeBiometricCredential,
-} from '../utils/biometricAuth';
 import { triggerHaptic } from '../utils/haptics';
 import { Button } from './ui/button';
 
@@ -23,12 +18,6 @@ const ProfileSwitcher = () => {
     setIsAmountsHidden,
   } = useFinance();
   const motionPermissionRequested = useRef(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(
-    () => Boolean(getBiometricCredentialId(activeProfile.id)),
-  );
-  const [isUpdatingBiometric, setIsUpdatingBiometric] = useState(false);
-  const [biometricMessage, setBiometricMessage] = useState('');
-  const [hasBiometricError, setHasBiometricError] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [name, setName] = useState('');
@@ -85,34 +74,6 @@ const ProfileSwitcher = () => {
 
   const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' })
     .format(new Date(filters.year, filters.month, 1));
-
-  useEffect(() => {
-    setBiometricEnabled(Boolean(getBiometricCredentialId(activeProfile.id)));
-    setBiometricMessage('');
-    setHasBiometricError(false);
-  }, [activeProfile.id]);
-
-  const handleBiometricToggle = async () => {
-    setIsUpdatingBiometric(true);
-    setBiometricMessage('');
-    setHasBiometricError(false);
-    try {
-      if (biometricEnabled) {
-        removeBiometricCredential(activeProfile.id);
-        setBiometricEnabled(false);
-        setBiometricMessage('Bloqueo biométrico desactivado para este perfil.');
-      } else {
-        await registerBiometricCredential(activeProfile);
-        setBiometricEnabled(true);
-        setBiometricMessage('Bloqueo biométrico activado. Se solicitará al volver a la app.');
-      }
-    } catch (error) {
-      setBiometricMessage(error.message || 'No se pudo actualizar el bloqueo biométrico.');
-      setHasBiometricError(true);
-    } finally {
-      setIsUpdatingBiometric(false);
-    }
-  };
 
   const toggleAmountVisibility = () => {
     setIsAmountsHidden((hidden) => !hidden);
@@ -318,42 +279,6 @@ const ProfileSwitcher = () => {
                 <Button type="submit">Guardar metas</Button>
               </div>
             </form>
-            <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-700">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                <ShieldCheck size={17} />
-                Bloqueo biométrico
-              </h3>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {biometricEnabled
-                  ? 'La app se bloqueará al pasar a segundo plano y pedirá Face ID, Touch ID o huella al volver.'
-                  : 'Activa Face ID, Touch ID o huella para bloquear la app cuando pase a segundo plano.'}
-              </p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Es un bloqueo de privacidad en este dispositivo; no cifra ni sincroniza tus datos.
-              </p>
-              <Button
-                type="button"
-                variant={biometricEnabled ? 'outline' : 'default'}
-                onClick={handleBiometricToggle}
-                disabled={isUpdatingBiometric}
-                className="mt-3 w-full"
-              >
-                <Fingerprint size={17} />
-                {isUpdatingBiometric
-                  ? 'Esperando al dispositivo...'
-                  : biometricEnabled
-                    ? 'Desactivar bloqueo biométrico'
-                    : 'Activar bloqueo biométrico'}
-              </Button>
-              {biometricMessage && (
-                <p
-                  role={hasBiometricError ? 'alert' : 'status'}
-                  className={`mt-2 text-sm ${hasBiometricError ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-400'}`}
-                >
-                  {biometricMessage}
-                </p>
-              )}
-            </div>
           </section>
         </div>
       )}

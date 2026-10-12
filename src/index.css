@@ -40,12 +40,6 @@ body {
   transition: filter 0.15s ease;
 }
 
-.app-shell[data-screen-locked="true"] {
-  filter: blur(12px);
-  pointer-events: none;
-  user-select: none;
-}
-
 html.dark body {
   background-color: #000;
 }

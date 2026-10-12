@@ -1,5 +1,5 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Fingerprint, LockKeyhole, MoonStar, Plus, SunMedium } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { MoonStar, Plus, SunMedium } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import SummaryCards from './components/SummaryCards';
 import TransactionForm from './components/TransactionForm';
@@ -9,7 +9,6 @@ import Filters from './components/Filters';
 import ExportImportButtons from './components/ExportImportButtons';
 import { Button } from './components/ui/button';
 import ProfileSwitcher from './components/ProfileSwitcher';
-import { authenticateBiometric, getBiometricCredentialId } from './utils/biometricAuth';
 import { triggerHaptic } from './utils/haptics';
 
 const App = () => {
@@ -22,19 +21,9 @@ const App = () => {
     setFilters,
     isAmountsHidden,
     setIsAmountsHidden,
-    activeProfile,
   } = useFinance();
   const monthSwipeStart = useRef(null);
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
-  const previousProfileId = useRef(activeProfile.id);
-  const [isBiometricEnabled, setIsBiometricEnabled] = useState(
-    () => Boolean(getBiometricCredentialId(activeProfile.id)),
-  );
-  const [isScreenLocked, setIsScreenLocked] = useState(
-    () => Boolean(getBiometricCredentialId(activeProfile.id)),
-  );
-  const [isUnlocking, setIsUnlocking] = useState(false);
-  const [unlockError, setUnlockError] = useState('');
   const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('balance-theme');
     if (storedTheme) return storedTheme;
@@ -48,40 +37,16 @@ const App = () => {
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
 
-  useLayoutEffect(() => {
-    const refreshBiometricSetting = () => {
-      const enabled = Boolean(getBiometricCredentialId(activeProfile.id));
-      setIsBiometricEnabled(enabled);
-      if (!enabled) {
-        setIsScreenLocked(false);
-        setUnlockError('');
-      } else if (previousProfileId.current !== activeProfile.id) {
-        setIsScreenLocked(true);
-        setUnlockError('');
-      }
-      previousProfileId.current = activeProfile.id;
-    };
-    const lockApp = () => {
-      if (getBiometricCredentialId(activeProfile.id)) {
-        setIsScreenLocked(true);
-        setUnlockError('');
-      }
-    };
-    const lockWhenBackgrounded = () => {
-      if (document.visibilityState === 'hidden') lockApp();
-    };
-
-    window.addEventListener('balance:biometric-configuration-changed', refreshBiometricSetting);
-    document.addEventListener('visibilitychange', lockWhenBackgrounded);
-    window.addEventListener('pagehide', lockApp);
-    window.addEventListener('blur', lockApp);
-    return () => {
-      window.removeEventListener('balance:biometric-configuration-changed', refreshBiometricSetting);
-      document.removeEventListener('visibilitychange', lockWhenBackgrounded);
-      window.removeEventListener('pagehide', lockApp);
-      window.removeEventListener('blur', lockApp);
-    };
-  }, [activeProfile.id]);
+  useEffect(() => {
+    try {
+      const staleBiometricKeys = Object.keys(localStorage).filter((key) => (
+        /^finance:.*:biometricCredential$/.test(key)
+      ));
+      staleBiometricKeys.forEach((key) => localStorage.removeItem(key));
+    } catch (error) {
+      console.error('No se pudieron limpiar las preferencias de bloqueo antiguas.', error);
+    }
+  }, []);
 
   useEffect(() => {
     if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
@@ -159,29 +124,11 @@ const App = () => {
     triggerHaptic();
   };
 
-  const handleBiometricUnlock = async () => {
-    setIsUnlocking(true);
-    setUnlockError('');
-    try {
-      await authenticateBiometric(activeProfile.id);
-      setIsScreenLocked(false);
-      triggerHaptic();
-    } catch (error) {
-      setUnlockError(error.name === 'NotAllowedError'
-        ? 'No se completó la autenticación. Inténtalo de nuevo.'
-        : error.message || 'No se pudo verificar tu identidad.');
-    } finally {
-      setIsUnlocking(false);
-    }
-  };
-
   return (
-    <>
-      <div
-        className="app-shell min-h-screen bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-slate-50"
-        data-amounts-hidden={isAmountsHidden}
-        data-screen-locked={isScreenLocked}
-      >
+    <div
+      className="app-shell min-h-screen bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-slate-50"
+      data-amounts-hidden={isAmountsHidden}
+    >
       <main
         className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-9 sm:px-6 lg:px-8"
         onTouchStart={handleTouchStart}
@@ -259,42 +206,7 @@ const App = () => {
           }}
         />
       )}
-      </div>
-      {isBiometricEnabled && isScreenLocked && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-6 text-center backdrop-blur-md"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="biometric-lock-title"
-        >
-          <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-slate-900/95 p-7 text-white shadow-2xl">
-            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-white/10 text-emerald-300">
-              <LockKeyhole size={26} />
-            </span>
-            <h2 id="biometric-lock-title" className="mt-4 text-xl font-semibold text-white">
-              Balance está bloqueado
-            </h2>
-            <p className="mt-2 text-sm text-slate-300">
-              Confirma tu identidad con Face ID, Touch ID o la huella configurada en el dispositivo.
-            </p>
-            <Button
-              type="button"
-              onClick={handleBiometricUnlock}
-              disabled={isUnlocking}
-              className="mt-5 w-full bg-emerald-600 text-white hover:bg-emerald-700"
-            >
-              <Fingerprint size={18} />
-              {isUnlocking ? 'Esperando autenticación...' : 'Desbloquear'}
-            </Button>
-            {unlockError && (
-              <p role="alert" className="mt-3 text-sm text-rose-300">
-                {unlockError}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 };
 
