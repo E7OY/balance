@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MoonStar, SunMedium } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import SummaryCards from './components/SummaryCards';
@@ -17,7 +17,9 @@ const App = () => {
     editingTransaction,
     setEditingTransaction,
     filters,
+    setFilters,
   } = useFinance();
+  const monthSwipeStart = useRef(null);
   const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('balance-theme');
     if (storedTheme) return storedTheme;
@@ -35,9 +37,50 @@ const App = () => {
     new Date(filters.year, filters.month, 1),
   );
 
+  const handleTouchStart = (event) => {
+    if (!window.matchMedia('(max-width: 767px)').matches || event.touches.length !== 1) {
+      monthSwipeStart.current = null;
+      return;
+    }
+
+    if (event.target.closest?.('button, input, select, textarea, a, [role="dialog"], [data-month-swipe-ignore]')) {
+      monthSwipeStart.current = null;
+      return;
+    }
+
+    const touch = event.touches[0];
+    monthSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event) => {
+    const start = monthSwipeStart.current;
+    monthSwipeStart.current = null;
+    if (!start || event.changedTouches.length !== 1) return;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.3) return;
+
+    const monthOffset = deltaX < 0 ? 1 : -1;
+    setFilters((previous) => {
+      const nextMonth = new Date(previous.year, previous.month + monthOffset, 1);
+      return {
+        ...previous,
+        month: nextMonth.getMonth(),
+        year: nextMonth.getFullYear(),
+      };
+    });
+  };
+
   return (
     <div className="app-shell min-h-screen bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-slate-50">
-      <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-9 sm:px-6 lg:px-8">
+      <main
+        className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-9 sm:px-6 lg:px-8"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => { monthSwipeStart.current = null; }}
+      >
         <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
             <p className="mb-2 text-sm font-medium capitalize text-slate-500 dark:text-slate-400">
