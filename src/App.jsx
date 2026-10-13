@@ -163,7 +163,6 @@ const App = () => {
     filters.type !== 'Todos',
     filters.category !== 'Todas',
   ].filter(Boolean).length;
-
   const handleTouchStart = (event) => {
     if (!window.matchMedia('(max-width: 767px)').matches || event.touches.length !== 1) {
       monthSwipeStart.current = null;

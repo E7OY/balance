@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, FileText, Paperclip, Plus, Trash2, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowDownLeft, ArrowUpRight, Camera, FileText, Paperclip, Plus, Trash2, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { expenseCategories } from '../utils/categories';
 import { getLocalDateString } from '../utils/helpers';
@@ -42,6 +42,11 @@ const TransactionForm = ({ transaction = null, onClose }) => {
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isReadingReceipt, setIsReadingReceipt] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [receiptNotice, setReceiptNotice] = useState('');
+  const [receiptToScan, setReceiptToScan] = useState(null);
+  const receiptPhotoInputRef = useRef(null);
   const categories = allCategories[type];
 
   useEffect(() => {
@@ -54,6 +59,68 @@ const TransactionForm = ({ transaction = null, onClose }) => {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose, setIsModalOpen]);
+
+  useEffect(() => {
+    if (!receiptToScan) return undefined;
+    let isCancelled = false;
+
+    const readReceipt = async () => {
+      if (receiptToScan.size > MAX_INVOICE_SIZE) {
+        setErrorMessage('La foto supera los 10 MB. Elige una imagen más ligera.');
+        return;
+      }
+      if (!receiptToScan.type.startsWith('image/')) {
+        setErrorMessage('El recibo debe ser una imagen compatible.');
+        return;
+      }
+
+      setType('Gasto');
+      setInvoiceFile(receiptToScan);
+      setIsReadingReceipt(true);
+      setOcrProgress(0);
+      setErrorMessage('');
+      setReceiptNotice('');
+
+      try {
+        const { scanReceipt } = await import('../utils/receiptOcr');
+        const result = await scanReceipt(receiptToScan, allCategories.Gasto, (progress) => {
+          if (!isCancelled) setOcrProgress(progress);
+        });
+        if (isCancelled) return;
+
+        const extractedFields = [];
+        if (result.amount !== null) {
+          setAmount(result.amount.toFixed(2));
+          extractedFields.push('importe');
+        }
+        if (result.date) {
+          setDate(result.date);
+          extractedFields.push('fecha');
+        }
+        if (result.category) {
+          setCategory(result.category);
+          extractedFields.push(`categoría: ${result.category}`);
+        }
+        if (result.paymentMethod && paymentMethods.includes(result.paymentMethod)) {
+          setPaymentMethod(result.paymentMethod);
+          extractedFields.push(`método de pago: ${result.paymentMethod}`);
+        }
+        setReceiptNotice(extractedFields.length > 0
+          ? `Detectado: ${extractedFields.join(' · ')}. Revisa los campos antes de guardar.`
+          : 'No se detectaron datos claros. Completa los campos manualmente; la foto quedará adjunta.');
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('No se pudo leer el recibo.', error);
+          setErrorMessage('No se pudo leer el recibo. Completa los campos manualmente; la foto sigue adjunta.');
+        }
+      } finally {
+        if (!isCancelled) setIsReadingReceipt(false);
+      }
+    };
+
+    readReceipt();
+    return () => { isCancelled = true; };
+  }, [allCategories.Gasto, receiptToScan]);
 
   const closeForm = () => {
     if (onClose) onClose();
@@ -97,6 +164,22 @@ const TransactionForm = ({ transaction = null, onClose }) => {
     }
     setInvoiceFile(file);
     setErrorMessage('');
+  };
+
+  const handleReceiptCapture = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > MAX_INVOICE_SIZE) {
+      setErrorMessage('La foto supera los 10 MB. Elige una imagen más ligera.');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('El recibo debe ser una imagen compatible.');
+      return;
+    }
+    setErrorMessage('');
+    setReceiptToScan(file);
   };
 
   const handleSubmit = async (event) => {
@@ -197,6 +280,47 @@ const TransactionForm = ({ transaction = null, onClose }) => {
             {transaction ? 'Actualiza los datos de este movimiento.' : 'Apunta el sueldo que entra o un gasto del mes.'}
           </p>
         </div>
+
+        {!transaction && (
+          <div className="mb-5">
+            <input
+              ref={receiptPhotoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleReceiptCapture}
+              className="hidden"
+              aria-label="Fotografiar recibo"
+            />
+            <button
+              type="button"
+              onClick={() => receiptPhotoInputRef.current?.click()}
+              disabled={isReadingReceipt}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <Camera size={16} aria-hidden="true" />
+              Fotografiar recibo
+            </button>
+          </div>
+        )}
+
+        {receiptToScan && (
+          <div className="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+            {isReadingReceipt ? (
+              <div role="status">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Leyendo recibo…</span>
+                  <span className="text-xs tabular-nums">{ocrProgress}%</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-emerald-200 dark:bg-emerald-950/50">
+                  <span className="block h-full rounded-full bg-emerald-600 transition-[width] dark:bg-emerald-400" style={{ width: `${ocrProgress}%` }} />
+                </div>
+              </div>
+            ) : receiptNotice ? (
+              <p role="status" className="privacy-sensitive">{receiptNotice}</p>
+            ) : null}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
