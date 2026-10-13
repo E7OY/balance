@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ReceiptText } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronUp, ReceiptText } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import TransactionItem from './TransactionItem';
 import { Card } from './ui/card';
@@ -22,14 +22,58 @@ const getRelevance = (transaction, searchTerm) => {
 const TransactionList = () => {
   const { filteredTransactions, setIsModalOpen, filters } = useFinance();
   const [showAllMobile, setShowAllMobile] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: 'default', direction: 'desc' });
   const sortedTransactions = useMemo(() => {
     const transactions = [...filteredTransactions];
     const byNewest = (a, b) => b.date.localeCompare(a.date);
 
+    if (sortConfig.key !== 'default') {
+      const direction = sortConfig.direction === 'asc' ? 1 : -1;
+      return transactions.sort((a, b) => {
+        let comparison = 0;
+        if (sortConfig.key === 'date') comparison = a.date.localeCompare(b.date);
+        if (sortConfig.key === 'amount') comparison = Number(a.amount) - Number(b.amount);
+        if (sortConfig.key === 'category') {
+          comparison = (a.category || '').localeCompare(b.category || '', 'es', { sensitivity: 'base' });
+        }
+        return comparison * direction || byNewest(a, b);
+      });
+    }
+
     return transactions.sort((a, b) =>
       getRelevance(b, filters.searchTerm) - getRelevance(a, filters.searchTerm) || byNewest(a, b),
     );
-  }, [filteredTransactions, filters.searchTerm]);
+  }, [filteredTransactions, filters.searchTerm, sortConfig]);
+  const toggleSort = (key) => {
+    setSortConfig((previous) => ({
+      key,
+      direction: previous.key === key
+        ? previous.direction === 'asc' ? 'desc' : 'asc'
+        : key === 'category' ? 'asc' : 'desc',
+    }));
+  };
+  const renderSortHeader = (label, key, className) => {
+    const SortIcon = sortConfig.key !== key
+      ? ArrowUpDown
+      : sortConfig.direction === 'asc' ? ArrowUp : ArrowDown;
+
+    return (
+      <th
+        scope="col"
+        aria-sort={sortConfig.key === key ? sortConfig.direction === 'asc' ? 'ascending' : 'descending' : undefined}
+        className={className}
+      >
+        <button
+          type="button"
+          onClick={() => toggleSort(key)}
+          className="inline-flex items-center gap-1 rounded-sm hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:hover:text-slate-100"
+        >
+          {label}
+          <SortIcon size={14} aria-hidden="true" />
+        </button>
+      </th>
+    );
+  };
   const mobileTransactions = showAllMobile ? sortedTransactions : sortedTransactions.slice(0, 3);
   const hiddenMobileCount = sortedTransactions.length - mobileTransactions.length;
 
@@ -92,10 +136,10 @@ const TransactionList = () => {
             <thead className="bg-slate-50/80 text-xs font-medium uppercase tracking-wide text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
               <tr>
                 <th scope="col" className="px-5 py-3 sm:px-6">Movimiento</th>
-                <th scope="col" className="px-4 py-3">Categoría</th>
+                {renderSortHeader('Categoría', 'category', 'px-4 py-3')}
                 <th scope="col" className="px-4 py-3">Método</th>
-                <th scope="col" className="px-4 py-3">Fecha</th>
-                <th scope="col" className="px-5 py-3 text-right sm:px-6">Importe</th>
+                {renderSortHeader('Fecha', 'date', 'px-4 py-3')}
+                {renderSortHeader('Importe', 'amount', 'px-5 py-3 text-right sm:px-6 [&>button]:w-full [&>button]:justify-end')}
                 <th scope="col" className="sticky right-0 z-20 w-12 bg-slate-50/95 px-2 py-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] dark:bg-slate-800/95">
                   <span className="sr-only">Acciones</span>
                 </th>
