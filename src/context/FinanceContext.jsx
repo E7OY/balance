@@ -15,6 +15,11 @@ const normalizeMonthlyGoals = (goals) => ({
   savings: Number.isFinite(Number(goals?.savings)) ? Math.max(0, Number(goals.savings)) : 0,
   investment: Number.isFinite(Number(goals?.investment)) ? Math.max(0, Number(goals.investment)) : 0,
 });
+const normalizeMonthlyCategoryCaps = (caps) => Object.fromEntries(
+  Object.entries(caps && typeof caps === 'object' && !Array.isArray(caps) ? caps : {})
+    .filter(([, amount]) => Number.isFinite(Number(amount)) && Number(amount) > 0)
+    .map(([category, amount]) => [category, Number(amount)]),
+);
 
 const loadProfileSetup = () => {
   const savedProfiles = getFromLocalStorage(PROFILES_KEY);
@@ -35,6 +40,7 @@ const loadProfileSetup = () => {
   const namespacedTransactions = getFromLocalStorage(profileStorageKey(activeProfileId, 'transactions'));
   const namespacedCategories = getFromLocalStorage(profileStorageKey(activeProfileId, 'customCategories'));
   const savedGoals = getFromLocalStorage(profileStorageKey(activeProfileId, 'monthlyGoals'));
+  const savedCategoryCaps = getFromLocalStorage(profileStorageKey(activeProfileId, 'monthlyCategoryCaps'));
   const initialGoalsMonthKey = getGoalsMonthKey(new Date().getFullYear(), new Date().getMonth());
   const monthlyGoalsByMonth = savedGoals && typeof savedGoals === 'object'
     ? (Object.hasOwn(savedGoals, 'savings') || Object.hasOwn(savedGoals, 'investment')
@@ -42,6 +48,11 @@ const loadProfileSetup = () => {
       : Object.fromEntries(
         Object.entries(savedGoals).map(([monthKey, goals]) => [monthKey, normalizeMonthlyGoals(goals)]),
       ))
+    : {};
+  const monthlyCategoryCapsByMonth = savedCategoryCaps && typeof savedCategoryCaps === 'object'
+    ? Object.fromEntries(
+      Object.entries(savedCategoryCaps).map(([monthKey, caps]) => [monthKey, normalizeMonthlyCategoryCaps(caps)]),
+    )
     : {};
   const isDefaultProfile = activeProfileId === 'default';
   const legacyTransactions = isDefaultProfile ? getFromLocalStorage('transactions') : null;
@@ -61,6 +72,7 @@ const loadProfileSetup = () => {
     activeProfileId,
     transactions: Array.isArray(transactions) ? transactions : [],
     monthlyGoalsByMonth,
+    monthlyCategoryCapsByMonth,
     customCategories: {
       Ingreso: Array.isArray(categories?.Ingreso) ? categories.Ingreso : [],
       Gasto: Array.isArray(categories?.Gasto) ? categories.Gasto : [],
@@ -131,6 +143,7 @@ export const FinanceProvider = ({ children }) => {
   });
   const [customCategories, setCustomCategories] = useState(initialProfileSetup.customCategories);
   const [monthlyGoalsByMonth, setMonthlyGoalsByMonth] = useState(initialProfileSetup.monthlyGoalsByMonth);
+  const [monthlyCategoryCapsByMonth, setMonthlyCategoryCapsByMonth] = useState(initialProfileSetup.monthlyCategoryCapsByMonth);
   const [isAmountsHidden, setIsAmountsHidden] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -155,6 +168,10 @@ export const FinanceProvider = ({ children }) => {
   }, [activeProfileId, monthlyGoalsByMonth]);
 
   useEffect(() => {
+    saveToLocalStorage(profileStorageKey(activeProfileId, 'monthlyCategoryCaps'), monthlyCategoryCapsByMonth);
+  }, [activeProfileId, monthlyCategoryCapsByMonth]);
+
+  useEffect(() => {
     saveToLocalStorage(PROFILES_KEY, profiles);
   }, [profiles]);
 
@@ -176,6 +193,12 @@ export const FinanceProvider = ({ children }) => {
         ? { [getGoalsMonthKey(filters.year, filters.month)]: normalizeMonthlyGoals(storedGoals) }
         : storedGoals)
       : {});
+    const storedCategoryCaps = getFromLocalStorage(profileStorageKey(profileId, 'monthlyCategoryCaps'));
+    setMonthlyCategoryCapsByMonth(storedCategoryCaps && typeof storedCategoryCaps === 'object'
+      ? Object.fromEntries(
+        Object.entries(storedCategoryCaps).map(([monthKey, caps]) => [monthKey, normalizeMonthlyCategoryCaps(caps)]),
+      )
+      : {});
     setEditingTransaction(null);
     setIsModalOpen(false);
     setActiveProfileId(profileId);
@@ -195,12 +218,14 @@ export const FinanceProvider = ({ children }) => {
     setTransactions([]);
     setCustomCategories({ Ingreso: [], Gasto: [] });
     setMonthlyGoalsByMonth({});
+    setMonthlyCategoryCapsByMonth({});
     setEditingTransaction(null);
     setIsModalOpen(false);
     setActiveProfileId(id);
     saveToLocalStorage(profileStorageKey(id, 'transactions'), []);
     saveToLocalStorage(profileStorageKey(id, 'customCategories'), { Ingreso: [], Gasto: [] });
     saveToLocalStorage(profileStorageKey(id, 'monthlyGoals'), {});
+    saveToLocalStorage(profileStorageKey(id, 'monthlyCategoryCaps'), {});
     saveToLocalStorage(ACTIVE_PROFILE_KEY, id);
     return newProfile;
   };
@@ -366,6 +391,21 @@ export const FinanceProvider = ({ children }) => {
       [activeGoalsMonthKey]: normalizeMonthlyGoals(goals),
     }));
   };
+  const activeCategoryCapsMonthKey = getGoalsMonthKey(filters.year, filters.month);
+  const monthlyCategoryCaps = monthlyCategoryCapsByMonth[activeCategoryCapsMonthKey] || {};
+  const setMonthlyCategoryCap = (category, value) => {
+    const amount = value === '' ? 0 : Number(value);
+    if (!Number.isFinite(amount)) return;
+    setMonthlyCategoryCapsByMonth((previousCaps) => {
+      const monthCaps = { ...(previousCaps[activeCategoryCapsMonthKey] || {}) };
+      if (amount > 0) monthCaps[category] = amount;
+      else delete monthCaps[category];
+      return {
+        ...previousCaps,
+        [activeCategoryCapsMonthKey]: normalizeMonthlyCategoryCaps(monthCaps),
+      };
+    });
+  };
 
   const totalExpenses = useMemo(() => {
     return monthlyTransactions.reduce((acc, transaction) => {
@@ -490,6 +530,8 @@ export const FinanceProvider = ({ children }) => {
         monthlyGoals,
         monthlyGoalsByMonth,
         setMonthlyGoals,
+        monthlyCategoryCaps,
+        setMonthlyCategoryCap,
         isAmountsHidden,
         setIsAmountsHidden,
         addProfile,
