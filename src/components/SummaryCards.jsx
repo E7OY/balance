@@ -1,8 +1,106 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowDown, ArrowDownRight, ArrowUp, ArrowUpRight, Minus, Wallet } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
 import { Card } from './ui/card';
+
+const Sparkline = ({ values, label, tone }) => {
+  const [activeIndex, setActiveIndex] = useState(null);
+  const minimum = Math.min(...values);
+  const range = Math.max(...values) - minimum;
+  const color = tone === 'income' ? '#10b981' : '#f43f5e';
+  const gradientId = `sparkline-${tone}-gradient`;
+  const points = values.map((value, index) => ({
+    x: (index / (values.length - 1)) * 100,
+    y: range > 0 ? 27 - ((value - minimum) / range) * 22 : 16,
+  }));
+  const linePoints = points.map(({ x, y }) => `${x},${y}`).join(' ');
+  const fillPoints = [`${points[0].x},32`, linePoints, `${points[points.length - 1].x},32`].join(' ');
+  const activePoint = activeIndex === null ? null : points[activeIndex];
+  const tooltipLeft = activeIndex === null
+    ? 50
+    : Math.min(84, Math.max(16, (activeIndex / (values.length - 1)) * 100));
+
+  return (
+    <div
+      className="relative mt-6 h-14"
+      onMouseMove={(event) => {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const position = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+        setActiveIndex(Math.round(position * (values.length - 1)));
+      }}
+      onMouseLeave={() => setActiveIndex(null)}
+    >
+      <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-full w-full overflow-visible" aria-hidden="true">
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.24" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={fillPoints} fill={`url(#${gradientId})`} />
+        <polyline
+          points={linePoints}
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        {activePoint && (
+          <>
+            <line
+              x1={activePoint.x}
+              y1="2"
+              x2={activePoint.x}
+              y2="30"
+              stroke={color}
+              strokeDasharray="2 2"
+              strokeOpacity="0.6"
+              vectorEffect="non-scaling-stroke"
+            />
+          </>
+        )}
+        {points.map(({ x, y }, index) => (
+          <circle
+            key={index}
+            cx={x}
+            cy={y}
+            r="7"
+            fill="transparent"
+            tabIndex="0"
+            aria-label={`${label}, semana ${index + 1}: ${formatCurrency(values[index])}`}
+            onFocus={() => setActiveIndex(index)}
+            onBlur={() => setActiveIndex(null)}
+          >
+            <title>{`Semana ${index + 1}: ${formatCurrency(values[index])}`}</title>
+          </circle>
+        ))}
+      </svg>
+      {activePoint && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute z-10 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+          style={{
+            left: `${activePoint.x}%`,
+            top: `${(activePoint.y / 32) * 100}%`,
+            backgroundColor: color,
+          }}
+        />
+      )}
+      {activeIndex !== null && (
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute bottom-full z-10 mb-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950 px-2 py-1 text-[11px] font-medium text-white shadow-md dark:bg-white dark:text-slate-900"
+          style={{ left: `${tooltipLeft}%` }}
+        >
+          {`Semana ${activeIndex + 1} · ${formatCurrency(values[activeIndex])}`}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const SummaryCards = () => {
   const {
@@ -93,6 +191,21 @@ const SummaryCards = () => {
     return { day, total };
   });
   const chartMax = Math.max(...dailyExpenses.map((day) => day.total), 1);
+  const weeklyTotals = Array.from({ length: Math.ceil(dayCount / 7) }, () => ({ income: 0, expenses: 0 }));
+  monthlyTransactions.forEach((transaction) => {
+    const weekIndex = Math.floor((Number(transaction.date.slice(-2)) - 1) / 7);
+    const amount = Number(transaction.amount) || 0;
+    if (!weeklyTotals[weekIndex]) return;
+    if (transaction.type === 'Ingreso') weeklyTotals[weekIndex].income += amount;
+    if (transaction.type === 'Gasto') weeklyTotals[weekIndex].expenses += amount;
+  });
+  let accumulatedIncome = 0;
+  let accumulatedExpenses = 0;
+  const weeklyTrends = weeklyTotals.map(({ income, expenses }) => {
+    accumulatedIncome += income;
+    accumulatedExpenses += expenses;
+    return { income: accumulatedIncome, expenses: accumulatedExpenses };
+  });
 
   const stats = [
     {
@@ -103,6 +216,7 @@ const SummaryCards = () => {
       amountClass: 'text-emerald-700 dark:text-emerald-400',
       note: 'Lo que ha entrado este mes',
       previousAmount: previousMonthTotals.income,
+      trendValues: weeklyTrends.map((week) => week.income),
     },
     {
       label: 'Gastos del mes',
@@ -112,6 +226,7 @@ const SummaryCards = () => {
       amountClass: 'text-rose-700 dark:text-rose-400',
       note: 'Lo que ya has gastado',
       previousAmount: previousMonthTotals.expenses,
+      trendValues: weeklyTrends.map((week) => week.expenses),
     },
   ];
 
@@ -203,7 +318,7 @@ const SummaryCards = () => {
           </p>
         </Card>
 
-        {stats.map(({ label, amount, icon: Icon, iconClass, amountClass, note, previousAmount }) => {
+        {stats.map(({ label, amount, icon: Icon, iconClass, amountClass, note, previousAmount, trendValues }) => {
           const isIncome = label === 'Sueldo e ingresos';
           const currentTotal = Math.abs(amount);
           const previousTotal = Math.abs(previousAmount);
@@ -255,6 +370,7 @@ const SummaryCards = () => {
                 {`${label === 'Gastos del mes' ? 'Gastaste' : 'Ingresaste'} en ${previousMonthLabel}: `}
                 <span className="privacy-sensitive font-medium text-slate-700 dark:text-slate-200">{formatCurrency(previousAmount)}</span>
               </p>
+              <Sparkline values={trendValues} label={label} tone={isIncome ? 'income' : 'expense'} />
             </Card>
           );
         })}
