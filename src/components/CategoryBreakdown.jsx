@@ -148,7 +148,7 @@ const CategoryBreakdown = () => {
                 : progress >= 80 ? 'bg-amber-500' : 'bg-emerald-500';
 
               return (
-              <li key={item.category} className="text-sm">
+              <li key={item.category} className="border-b border-slate-100 pb-3 text-sm last:border-0 last:pb-0 dark:border-slate-700">
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex min-w-0 items-center gap-2.5">
                   <span

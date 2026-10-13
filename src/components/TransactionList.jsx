@@ -21,7 +21,7 @@ const getRelevance = (transaction, searchTerm) => {
 
 const TransactionList = () => {
   const { filteredTransactions, setIsModalOpen, filters } = useFinance();
-  const [showAllMobile, setShowAllMobile] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'default', direction: 'desc' });
   const sortedTransactions = useMemo(() => {
     const transactions = [...filteredTransactions];
@@ -74,8 +74,7 @@ const TransactionList = () => {
       </th>
     );
   };
-  const mobileTransactions = showAllMobile ? sortedTransactions : sortedTransactions.slice(0, 3);
-  const hiddenMobileCount = sortedTransactions.length - mobileTransactions.length;
+  const visibleTransactions = showAllTransactions ? sortedTransactions : sortedTransactions.slice(0,5);
 
   return (
     <Card as="section" className="overflow-hidden">
@@ -115,21 +114,9 @@ const TransactionList = () => {
       ) : (
         <>
           <div className="space-y-1.5 p-2 sm:space-y-2 sm:p-3 xl:hidden">
-            {mobileTransactions.map((transaction) => (
+            {visibleTransactions.map((transaction) => (
               <TransactionItem key={transaction.id} transaction={transaction} layout="card" />
             ))}
-            {sortedTransactions.length > 3 && (
-              <button
-                type="button"
-                aria-expanded={showAllMobile}
-                onClick={() => setShowAllMobile((isExpanded) => !isExpanded)}
-                className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
-              >
-                {showAllMobile
-                  ? <>Mostrar menos <ChevronUp size={16} aria-hidden="true" /></>
-                  : <>Ver {hiddenMobileCount} {hiddenMobileCount === 1 ? 'movimiento más' : 'movimientos más'} <ChevronDown size={16} aria-hidden="true" /></>}
-              </button>
-            )}
           </div>
           <div className="hidden overflow-x-auto xl:block">
             <table className="w-full min-w-[620px] text-left text-sm">
@@ -146,12 +133,24 @@ const TransactionList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {sortedTransactions.map((transaction) => (
+              {visibleTransactions.map((transaction) => (
                 <TransactionItem key={transaction.id} transaction={transaction} />
               ))}
             </tbody>
             </table>
           </div>
+          {sortedTransactions.length > 9 && (
+            <button
+              type="button"
+              aria-expanded={showAllTransactions}
+              onClick={() => setShowAllTransactions((showAll) => !showAll)}
+              className="flex min-h-11 w-full items-center justify-center gap-1.5 border-t border-slate-100 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 dark:border-slate-700 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+            >
+              {showAllTransactions
+                ? <>Mostrar menos <ChevronUp size={16} aria-hidden="true" /></>
+                : <>Ver todos <ChevronDown size={16} aria-hidden="true" /></>}
+            </button>
+          )}
         </>
       )}
     </Card>
