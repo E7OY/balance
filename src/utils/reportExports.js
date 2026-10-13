@@ -43,6 +43,12 @@ export const exportTransactionsPdf = (transactions) => {
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 16;
   const contentWidth = pageWidth - margin * 2;
+  const dateX = margin + 1;
+  const descriptionX = margin + 24;
+  const categoryX = margin + 82;
+  const paymentMethodX = margin + 112;
+  const amountX = pageWidth - margin - 2;
+  const amountWidth = 36;
   const sortedTransactions = [...transactions].sort((a, b) => b.date.localeCompare(a.date));
   const totalIncome = transactions.reduce(
     (total, transaction) => total + (transaction.type === 'Ingreso' ? Number(transaction.amount) : 0),
@@ -85,11 +91,11 @@ export const exportTransactionsPdf = (transactions) => {
     pdf.setTextColor(100, 116, 139);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
-    pdf.text('FECHA', margin + 2, y);
-    pdf.text('MOVIMIENTO', margin + 27, y);
-    pdf.text('CATEGORÍA', margin + 86, y);
-    pdf.text('MÉTODO', margin + 119, y);
-    pdf.text('IMPORTE', pageWidth - margin - 2, y, { align: 'right' });
+    pdf.text('FECHA', dateX, y);
+    pdf.text('MOVIMIENTO', descriptionX, y);
+    pdf.text('CATEGORÍA', categoryX, y);
+    pdf.text('MÉTODO', paymentMethodX, y);
+    pdf.text('IMPORTE', amountX, y, { align: 'right' });
     y += 9;
   };
 
@@ -113,11 +119,11 @@ export const exportTransactionsPdf = (transactions) => {
 
   sortedTransactions.forEach((transaction, index) => {
     const description = transaction.description?.trim() || transaction.category;
-    const descriptionLines = pdf.splitTextToSize(description, 53);
-    const categoryLines = pdf.splitTextToSize(transaction.category, 29);
-    const paymentMethodLines = pdf.splitTextToSize(transaction.paymentMethod || '—', 31);
+    const descriptionLines = pdf.splitTextToSize(description, 54);
+    const categoryLines = pdf.splitTextToSize(transaction.category || '—', 26);
+    const paymentMethodLines = pdf.splitTextToSize(transaction.paymentMethod || '—', 24);
     const invoiceLines = transaction.invoice
-      ? pdf.splitTextToSize(`Factura: ${transaction.invoice.name}`, 53)
+      ? pdf.splitTextToSize(`Factura: ${transaction.invoice.name}`, 54)
       : [];
     const lineCount = Math.max(descriptionLines.length, categoryLines.length, paymentMethodLines.length, 1) + invoiceLines.length;
     const rowHeight = Math.max(10, lineCount * 4 + 3);
@@ -135,28 +141,31 @@ export const exportTransactionsPdf = (transactions) => {
     pdf.setTextColor(71, 85, 105);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
-    pdf.text(formatDate(transaction.date), margin + 2, y);
+    const compactDate = transaction.date.split('-').reverse().join('/');
+    pdf.text(compactDate, dateX, y);
 
     pdf.setTextColor(15, 23, 42);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    pdf.text(descriptionLines, margin + 27, y);
+    pdf.text(descriptionLines, descriptionX, y);
     if (invoiceLines.length) {
       pdf.setTextColor(5, 120, 88);
       pdf.setFontSize(7);
-      pdf.text(invoiceLines, margin + 27, y + descriptionLines.length * 4);
+      pdf.text(invoiceLines, descriptionX, y + descriptionLines.length * 4);
     }
 
     pdf.setTextColor(71, 85, 105);
     pdf.setFontSize(8);
-    pdf.text(categoryLines, margin + 86, y);
-    pdf.text(paymentMethodLines, margin + 119, y);
+    pdf.text(categoryLines, categoryX, y);
+    pdf.text(paymentMethodLines, paymentMethodX, y);
 
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(9);
     pdf.setTextColor(transaction.type === 'Ingreso' ? 4 : 15, transaction.type === 'Ingreso' ? 120 : 23, transaction.type === 'Ingreso' ? 87 : 42);
-    const prefix = transaction.type === 'Ingreso' ? '+' : '−';
-    pdf.text(`${prefix}${formatCurrency(Number(transaction.amount))}`, pageWidth - margin - 2, y, { align: 'right' });
+    const prefix = transaction.type === 'Ingreso' ? '+' : '-';
+    const amountText = `${prefix}${formatCurrency(Number(transaction.amount))}`;
+    if (pdf.getTextWidth(amountText) > amountWidth) pdf.setFontSize(8);
+    pdf.text(amountText, amountX, y, { align: 'right' });
 
     y += rowHeight;
     pdf.setDrawColor(241, 245, 249);
