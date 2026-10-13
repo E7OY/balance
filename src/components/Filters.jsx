@@ -37,7 +37,7 @@ const Filters = ({ isMobileFiltersOpen }) => {
       ? allCategories.Gasto
       : allCategories.Todas;
   return (
-    <section aria-label="Seleccionar mes y filtrar movimientos" className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900 sm:gap-3 sm:p-3 md:flex md:flex-row md:items-center md:justify-between`}>
+    <section aria-label="Seleccionar mes y filtrar movimientos" className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} flex-col gap-2 rounded-xl border-0 bg-white p-2.5 transition-colors dark:border-slate-700 dark:bg-slate-900 sm:gap-3 sm:p-3 md:flex md:flex-row md:items-center md:justify-between`}>
       <div className="hidden items-center gap-1 md:flex md:gap-2">
         <button
           type="button"
