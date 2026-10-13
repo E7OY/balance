@@ -1,14 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Filter, Search } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 
 const monthNames = Array.from({ length: 12 }, (_, month) =>
   new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(2024, month, 1)),
 );
 
-const Filters = () => {
+const Filters = ({ isMobileFiltersOpen }) => {
   const { filters, setFilters, allCategories, transactions } = useFinance();
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const availableYears = useMemo(() => {
     const years = transactions.map((transaction) => Number(transaction.date.slice(0, 4)));
     return [...new Set([filters.year, ...years])].sort((a, b) => b - a);
@@ -37,14 +36,8 @@ const Filters = () => {
     : filters.type === 'Gasto'
       ? allCategories.Gasto
       : allCategories.Todas;
-  const activeFilterCount = [
-    filters.searchTerm.trim().length > 0,
-    filters.type !== 'Todos',
-    filters.category !== 'Todas',
-  ].filter(Boolean).length;
-
   return (
-    <section aria-label="Seleccionar mes y filtrar movimientos" className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900 sm:gap-3 sm:p-3 sm:flex-row sm:items-center sm:justify-between">
+    <section aria-label="Seleccionar mes y filtrar movimientos" className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900 sm:gap-3 sm:p-3 md:flex md:flex-row md:items-center md:justify-between`}>
       <div className="hidden items-center gap-1 md:flex md:gap-2">
         <button
           type="button"
@@ -85,27 +78,6 @@ const Filters = () => {
           <ChevronRight size={18} />
         </button>
       </div>
-
-      <button
-        type="button"
-        aria-expanded={isMobileFiltersOpen}
-        aria-controls="transaction-filters"
-        onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
-        className="inline-flex h-9 items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 md:hidden"
-      >
-        <span className="inline-flex items-center gap-2">
-          <Filter size={15} aria-hidden="true" />
-          Mes y filtros
-          {activeFilterCount > 0 && (
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
-              {activeFilterCount}
-            </span>
-          )}
-        </span>
-        {isMobileFiltersOpen
-          ? <ChevronUp size={16} aria-hidden="true" />
-          : <ChevronDown size={16} aria-hidden="true" />}
-      </button>
 
       <div
         id="transaction-filters"

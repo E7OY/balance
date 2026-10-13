@@ -303,6 +303,27 @@ export const FinanceProvider = ({ children }) => {
     }));
   };
 
+  const splitTransaction = (id, totalInstallments) => {
+    const sourceTransaction = transactions.find((transaction) => transaction.id === id);
+    const installmentCount = Number(totalInstallments);
+    if (!sourceTransaction) throw new Error('No se encontró el movimiento que quieres dividir.');
+    if (sourceTransaction.type !== 'Gasto') throw new Error('Solo se pueden dividir los gastos.');
+    if (sourceTransaction.installment?.seriesId) throw new Error('Este movimiento ya forma parte de un pago a plazos.');
+    if (!Number.isInteger(installmentCount) || installmentCount < 2 || installmentCount > 24) {
+      throw new Error('El número de cuotas debe estar entre 2 y 24.');
+    }
+
+    const installmentRecords = buildInstallmentRecords(sourceTransaction, installmentCount)
+      .map((record, index) => {
+        if (index === 0 || !record.invoice) return record;
+        const { invoice, ...recordWithoutInvoice } = record;
+        return recordWithoutInvoice;
+      });
+    setTransactions((previousTransactions) => previousTransactions.flatMap((transaction) => (
+      transaction.id === id ? installmentRecords : [transaction]
+    )));
+  };
+
   const deleteTransaction = async (id) => {
     const targetTransaction = transactions.find((transaction) => transaction.id === id);
     const seriesId = targetTransaction?.installment?.seriesId;
@@ -537,6 +558,7 @@ export const FinanceProvider = ({ children }) => {
         addProfile,
         switchProfile,
         addTransaction,
+        splitTransaction,
         addCategory,
         deleteTransaction,
         previewInvoice,

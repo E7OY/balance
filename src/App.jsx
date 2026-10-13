@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MoonStar, Plus, SunMedium } from 'lucide-react';
+import { Filter, MoonStar, Plus, SunMedium } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import SummaryCards from './components/SummaryCards';
 import TransactionForm from './components/TransactionForm';
@@ -32,6 +32,7 @@ const App = () => {
   } = useFinance();
   const monthSwipeStart = useRef(null);
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('balance-theme');
     if (storedTheme) return storedTheme;
@@ -157,6 +158,11 @@ const App = () => {
   const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(
     new Date(filters.year, filters.month, 1),
   );
+  const activeFilterCount = [
+    filters.searchTerm.trim().length > 0,
+    filters.type !== 'Todos',
+    filters.category !== 'Todas',
+  ].filter(Boolean).length;
 
   const handleTouchStart = (event) => {
     if (!window.matchMedia('(max-width: 767px)').matches || event.touches.length !== 1) {
@@ -228,6 +234,22 @@ const App = () => {
             >
               {theme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
             </button>
+            <button
+              type="button"
+              aria-label={activeFilterCount > 0 ? `Mes y filtros, ${activeFilterCount} filtros activos` : 'Mes y filtros'}
+              title="Mes y filtros"
+              aria-expanded={isMobileFiltersOpen}
+              aria-controls="transaction-filters"
+              onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
+              className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
+            >
+              <Filter size={18} aria-hidden="true" />
+              {activeFilterCount > 0 && (
+                <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-semibold leading-none text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
             <ProfileSwitcher />
             <div className="hidden lg:block">
               <Button
@@ -242,7 +264,7 @@ const App = () => {
           </div>
         </div>
 
-        <Filters />
+        <Filters isMobileFiltersOpen={isMobileFiltersOpen} />
         <SummaryCards />
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">

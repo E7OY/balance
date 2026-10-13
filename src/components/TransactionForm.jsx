@@ -157,7 +157,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
           }
         }
       }
-      triggerHaptic();
+      triggerHaptic(type === 'Ingreso' ? 'income' : 'heavy');
       setAmount('');
       setDescription('');
       setInvoiceFile(null);
