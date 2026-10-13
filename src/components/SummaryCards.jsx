@@ -13,6 +13,7 @@ const SummaryCards = () => {
     monthlyTransactions,
     filters,
     monthlyGoals,
+    isAmountsHidden,
   } = useFinance();
   const previousMonthDate = new Date(filters.year, filters.month - 1, 1);
   const previousMonthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(previousMonthDate);
