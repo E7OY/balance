@@ -36,7 +36,7 @@ const App = () => {
   const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('balance-theme');
     if (storedTheme) return storedTheme;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   });
 
   useEffect(() => {
@@ -202,7 +202,7 @@ const App = () => {
 
   return (
     <div
-      className="app-shell min-h-screen bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-slate-50"
+      className="app-shell min-h-screen bg-zinc-50 text-zinc-950 transition-colors dark:bg-black dark:text-white"
       data-amounts-hidden={isAmountsHidden}
     >
       <main

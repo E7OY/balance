@@ -179,9 +179,11 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
               <p className="min-w-0 break-words text-[13px] font-medium leading-5 text-slate-900 dark:text-slate-100 sm:text-sm">
                 {description || transaction.category}
               </p>
-              <p className={`privacy-sensitive shrink-0 whitespace-nowrap text-[13px] font-semibold sm:text-sm ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
-              </p>
+              <div className="flex shrink-0 items-center gap-1">
+                <p className={`privacy-sensitive whitespace-nowrap text-[13px] font-semibold sm:text-sm ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                  {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
+                </p>
+              </div>
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 sm:mt-2 sm:gap-x-2 sm:text-xs">
               <span>{transaction.category}</span>

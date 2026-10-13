@@ -120,26 +120,26 @@ const TransactionList = () => {
           </div>
           <div className="hidden overflow-x-auto xl:block">
             <table className="w-full min-w-[620px] text-left text-sm">
-            <thead className="bg-slate-50/80 text-xs font-medium uppercase tracking-wide text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
-              <tr>
-                <th scope="col" className="px-5 py-3 sm:px-6">Movimiento</th>
-                {renderSortHeader('Categoría', 'category', 'px-4 py-3')}
-                <th scope="col" className="px-4 py-3">Método</th>
-                {renderSortHeader('Fecha', 'date', 'px-4 py-3')}
-                {renderSortHeader('Importe', 'amount', 'px-5 py-3 text-right sm:px-6 [&>button]:w-full [&>button]:justify-end')}
-                <th scope="col" className="sticky right-0 z-20 w-12 bg-slate-50/95 px-2 py-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] dark:bg-slate-800/95">
-                  <span className="sr-only">Acciones</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {visibleTransactions.map((transaction) => (
-                <TransactionItem key={transaction.id} transaction={transaction} />
-              ))}
-            </tbody>
+              <thead className="bg-slate-50/80 text-xs font-medium uppercase tracking-wide text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
+                <tr>
+                  <th scope="col" className="px-5 py-3 sm:px-6">Movimiento</th>
+                  {renderSortHeader('Categoría', 'category', 'px-4 py-3')}
+                  <th scope="col" className="px-4 py-3">Método</th>
+                  {renderSortHeader('Fecha', 'date', 'px-4 py-3')}
+                  {renderSortHeader('Importe', 'amount', 'px-5 py-3 text-right sm:px-6 [&>button]:w-full [&>button]:justify-end')}
+                  <th scope="col" className="sticky right-0 z-20 w-12 bg-slate-50/95 px-2 py-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] dark:bg-slate-800/95">
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                {visibleTransactions.map((transaction) => (
+                  <TransactionItem key={transaction.id} transaction={transaction} />
+                ))}
+              </tbody>
             </table>
           </div>
-          {sortedTransactions.length > 9 && (
+          {sortedTransactions.length > 5 && (
             <button
               type="button"
               aria-expanded={showAllTransactions}
