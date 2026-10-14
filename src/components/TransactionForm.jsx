@@ -211,8 +211,9 @@ const TransactionForm = ({ transaction = null, onClose }) => {
         invoiceFile,
         ...(removeExistingInvoice && { removeInvoice: true }),
       };
-      if (transaction) await updateTransaction(transaction.id, movement);
-      else {
+      if (transaction) {
+        await updateTransaction(transaction.id, movement);
+      } else {
         await addTransaction(movement);
         const targetMonth = date.slice(0, 7);
         const targetMonthGoals = monthlyGoalsByMonth[targetMonth] || { savings: 0, investment: 0 };

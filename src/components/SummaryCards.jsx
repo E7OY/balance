@@ -113,6 +113,7 @@ const SummaryCards = () => {
     monthlyGoals,
     isAmountsHidden,
   } = useFinance();
+  
   const previousMonthDate = new Date(filters.year, filters.month - 1, 1);
   const previousMonthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(previousMonthDate);
   const previousMonthTransactions = transactions.filter((transaction) => {
@@ -161,24 +162,42 @@ const SummaryCards = () => {
     ? `Este mes has gastado un ${Math.round(anomaly.delta)}% más en '${anomaly.category}' que el mes pasado.`
     : null;
 
-  const savingsGoal = monthlyGoals.savings;
-  const investmentGoal = monthlyGoals.investment;
+  // Lógica de Metas y Cascada
+  const savingsGoal = monthlyGoals.savings || 0;
+  const investmentGoal = monthlyGoals.investment || 0;
   const totalGoals = savingsGoal + investmentGoal;
   const hasMonthlyGoals = totalGoals > 0;
+  
   const savedPercentage = totalIncome > 0
     ? Math.max(0, Math.min(100, (totalBalance / totalIncome) * 100))
     : 0;
-  const reallySpendable = Math.max(0, totalBalance - totalGoals);
+    
   const positiveBalance = Math.max(0, totalBalance);
-  const availableForSavings = Math.min(savingsGoal, positiveBalance);
-  const availableForInvestment = Math.min(investmentGoal, Math.max(0, positiveBalance - availableForSavings));
-  const savingsWidth = positiveBalance > 0 ? (availableForSavings / positiveBalance) * 100 : 0;
-  const investmentWidth = positiveBalance > 0 ? (availableForInvestment / positiveBalance) * 100 : 0;
-  const spendableWidth = positiveBalance > 0 ? (reallySpendable / positiveBalance) * 100 : 0;
-  const consumedReserve = Math.min(totalGoals, Math.max(0, totalGoals - positiveBalance));
-  const formatIncomePercentage = (amount) => totalIncome > 0
-    ? `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format((amount / totalIncome) * 100)}%`
-    : '—';
+
+  // NUEVO: Saldo gastable real (ahora puede ser negativo para mostrar el signo "-")
+  const realSpendableBalance = totalBalance - totalGoals;
+
+  // Cascada: 1º Dinero Libre, 2º Ahorro, 3º Inversión
+  const availableForInvestment = Math.min(investmentGoal, positiveBalance);
+  const availableForSavings = Math.min(savingsGoal, Math.max(0, positiveBalance - investmentGoal));
+  const spendableWidthAmount = Math.max(0, positiveBalance - totalGoals);
+
+  const consumedSavings = Math.max(0, savingsGoal - availableForSavings);
+  const consumedInvestment = Math.max(0, investmentGoal - availableForInvestment);
+
+  const baseForBar = Math.max(positiveBalance, totalGoals, 1);
+  const investmentWidth = (availableForInvestment / baseForBar) * 100;
+  const consumedInvestmentWidth = (consumedInvestment / baseForBar) * 100;
+  const savingsWidth = (availableForSavings / baseForBar) * 100;
+  const consumedSavingsWidth = (consumedSavings / baseForBar) * 100;
+  const spendableWidth = (spendableWidthAmount / baseForBar) * 100;
+
+  // Leyenda limpia: Solo muestra las metas establecidas y el dinero libre
+  const legendItems = [
+    { label: 'Inversión', amount: investmentGoal, color: 'bg-violet-500' },
+    { label: 'Ahorro', amount: savingsGoal, color: 'bg-emerald-500' },
+    { label: 'Dinero libre', amount: spendableWidthAmount, color: 'bg-sky-500' }
+  ].filter(item => item.amount > 0);
 
   const dayCount = new Date(filters.year, filters.month + 1, 0).getDate();
   const dailyExpenses = Array.from({ length: dayCount }, (_, index) => {
@@ -190,6 +209,7 @@ const SummaryCards = () => {
 
     return { day, total };
   });
+
   const chartMax = Math.max(...dailyExpenses.map((day) => day.total), 1);
   const weeklyTotals = Array.from({ length: Math.ceil(dayCount / 7) }, () => ({ income: 0, expenses: 0 }));
   monthlyTransactions.forEach((transaction) => {
@@ -199,6 +219,7 @@ const SummaryCards = () => {
     if (transaction.type === 'Ingreso') weeklyTotals[weekIndex].income += amount;
     if (transaction.type === 'Gasto') weeklyTotals[weekIndex].expenses += amount;
   });
+  
   let accumulatedIncome = 0;
   let accumulatedExpenses = 0;
   const weeklyTrends = weeklyTotals.map(({ income, expenses }) => {
@@ -251,48 +272,52 @@ const SummaryCards = () => {
               <Wallet size={18} />
             </span>
           </div>
-          <p className="privacy-sensitive mt-3 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:mt-5 sm:text-3xl">
-            {formatCurrency(hasMonthlyGoals ? reallySpendable : totalBalance)}
+          
+          {/* NUEVO: Si está en negativo, se pone rojo automáticamente */}
+          <p className={`privacy-sensitive mt-3 text-2xl font-semibold tracking-tight sm:mt-5 sm:text-3xl ${hasMonthlyGoals && realSpendableBalance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-950 dark:text-slate-50'}`}>
+            {formatCurrency(hasMonthlyGoals ? realSpendableBalance : totalBalance)}
           </p>
+          
           {hasMonthlyGoals ? (
             <>
               <p className="privacy-sensitive mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Saldo del mes: {formatCurrency(totalBalance)} menos tus metas
               </p>
+              
+              {/* BARRA DE COLORES */}
               <div
                 className="mt-3 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 sm:mt-5 sm:h-2.5"
                 role="img"
                 aria-label={isAmountsHidden
                   ? 'Distribución del saldo entre ahorro, inversión y dinero libre.'
-                  : `Distribución del saldo: ${formatCurrency(availableForSavings)} para ahorro, ${formatCurrency(availableForInvestment)} para inversión y ${formatCurrency(reallySpendable)} libres`}
+                  : `Distribución del saldo.`}
               >
-                <span className="h-full bg-emerald-500 transition-[width]" style={{ width: `${savingsWidth}%` }} />
                 <span className="h-full bg-violet-500 transition-[width]" style={{ width: `${investmentWidth}%` }} />
+                <span className="h-full bg-rose-500 transition-[width]" style={{ width: `${consumedInvestmentWidth}%` }} />
+                <span className="h-full bg-emerald-500 transition-[width]" style={{ width: `${savingsWidth}%` }} />
+                <span className="h-full bg-amber-500 transition-[width]" style={{ width: `${consumedSavingsWidth}%` }} />
                 <span className="h-full bg-sky-500 transition-[width]" style={{ width: `${spendableWidth}%` }} />
               </div>
-              <div className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                {[
-                  { label: 'Ahorro', amount: savingsGoal, color: 'bg-emerald-500' },
-                  { label: 'Inversión', amount: investmentGoal, color: 'bg-violet-500' },
-                  { label: 'Dinero libre', amount: reallySpendable, color: 'bg-sky-500' },
-                ].map(({ label, amount, color }) => (
+
+              {/* LEYENDA LIMPIA */}
+              <div className="mt-3 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                {legendItems.map(({ label, amount, color }) => (
                   <p key={label} className="flex items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1.5">
                       <span className={`size-2 shrink-0 rounded-full ${color}`} />
                       {label}
                     </span>
                     <span className="privacy-sensitive text-right font-medium">
-                      {formatCurrency(amount)} ({formatIncomePercentage(amount)} de tus ingresos)
+                      {formatCurrency(amount)}
                     </span>
                   </p>
                 ))}
               </div>
-              {totalBalance < totalGoals && (
-                <p
-                  role="alert"
-                  className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs leading-5 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
-                >
-                  Tus gastos han consumido <span className="privacy-sensitive">{formatCurrency(consumedReserve)}</span> de la reserva prevista para ahorro e inversión.
+
+              {/* AVISO DE TIRAR DE AHORROS / INVERSIÓN */}
+              {realSpendableBalance < 0 && (
+                <p role="alert" className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs leading-5 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+                  ⚠️ Estás tirando de {consumedInvestment > 0 ? 'tus ahorros e inversiones' : 'tus ahorros'}.
                 </p>
               )}
             </>
@@ -312,6 +337,7 @@ const SummaryCards = () => {
               </p>
             </>
           )}
+          
           <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400 sm:mt-3 sm:pt-3">
             {`Disponible en ${previousMonthLabel}: `}
             <span className="privacy-sensitive font-medium text-slate-700 dark:text-slate-200">{formatCurrency(previousMonthTotals.balance)}</span>
@@ -328,7 +354,9 @@ const SummaryCards = () => {
           const isIncrease = change !== null && change > 0;
           const isDecrease = change !== null && change < 0;
           const isFavorable = isIncome ? isIncrease : isDecrease;
+          
           const TrendIcon = isIncrease ? ArrowUp : isDecrease ? ArrowDown : Minus;
+          
           const trendClass = change === null
             ? isIncome
               ? 'text-emerald-700 dark:text-emerald-400'
