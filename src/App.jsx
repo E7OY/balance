@@ -240,7 +240,7 @@ const App = () => {
               aria-expanded={isMobileFiltersOpen}
               aria-controls="transaction-filters"
               onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
-              className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
+              className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
             >
               <Filter size={18} aria-hidden="true" />
               {activeFilterCount > 0 && (
