@@ -349,7 +349,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
           <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1.5 dark:bg-slate-800">
             {[
               { value: 'Gasto', label: 'Gasto', Icon: ArrowDownLeft },
-              { value: 'Ingreso', label: 'Sueldo / ingreso', Icon: ArrowUpRight },
+              { value: 'Ingreso', label: ' ingreso', Icon: ArrowUpRight },
             ].map(({ value, label, Icon }) => (
               <button
                 key={value}
