@@ -1,8 +1,10 @@
 export const incomeCategories = [
   'Salario',
-  'Freelance',
   'Inversiones',
   'Regalo',
+  'Reembolso',
+  'Ventas',
+  'Freelance',
   'Otros'
 ];
 
@@ -12,12 +14,13 @@ export const expenseCategories = [
   'Transporte',
   'Ocio',
   'Suscripciones',
-  'Servicios',
+  'Mascotas',
   'Salud',
-  'Educación',
   'Ropa',
   'Hogar',
   'Viajes',
+  'Regalos',
+  'Inversiones',
   'Deudas',
   'Otros'
 ];
