@@ -193,6 +193,61 @@ const suggestPaymentMethod = (text) => {
   return paymentMethodKeywords.find(([, keywords]) => keywords.test(normalizedText))?.[0] || null;
 };
 
+const knownMerchants = [
+  ['Mercadona', /mercadona/], ['Carrefour', /carrefour/], ['Lidl', /\blidl\b/], ['Aldi', /\baldi\b/],
+  ['Alcampo', /alcampo/], ['Eroski', /eroski/], ['Consum', /\bconsum\b/], ['Ahorramás', /ahorramas/],
+  ['El Corte Inglés', /corte ingles/], ['Hipercor', /hipercor/], ['Zara', /\bzara\b/], ['Primark', /primark/],
+  ['Decathlon', /decathlon/], ['Ikea', /\bikea\b/], ['Leroy Merlin', /leroy\s*merlin/],
+  ['Repsol', /repsol/], ['Cepsa', /cepsa/], ['Shell', /\bshell\b/], ['Galp', /\bgalp\b/],
+  ['Starbucks', /starbucks/], ['McDonald\'s', /mcdonald/], ['Burger King', /burger\s*king/], ['KFC', /\bkfc\b/],
+  ['Telepizza', /telepizza/], ['Domino\'s', /domino/], ['Amazon', /amazon/], ['Media Markt', /media\s*markt/],
+  ['Fnac', /\bfnac\b/], ['Familia', /familia/], ['Dia', /\bdia\b/], ['Coviran', /coviran/], ['Masymas', /masymas/], ['Hiper Usera', /hiper\s*usera/], ['Gadis', /gadis/],
+];
+
+const notMerchantLine = new RegExp([
+  'factura', 'ticket', 'simplificada', String.raw`\bn\.?i\.?f\b`, String.raw`\bc\.?i\.?f\b`, String.raw`\btelf?\b`,
+  'telefono', String.raw`www\.`, 'http', '@', String.raw`^c\/`, '^calle', String.raw`\bavda\b`, 'avenida', '^plaza',
+  String.raw`\bc\.?p\.?\b`, 'codigo postal', 'fecha', String.raw`\bhora\b`, 'gracias', 'bienvenid', 'operacion',
+  'duplicado', String.raw`\bcopia\b`, String.raw`\boriginal\b`, String.raw`\bcliente\b`, String.raw`\bmesa\b`,
+  'camarero', String.raw`\biva\b`, String.raw`\btotal\b`, String.raw`\bcaja\s*[:#\d]`,
+].join('|'));
+
+const lowercaseWords = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'en', 'con']);
+
+const toTitleCase = (value) => value
+  .toLocaleLowerCase('es')
+  .split(/\s+/)
+  .map((word, index) => (
+    index > 0 && lowercaseWords.has(word) ? word : word.charAt(0).toLocaleUpperCase('es') + word.slice(1)
+  ))
+  .join(' ');
+
+// Nombre del comercio: primero se buscan cadenas conocidas y, si no, la primera línea de la cabecera que parezca un nombre.
+const extractMerchant = (text) => {
+  const keywordText = toKeywordText(text);
+  const knownMerchant = knownMerchants.find(([, pattern]) => pattern.test(keywordText));
+  if (knownMerchant) return knownMerchant[0];
+
+  const headerLines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 10);
+  for (const line of headerLines) {
+    const cleaned = line
+      .replace(/[^\p{L}\p{N}\s&'.,-]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/[,\s]+(?:s\.?\s?a\.?\s?u?\.?|s\.?\s?l\.?\s?u?\.?|s\.?\s?c\.?|c\.?\s?b\.?)\s*$/i, '')
+      .replace(/^[\s.,'&-]+|[\s.,'&-]+$/g, '');
+    const letterCount = (cleaned.match(/\p{L}/gu) || []).length;
+    const compactLength = cleaned.replace(/\s/g, '').length;
+
+    if (letterCount < 3 || letterCount / compactLength < 0.7) continue;
+    if (!/\p{L}{3,}/u.test(cleaned)) continue;
+    if (/\d{4,}/.test(cleaned) || dateLikeRegex.test(cleaned)) continue;
+    if (notMerchantLine.test(normalizeText(cleaned))) continue;
+    return toTitleCase(cleaned).slice(0, 40).trim();
+  }
+  return null;
+};
+
 const TARGET_LONG_SIDE = 2200;
 
 const loadImage = (file) => new Promise((resolve, reject) => {
@@ -307,6 +362,7 @@ export const scanReceipt = async (file, categories, onProgress) => {
       date: extractDate(text),
       category: suggestCategory(text, categories),
       paymentMethod: suggestPaymentMethod(text),
+      description: extractMerchant(text),
     };
   } finally {
     await worker.terminate();
