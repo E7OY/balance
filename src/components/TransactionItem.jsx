@@ -221,7 +221,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
           <section role="dialog" aria-modal="true" aria-labelledby="split-expense-title" className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <h2 id="split-expense-title" className="text-base font-semibold text-slate-950 dark:text-slate-50">Dividir gasto en cuotas</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {description || transaction.category} · {formatCurrency(Number(transaction.amount))}
+              {description || transaction.categoory} · {formatCurrency(Number(transaction.amount))}
             </p>
             <label htmlFor="split-installment-count" className="mb-1.5 mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Número de cuotas

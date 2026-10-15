@@ -211,7 +211,7 @@ const App = () => {
         onTouchEnd={handleTouchEnd}
         onTouchCancel={() => { monthSwipeStart.current = null; }}
       >
-        <div className="mb-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div className="mb-4 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
             <p className="mb-2 text-sm font-medium capitalize text-slate-500 dark:text-slate-400">
               Tu resumen financiero
@@ -223,7 +223,7 @@ const App = () => {
               Sueldo, gastos y todo lo que te queda a final de mes.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
 
             <ProfileSwitcher />
             <div className="hidden lg:block">
@@ -258,9 +258,14 @@ const App = () => {
           onClick={() => setIsModalOpen(true)}
           aria-label="Añadir movimiento"
           title="Añadir movimiento"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex size-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-950/20 transition-transform hover:scale-105 hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 lg:hidden"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-slate-800 px-4 text-emerald-600 shadow-lg shadow-slate-900/10 transition-all duration-200 hover:scale-105 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-white dark:hover:bg-slate-800 lg:hidden"
         >
-          <Plus size={26} strokeWidth={2.5} />
+          <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-700 text-white">
+            <Plus size={16} strokeWidth={2.5} />
+          </span>
+          <span className="text-sm font-semibold">
+            Añadir movimiento
+          </span>
         </button>
       )}
 

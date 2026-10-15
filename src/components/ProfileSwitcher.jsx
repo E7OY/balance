@@ -210,8 +210,8 @@ const ProfileSwitcher = () => {
 
   return (
     <>
-        <div className="flex items-center gap-0.5 rounded-full bg-white p-1 shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] dark:bg-slate-900 md:contents">        
-                        <button
+<div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1.5 rounded-2xl bg-white p-1.5 shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] dark:bg-slate-900 sm:gap-2 md:contents">
+         <button
                 type="button"
                 onClick={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
                 aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
