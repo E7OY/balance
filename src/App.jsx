@@ -202,7 +202,7 @@ const App = () => {
 
   return (
     <div
-      className="app-shell min-h-screen bg-zinc-50 text-zinc-950 transition-colors dark:bg-black dark:text-white"
+      className="app-shell min-h-screen bg-white text-zinc-950 transition-colors dark:bg-black dark:text-white pb-10"
       data-amounts-hidden={isAmountsHidden}
     >
       <main
@@ -251,23 +251,38 @@ const App = () => {
           <ExportImportButtons />
         </div>
       </main>
+        
 
-      {!isModalOpen && !editingTransaction && (
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          aria-label="Añadir movimiento"
-          title="Añadir movimiento"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-slate-800 px-4 text-emerald-600 shadow-lg shadow-slate-900/10 transition-all duration-200 hover:scale-105 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-white dark:hover:bg-slate-800 lg:hidden"
-        >
-          <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-700 text-white">
-            <Plus size={16} strokeWidth={2.5} />
-          </span>
-          <span className="text-sm font-semibold">
-            Añadir movimiento
-          </span>
-        </button>
-      )}
+    {!isModalOpen && !editingTransaction && (
+      <button
+        type="button"
+        onClick={() => setIsModalOpen(true)}
+        aria-label="Añadir movimiento"
+        title="Añadir movimiento"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-white px-4 text-emerald-800 shadow-lg shadow-slate-900/10 transition-all duration-200 hover:scale-101 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800 lg:hidden"
+      >
+        <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-700 text-white">
+          <Plus size={16} strokeWidth={2.5} />
+        </span>
+        <span className="text-sm font-semibold">
+          Añadir movimiento
+        </span>
+      </button>
+    )}
+{/*
+        {!isModalOpen && !editingTransaction && (
+      <button
+        type="button"
+        onClick={() => setIsModalOpen(true)}
+        aria-label="Añadir movimiento"
+        title="Añadir movimiento"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex size-14 items-center justify-center rounded-full bg-white text-emerald-800 shadow-lg shadow-slate-900/10 transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800 lg:hidden"
+      >
+        <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-700 text-white">
+          <Plus size={18} strokeWidth={2.5} />
+        </span>
+      </button>
+    )}*/}
 
       {(isModalOpen || editingTransaction) && (
         <TransactionForm
