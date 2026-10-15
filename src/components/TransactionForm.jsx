@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Camera, FileText, Paperclip, Plus, Trash2, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { expenseCategories } from '../utils/categories';
+import { expenseCategories, incomeCategories } from '../utils/categories';
 import { getLocalDateString } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
 import { getPushNotificationsEnabled, showAppNotification } from '../utils/pushNotifications';
@@ -15,6 +15,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
     addTransaction,
     updateTransaction,
     addCategory,
+    deleteCategory,
     setIsModalOpen,
     downloadInvoice,
     filters,
@@ -48,6 +49,8 @@ const TransactionForm = ({ transaction = null, onClose }) => {
   const [receiptToScan, setReceiptToScan] = useState(null);
   const receiptPhotoInputRef = useRef(null);
   const categories = allCategories[type];
+  const defaultCategories = type === 'Ingreso' ? incomeCategories : expenseCategories;
+  const isCustomCategory = Boolean(category) && !defaultCategories.includes(category);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -149,6 +152,22 @@ const TransactionForm = ({ transaction = null, onClose }) => {
     }
   };
 
+  const handleDeleteCategory = async () => {
+    if (!isCustomCategory) return;
+    const confirmed = window.confirm(
+      `¿Eliminar la categoría "${category}"? Los movimientos que ya la usan conservarán su nombre.`,
+    );
+    if (!confirmed) return;
+    try {
+      const fallbackCategory = categories.find((option) => option !== category) || defaultCategories[0];
+      await deleteCategory(type, category);
+      setCategory(fallbackCategory);
+      setErrorMessage('');
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
+  };
+
   const handleInvoiceChange = (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -211,9 +230,8 @@ const TransactionForm = ({ transaction = null, onClose }) => {
         invoiceFile,
         ...(removeExistingInvoice && { removeInvoice: true }),
       };
-      if (transaction) {
-        await updateTransaction(transaction.id, movement);
-      } else {
+      if (transaction) await updateTransaction(transaction.id, movement);
+      else {
         await addTransaction(movement);
         const targetMonth = date.slice(0, 7);
         const targetMonthGoals = monthlyGoalsByMonth[targetMonth] || { savings: 0, investment: 0 };
@@ -369,17 +387,29 @@ const TransactionForm = ({ transaction = null, onClose }) => {
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <label htmlFor="category" className="text-sm font-medium text-slate-700 dark:text-slate-200">Categoría</label>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowNewCategory((visible) => !visible);
-                  setErrorMessage('');
-                }}
-                className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 hover:text-emerald-950 dark:text-emerald-400 dark:hover:text-emerald-300"
-              >
-                <Plus size={14} />
-                Nueva categoría
-              </button>
+              <div className="flex items-center gap-3">
+                {isCustomCategory && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteCategory}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-rose-700 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300"
+                  >
+                    <Trash2 size={14} />
+                    Eliminar categoría
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewCategory((visible) => !visible);
+                    setErrorMessage('');
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 hover:text-emerald-950 dark:text-emerald-400 dark:hover:text-emerald-300"
+                >
+                  <Plus size={14} />
+                  Nueva categoría
+                </button>
+              </div>
             </div>
             <select
               id="category"

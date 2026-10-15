@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { CircleHelp, PieChart, SlidersHorizontal, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
@@ -26,9 +26,13 @@ const CategoryBreakdown = () => {
     allCategories,
     monthlyCategoryCaps,
     setMonthlyCategoryCap,
+    setMonthlyCategoryCaps,
+    previousMonthCategoryCaps,
     filters,
   } = useFinance();
   const [isEditingCaps, setIsEditingCaps] = useState(false);
+  const [copyPreviousCaps, setCopyPreviousCaps] = useState(false);
+  const capsSnapshot = useRef(null);
   const categoriesToShow = [...new Set([
     ...expenseBreakdown.map((item) => item.category),
     ...Object.keys(monthlyCategoryCaps),
@@ -45,6 +49,27 @@ const CategoryBreakdown = () => {
       .format((amount / totalIncome) * 100);
     return `${percentage}% de ingresos`;
   };
+  const previousMonthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' })
+    .format(new Date(filters.year, filters.month - 1, 1));
+  const previousCapsCount = Object.keys(previousMonthCategoryCaps).length;
+  const openCapsEditor = () => {
+    setCopyPreviousCaps(false);
+    setIsEditingCaps(true);
+  };
+  const handleCopyCapsToggle = (event) => {
+    const checked = event.target.checked;
+    if (checked) {
+      capsSnapshot.current = monthlyCategoryCaps;
+      setMonthlyCategoryCaps(previousMonthCategoryCaps);
+    } else if (capsSnapshot.current) {
+      setMonthlyCategoryCaps(capsSnapshot.current);
+    }
+    setCopyPreviousCaps(checked);
+  };
+  const handleCapChange = (category, value) => {
+    setMonthlyCategoryCap(category, value);
+    setCopyPreviousCaps(false);
+  };
   const circumference = 2 * Math.PI * 72;
   let offset = 0;
 
@@ -59,7 +84,7 @@ const CategoryBreakdown = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsEditingCaps(true)}
+            onClick={openCapsEditor}
             aria-label="Configurar topes mensuales"
             title="Configurar topes mensuales"
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -220,6 +245,27 @@ const CategoryBreakdown = () => {
             Topes mensuales
           </h2>
           <p className="mt-1 text-sm capitalize text-slate-500 dark:text-slate-400">Gasto máximo por categoría · {monthLabel}</p>
+          <label
+            className={`mt-4 flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 ${
+              previousCapsCount > 0 ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+            }`}
+          >
+            <span>
+              Copiar los topes de {previousMonthLabel}
+              <span className="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                {previousCapsCount > 0
+                  ? `${previousCapsCount} ${previousCapsCount === 1 ? 'tope' : 'topes'} · sustituye los de este mes`
+                  : `No hay topes guardados en ${previousMonthLabel}`}
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={copyPreviousCaps}
+              disabled={previousCapsCount === 0}
+              onChange={handleCopyCapsToggle}
+              className="size-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700"
+            />
+          </label>
           <div className="mt-5 space-y-3 overflow-y-auto">
             {allCategories.Gasto.map((category, index) => (
               <div key={`${category}-${index}`} className="flex items-center justify-between gap-4">
@@ -236,7 +282,7 @@ const CategoryBreakdown = () => {
                       inputMode="decimal"
                       placeholder="Sin tope"
                       value={monthlyCategoryCaps[category] ?? ''}
-                      onChange={(event) => setMonthlyCategoryCap(category, event.target.value)}
+                      onChange={(event) => handleCapChange(category, event.target.value)}
                       className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     />
                     <span aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">€</span>

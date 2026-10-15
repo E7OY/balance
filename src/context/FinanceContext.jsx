@@ -253,6 +253,32 @@ export const FinanceProvider = ({ children }) => {
     return normalizedName;
   };
 
+  const deleteCategory = (type, name) => {
+    if (!['Ingreso', 'Gasto'].includes(type)) {
+      throw new Error('Selecciona si la categoría es de un ingreso o de un gasto.');
+    }
+    if (!customCategories[type].includes(name)) {
+      throw new Error('Solo se pueden eliminar las categorías que has creado.');
+    }
+
+    setCustomCategories((previous) => ({
+      ...previous,
+      [type]: previous[type].filter((category) => category !== name),
+    }));
+    if (type === 'Gasto') {
+      setMonthlyCategoryCapsByMonth((previousCaps) => Object.fromEntries(
+        Object.entries(previousCaps).map(([monthKey, caps]) => {
+          const nextCaps = { ...caps };
+          delete nextCaps[name];
+          return [monthKey, nextCaps];
+        }),
+      ));
+    }
+    setFilters((previous) => (
+      previous.category === name ? { ...previous, category: 'Todas' } : previous
+    ));
+  };
+
   const addTransaction = async ({ invoiceFile, ...transaction }) => {
     const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const installmentTotal = Number(transaction.installmentTotal);
@@ -428,6 +454,17 @@ export const FinanceProvider = ({ children }) => {
     });
   };
 
+  const setMonthlyCategoryCaps = (caps) => {
+    setMonthlyCategoryCapsByMonth((previousCaps) => ({
+      ...previousCaps,
+      [activeCategoryCapsMonthKey]: normalizeMonthlyCategoryCaps(caps),
+    }));
+  };
+  const previousMonthDate = new Date(filters.year, filters.month - 1, 1);
+  const previousMonthKey = getGoalsMonthKey(previousMonthDate.getFullYear(), previousMonthDate.getMonth());
+  const previousMonthGoals = monthlyGoalsByMonth[previousMonthKey] || { savings: 0, investment: 0 };
+  const previousMonthCategoryCaps = monthlyCategoryCapsByMonth[previousMonthKey] || {};
+
   const totalExpenses = useMemo(() => {
     return monthlyTransactions.reduce((acc, transaction) => {
       return transaction.type === 'Gasto'
@@ -551,8 +588,11 @@ export const FinanceProvider = ({ children }) => {
         monthlyGoals,
         monthlyGoalsByMonth,
         setMonthlyGoals,
+        previousMonthGoals,
         monthlyCategoryCaps,
         setMonthlyCategoryCap,
+        setMonthlyCategoryCaps,
+        previousMonthCategoryCaps,
         isAmountsHidden,
         setIsAmountsHidden,
         addProfile,
@@ -560,6 +600,7 @@ export const FinanceProvider = ({ children }) => {
         addTransaction,
         splitTransaction,
         addCategory,
+        deleteCategory,
         deleteTransaction,
         previewInvoice,
         downloadInvoice,

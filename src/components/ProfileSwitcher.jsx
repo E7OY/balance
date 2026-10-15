@@ -17,6 +17,7 @@ const ProfileSwitcher = () => {
     addProfile,
     monthlyGoals,
     setMonthlyGoals,
+    previousMonthGoals,
     totalIncome,
     filters,
     isAmountsHidden,
@@ -28,6 +29,8 @@ const ProfileSwitcher = () => {
   const [name, setName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [goalValues, setGoalValues] = useState({ savings: 0, investment: 0 });
+  const [copyPreviousGoals, setCopyPreviousGoals] = useState(false);
+  const goalValuesSnapshot = useRef(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     () => getPushNotificationsEnabled(activeProfile.id),
   );
@@ -55,6 +58,7 @@ const ProfileSwitcher = () => {
       investment: monthlyGoals.investment > 0 ? String(monthlyGoals.investment) : '',
     });
     setErrorMessage('');
+    setCopyPreviousGoals(false);
     setIsEditingGoals(true);
   };
 
@@ -87,6 +91,30 @@ const ProfileSwitcher = () => {
 
   const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' })
     .format(new Date(filters.year, filters.month, 1));
+
+  const previousMonthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' })
+    .format(new Date(filters.year, filters.month - 1, 1));
+  const hasPreviousGoals = previousMonthGoals.savings > 0 || previousMonthGoals.investment > 0;
+  const formatEuro = (value) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
+
+  const handleCopyGoalsToggle = (event) => {
+    const checked = event.target.checked;
+    if (checked) {
+      goalValuesSnapshot.current = goalValues;
+      setGoalValues({
+        savings: previousMonthGoals.savings > 0 ? String(previousMonthGoals.savings) : '',
+        investment: previousMonthGoals.investment > 0 ? String(previousMonthGoals.investment) : '',
+      });
+    } else if (goalValuesSnapshot.current) {
+      setGoalValues(goalValuesSnapshot.current);
+    }
+    setCopyPreviousGoals(checked);
+  };
+
+  const handleGoalInputChange = (field, value) => {
+    setGoalValues((values) => ({ ...values, [field]: value }));
+    setCopyPreviousGoals(false);
+  };
 
   useEffect(() => {
     const refreshNotificationState = () => {
@@ -289,6 +317,27 @@ const ProfileSwitcher = () => {
               Define cuánto quieres reservar para {activeProfile.name} en {monthLabel}.
             </p>
             <form onSubmit={handleGoalsSubmit} className="mt-5 space-y-4">
+              <label
+                className={`flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 ${
+                  hasPreviousGoals ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+                }`}
+              >
+                <span>
+                  Copiar las metas de {previousMonthLabel}
+                  <span className="privacy-sensitive mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                    {hasPreviousGoals
+                      ? `Ahorro ${formatEuro(previousMonthGoals.savings)} · Inversión ${formatEuro(previousMonthGoals.investment)}`
+                      : `No hay metas guardadas en ${previousMonthLabel}`}
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={copyPreviousGoals}
+                  disabled={!hasPreviousGoals}
+                  onChange={handleCopyGoalsToggle}
+                  className="size-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700"
+                />
+              </label>
               <div>
                 <label htmlFor="monthly-savings-goal" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
                   Meta de Ahorro Mensual (€)
@@ -302,7 +351,7 @@ const ProfileSwitcher = () => {
                   min="0"
                   step="0.01"
                   value={goalValues.savings}
-                  onChange={(event) => setGoalValues((values) => ({ ...values, savings: event.target.value }))}
+                  onChange={(event) => handleGoalInputChange('savings', event.target.value)}
                   className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 />
                 {formatGoalProgress(goalValues.savings) && (
@@ -324,7 +373,7 @@ const ProfileSwitcher = () => {
                   min="0"
                   step="0.01"
                   value={goalValues.investment}
-                  onChange={(event) => setGoalValues((values) => ({ ...values, investment: event.target.value }))}
+                  onChange={(event) => handleGoalInputChange('investment', event.target.value)}
                   className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 />
                 {formatGoalProgress(goalValues.investment) && (
