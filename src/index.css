@@ -2,7 +2,7 @@
 @config "../tailwind.config.js";
 
 :root {
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -25,13 +25,122 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background-color: #f8fafc;
-  transition: background-color 0.2s ease;
+  background-color: #f5f5f5;
+  transition: background-color 0.15s ease-out;
 }
 
 .app-shell {
   position: relative;
   isolation: isolate;
+  font-variant-numeric: tabular-nums;
+  background-color: #f5f5f5;
+  color: #171717;
+}
+
+.app-shell h1,
+.app-shell h2,
+.app-shell h3 {
+  letter-spacing: -0.035em;
+}
+
+.app-shell button,
+.app-shell [data-month-swipe-ignore] article {
+  transition: transform 100ms ease-out, background-color 100ms ease-out, color 100ms ease-out;
+}
+
+.app-shell button:active,
+.app-shell [data-month-swipe-ignore] article:active {
+  transform: scale(0.97);
+}
+
+.app-shell .rounded-3xl {
+  border: 1px solid rgba(229, 229, 229, 0.7);
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.035);
+}
+
+.app-shell [role="dialog"] {
+  border-color: rgba(229, 229, 229, 0.8);
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
+  animation: sheet-enter 180ms ease-out both;
+}
+
+.app-shell [role="dialog"]::before {
+  content: "";
+  display: block;
+  width: 3rem;
+  height: 0.375rem;
+  margin: 0 auto 1rem;
+  border-radius: 9999px;
+  background-color: #d4d4d4;
+}
+
+.app-shell .fixed.inset-0:has(> [role="dialog"]) {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.app-shell :is(
+  [class*="text-emerald-"],
+  [class*="text-rose-"],
+  [class*="text-red-"],
+  [class*="text-amber-"],
+  [class*="text-sky-"],
+  [class*="text-blue-"],
+  [class*="text-indigo-"],
+  [class*="text-violet-"],
+  [class*="text-green-"],
+  [class*="text-orange-"]
+):not([data-color-icon]) {
+  color: #525252 !important;
+}
+
+.app-shell :is(
+  [class*="bg-emerald-"],
+  [class*="bg-rose-"],
+  [class*="bg-red-"],
+  [class*="bg-amber-"],
+  [class*="bg-sky-"],
+  [class*="bg-blue-"],
+  [class*="bg-indigo-"],
+  [class*="bg-violet-"],
+  [class*="bg-green-"],
+  [class*="bg-orange-"]
+):not([data-color-icon]) {
+  background-color: #e5e5e5 !important;
+}
+
+.app-shell [data-color-icon="income"] {
+  color: #07834f;
+  background-color: #d8f3e5;
+}
+
+.app-shell [data-color-icon="expense"] {
+  color: #dc3d55;
+  background-color: #fde1e5;
+}
+
+.app-shell [data-color-icon="chart"] {
+  color: #1683c4;
+  background-color: #dcedfa;
+}
+
+.app-shell .chart-color {
+  background-color: var(--chart-color) !important;
+}
+
+@keyframes sheet-enter {
+  from {
+    opacity: 0.65;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .app-shell[data-amounts-hidden="true"] .privacy-sensitive {
@@ -41,40 +150,153 @@ body {
 }
 
 html.dark body {
-  background-color: #000;
+  background-color: #0a0a0a;
 }
 
 html.dark .app-shell {
-  background-color: #000;
+  background-color: #0a0a0a;
+  color: #fafafa;
 }
 
 html.dark .app-shell [class~="dark:bg-slate-950"],
 html.dark .app-shell [class~="dark:bg-slate-950/60"] {
-  background-color: #000;
+  background-color: #0a0a0a;
 }
 
 html.dark .app-shell [class~="dark:bg-slate-900"] {
-  background-color: #111;
+  background-color: #171717;
 }
 
 html.dark .app-shell [class~="dark:bg-slate-800"],
 html.dark .app-shell [class~="dark:bg-slate-800/70"],
 html.dark .app-shell [class~="dark:bg-slate-800/80"] {
-  background-color: #1b1b1b;
+  background-color: #262626;
 }
 
 html.dark .app-shell [class~="dark:hover:bg-slate-800"]:hover,
 html.dark .app-shell [class~="dark:hover:bg-slate-700"]:hover {
-  background-color: #292929;
+  background-color: #333;
 }
 
 html.dark .app-shell [class~="dark:border-slate-700"],
 html.dark .app-shell [class~="dark:border-slate-600"] {
-  border-color: #333;
+  border-color: #262626;
+}
+
+html.dark .app-shell .rounded-3xl {
+  border-color: rgba(64, 64, 64, 0.8);
+  background-color: rgba(23, 23, 23, 0.96);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .app-shell [role="dialog"] {
+  border-color: #404040;
+  background-color: rgba(23, 23, 23, 0.98);
+}
+
+html.dark .app-shell [role="dialog"]::before {
+  background-color: #525252;
+}
+
+html.dark .app-shell .fixed.inset-0:has(> [role="dialog"]) {
+  background-color: rgba(0, 0, 0, 0.58);
+}
+
+html.dark .app-shell :is(
+  [class*="text-emerald-"],
+  [class*="text-rose-"],
+  [class*="text-red-"],
+  [class*="text-amber-"],
+  [class*="text-sky-"],
+  [class*="text-blue-"],
+  [class*="text-indigo-"],
+  [class*="text-violet-"],
+  [class*="text-green-"],
+  [class*="text-orange-"]
+):not([data-color-icon]) {
+  color: #d4d4d4 !important;
+}
+
+html.dark .app-shell :is(
+  [class*="bg-emerald-"],
+  [class*="bg-rose-"],
+  [class*="bg-red-"],
+  [class*="bg-amber-"],
+  [class*="bg-sky-"],
+  [class*="bg-blue-"],
+  [class*="bg-indigo-"],
+  [class*="bg-violet-"],
+  [class*="bg-green-"],
+  [class*="bg-orange-"]
+):not([data-color-icon]) {
+  background-color: #404040 !important;
+}
+
+html.dark .app-shell [data-color-icon="income"] {
+  color: #4ade91;
+  background-color: rgba(16, 185, 129, 0.18);
+}
+
+html.dark .app-shell [data-color-icon="expense"] {
+  color: #fb7185;
+  background-color: rgba(244, 63, 94, 0.18);
+}
+
+html.dark .app-shell [data-color-icon="chart"] {
+  color: #60b8f0;
+  background-color: rgba(14, 165, 233, 0.18);
 }
 
 button,
 input,
 select {
   font: inherit;
+}
+
+.app-shell input,
+.app-shell select {
+  accent-color: #525252;
+}
+
+.app-shell :is(input, select, button):focus-visible {
+  --tw-ring-color: #737373;
+  outline-color: #737373;
+}
+
+@media (max-width: 1023px) {
+  .app-shell .fixed.inset-0:has(> [role="dialog"]) {
+    align-items: flex-end;
+    padding: 0.75rem 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .app-shell .fixed.inset-0:has(> [role="dialog"]) > [role="dialog"] {
+    width: 100%;
+    max-width: 42rem;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 1.5rem);
+    margin: auto auto 0;
+    border-radius: 1.75rem 1.75rem 1rem 1rem;
+    animation-name: bottom-sheet-enter;
+  }
+}
+
+@keyframes bottom-sheet-enter {
+  from {
+    opacity: 0.7;
+    transform: translateY(36px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

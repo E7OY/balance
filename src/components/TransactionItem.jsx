@@ -171,7 +171,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
           className="relative z-10 cursor-pointer border-b border-slate-50 bg-white p-2.5 shadow-sm transition-transform duration-200 ease-out touch-pan-y hover:border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-neutral-700 dark:hover:bg-black sm:p-3"
         >
         <div className="flex items-start gap-2.5 sm:gap-3">
-          <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
+          <span data-color-icon={isExpense ? 'expense' : 'income'} className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
             {isExpense ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
           </span>
           <div className="min-w-0 flex-1">
@@ -180,7 +180,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
                 {description || transaction.category}
               </p>
               <div className="flex shrink-0 items-center gap-1">
-                <p className={`privacy-sensitive whitespace-nowrap text-[13px] font-semibold sm:text-sm ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                <p className={`privacy-sensitive whitespace-nowrap text-[13px] tabular-nums sm:text-sm ${isExpense ? 'font-medium text-neutral-700 dark:text-neutral-300' : 'font-semibold text-neutral-900 dark:text-white'}`}>
                   {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
                 </p>
               </div>
@@ -293,7 +293,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
         <td className="whitespace-nowrap px-4 py-3.5 text-slate-500 dark:text-slate-400">{formatDate(transaction.date)}</td>
         <td
           aria-label={isAmountsHidden ? 'Importe oculto' : undefined}
-          className={`privacy-sensitive whitespace-nowrap px-5 py-3.5 text-right font-medium sm:px-6 ${isExpense ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}
+          className={`privacy-sensitive whitespace-nowrap px-5 py-3.5 text-right tabular-nums sm:px-6 ${isExpense ? 'font-medium text-neutral-700 dark:text-neutral-300' : 'font-semibold text-neutral-900 dark:text-white'}`}
         >
           {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
         </td>
@@ -325,10 +325,15 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
             if (event.target === event.currentTarget) closePreview();
           }}
         >
-          <div className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invoice-preview-title"
+            className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+          >
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{transaction.invoice?.name}</h3>
+                <h3 id="invoice-preview-title" className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{transaction.invoice?.name}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Vista previa de la factura</p>
               </div>
               <div className="flex items-center gap-2">

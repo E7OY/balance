@@ -194,9 +194,9 @@ const SummaryCards = () => {
 
   // Leyenda limpia: Solo muestra las metas establecidas y el dinero libre
   const legendItems = [
-    { label: 'Inversión', amount: investmentGoal, color: 'bg-violet-500' },
-    { label: 'Ahorro', amount: savingsGoal, color: 'bg-emerald-500' },
-    { label: 'Dinero libre', amount: spendableWidthAmount, color: 'bg-sky-500' }
+    { label: 'Inversión', amount: investmentGoal, color: '#8b5cf6' },
+    { label: 'Ahorro', amount: savingsGoal, color: '#10b981' },
+    { label: 'Dinero libre', amount: spendableWidthAmount, color: '#0ea5e9' }
   ].filter(item => item.amount > 0);
 
   const dayCount = new Date(filters.year, filters.month + 1, 0).getDate();
@@ -234,7 +234,7 @@ const SummaryCards = () => {
       amount: +totalIncome,
       icon: ArrowUpRight,
       iconClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-      amountClass: 'text-emerald-700 dark:text-emerald-400',
+      amountClass: 'text-neutral-900 dark:text-white font-semibold',
       note: 'Lo que ha entrado este mes',
       previousAmount: previousMonthTotals.income,
       trendValues: weeklyTrends.map((week) => week.income),
@@ -244,7 +244,7 @@ const SummaryCards = () => {
       amount: -totalExpenses,
       icon: ArrowDownRight,
       iconClass: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400',
-      amountClass: 'text-rose-700 dark:text-rose-400',
+      amountClass: 'text-neutral-700 dark:text-neutral-300 font-medium',
       note: 'Lo que ya has gastado',
       previousAmount: previousMonthTotals.expenses,
       trendValues: weeklyTrends.map((week) => week.expenses),
@@ -274,7 +274,7 @@ const SummaryCards = () => {
           </div>
           
           {/* NUEVO: Si está en negativo, se pone rojo automáticamente */}
-          <p className={`privacy-sensitive mt-3 text-2xl font-semibold tracking-tight sm:mt-5 sm:text-3xl ${hasMonthlyGoals && realSpendableBalance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-950 dark:text-slate-50'}`}>
+          <p className="privacy-sensitive mt-3 text-2xl font-semibold tracking-tight tabular-nums text-slate-950 sm:mt-5 sm:text-3xl dark:text-slate-50">
             {formatCurrency(hasMonthlyGoals ? realSpendableBalance : totalBalance)}
           </p>
           
@@ -292,11 +292,11 @@ const SummaryCards = () => {
                   ? 'Distribución del saldo entre ahorro, inversión y dinero libre.'
                   : `Distribución del saldo.`}
               >
-                <span className="h-full bg-violet-500 transition-[width]" style={{ width: `${investmentWidth}%` }} />
-                <span className="h-full bg-rose-500 transition-[width]" style={{ width: `${consumedInvestmentWidth}%` }} />
-                <span className="h-full bg-emerald-500 transition-[width]" style={{ width: `${savingsWidth}%` }} />
-                <span className="h-full bg-amber-500 transition-[width]" style={{ width: `${consumedSavingsWidth}%` }} />
-                <span className="h-full bg-sky-500 transition-[width]" style={{ width: `${spendableWidth}%` }} />
+                <span className="chart-color h-full transition-[width]" style={{ width: `${investmentWidth}%`, '--chart-color': '#8b5cf6' }} />
+                <span className="chart-color h-full transition-[width]" style={{ width: `${consumedInvestmentWidth}%`, '--chart-color': '#f43f5e' }} />
+                <span className="chart-color h-full transition-[width]" style={{ width: `${savingsWidth}%`, '--chart-color': '#10b981' }} />
+                <span className="chart-color h-full transition-[width]" style={{ width: `${consumedSavingsWidth}%`, '--chart-color': '#f59e0b' }} />
+                <span className="chart-color h-full transition-[width]" style={{ width: `${spendableWidth}%`, '--chart-color': '#0ea5e9' }} />
               </div>
 
               {/* LEYENDA LIMPIA */}
@@ -304,7 +304,7 @@ const SummaryCards = () => {
                 {legendItems.map(({ label, amount, color }) => (
                   <p key={label} className="flex items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className={`size-2 shrink-0 rounded-full ${color}`} />
+                      <span className="chart-color size-2 shrink-0 rounded-full" style={{ '--chart-color': color }} />
                       {label}
                     </span>
                     <span className="privacy-sensitive text-right font-medium">
@@ -326,8 +326,8 @@ const SummaryCards = () => {
               <p className="privacy-sensitive mt-1 text-sm text-slate-500 dark:text-slate-400">Ingresos menos gastos</p>
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 sm:mt-5 sm:h-2">
                 <div
-                  className="h-full rounded-full bg-emerald-500 transition-[width]"
-                  style={{ width: `${savedPercentage}%` }}
+                  className="chart-color h-full rounded-full transition-[width]"
+                  style={{ width: `${savedPercentage}%`, '--chart-color': '#10b981' }}
                 />
               </div>
               <p className="privacy-sensitive mt-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -374,12 +374,12 @@ const SummaryCards = () => {
             <Card as="article" key={label} className="min-w-0 p-3.5 sm:p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
-                <span className={`flex size-9 items-center justify-center rounded-lg ${iconClass}`}>
+                <span data-color-icon={isIncome ? 'income' : 'expense'} className={`flex size-9 items-center justify-center rounded-lg ${iconClass}`}>
                   <Icon size={18} />
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 sm:mt-5">
-                <p className={`privacy-sensitive break-words text-xl font-semibold tracking-tight sm:text-3xl ${amountClass}`}>
+                <p className={`privacy-sensitive break-words text-xl tracking-tight tabular-nums sm:text-3xl ${amountClass}`}>
                   {isIncome ? `+${formatCurrency(amount)}` : formatCurrency(amount)}
                 </p>
                 <span

@@ -213,14 +213,11 @@ const App = () => {
       >
         <div className="mb-4 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-2 text-sm font-medium capitalize text-slate-500 dark:text-slate-400">
-              Tu resumen financiero
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight capitalize sm:text-4xl">
-              {monthLabel} {filters.year}
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+              Balance
             </h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Sueldo, gastos y todo lo que te queda a final de mes.
+            <p className="mt-1 font-semibold text-2xl  capitalize text-neutral-400">
+              {monthLabel} {filters.year}
             </p>
           </div>
 <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
@@ -242,7 +239,10 @@ const App = () => {
           </div>
         </div>
 
-        <Filters isMobileFiltersOpen={isMobileFiltersOpen} />
+        <Filters
+          isMobileFiltersOpen={isMobileFiltersOpen}
+          onCloseMobileFilters={() => setIsMobileFiltersOpen(false)}
+        />
         <SummaryCards />
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
@@ -253,8 +253,6 @@ const App = () => {
         <div className="mt-6 flex justify-end">
           <ExportImportButtons />
         </div>
-      </main>
-        
 
     {!isModalOpen && !editingTransaction && (
       <button
@@ -262,9 +260,9 @@ const App = () => {
         onClick={() => setIsModalOpen(true)}
         aria-label="Añadir movimiento"
         title="Añadir movimiento"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-white px-4 text-emerald-800 shadow-lg shadow-slate-900/10 transition-all duration-200 hover:scale-101 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800 lg:hidden"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-neutral-900 px-4 text-white shadow-lg shadow-black/10 transition-transform duration-100 ease-out hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-neutral-400/30 active:scale-[0.97] dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 lg:hidden"
       >
-        <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-700 text-white">
+        <span className="inline-flex size-8 items-center justify-center rounded-full bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900">
           <Plus size={16} strokeWidth={2.5} />
         </span>
         <span className="text-sm font-semibold">
@@ -272,6 +270,8 @@ const App = () => {
         </span>
       </button>
     )}
+      </main>
+        
 {/*
         {!isModalOpen && !editingTransaction && (
       <button

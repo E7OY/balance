@@ -92,7 +92,7 @@ const CategoryBreakdown = () => {
             <SlidersHorizontal size={15} aria-hidden="true" />
             Topes
           </button>
-          <span className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          <span data-color-icon="chart" className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
             <PieChart size={18} />
           </span>
         </div>
@@ -168,9 +168,9 @@ const CategoryBreakdown = () => {
             {categoriesToShow.map((item, index) => {
               const cap = monthlyCategoryCaps[item.category];
               const progress = cap ? (item.amount / cap) * 100 : 0;
-              const progressClass = progress >= 100
-                ? 'bg-rose-500'
-                : progress >= 80 ? 'bg-amber-500' : 'bg-emerald-500';
+              const progressColor = progress >= 100
+                ? '#f43f5e'
+                : progress >= 80 ? '#f59e0b' : '#10b981';
 
               return (
               <li key={item.category} className="border-b border-slate-100 pb-3 text-sm last:border-0 last:pb-0 dark:border-slate-700">
@@ -178,8 +178,8 @@ const CategoryBreakdown = () => {
                   <span className="flex min-w-0 items-center gap-2.5">
                   <span
                     aria-hidden="true"
-                    className="size-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: chartColors[index % chartColors.length] }}
+                    className="chart-color size-2.5 shrink-0 rounded-full"
+                    style={{ '--chart-color': chartColors[index % chartColors.length] }}
                   />
                   <span className="truncate font-medium text-slate-700 dark:text-slate-200">{item.category}</span>
                   </span>
@@ -207,8 +207,8 @@ const CategoryBreakdown = () => {
                       className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"
                     >
                       <span
-                        className={`block h-full rounded-full transition-[width] ${progressClass}`}
-                        style={{ width: `${Math.min(progress, 100)}%` }}
+                        className="chart-color block h-full rounded-full transition-[width]"
+                        style={{ width: `${Math.min(progress, 100)}%`, '--chart-color': progressColor }}
                       />
                     </div>
                   </div>
@@ -296,7 +296,7 @@ const CategoryBreakdown = () => {
               </div>
             ))}
           </div>
-          <div className="mt-5 flex justify-end border-t border-slate-100 pt-4 dark:border-slate-700">
+          <div className="mt-5 flex justify-start border-t border-slate-100 pt-4 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setIsEditingCaps(false)}
