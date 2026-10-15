@@ -195,7 +195,7 @@ const ProfileSwitcher = () => {
           aria-label={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
           aria-pressed={isAmountsHidden}
           title={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
-          className="flex size-9 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
+          className="flex size-9 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
         >
           {isAmountsHidden ? <Eye size={17} /> : <EyeOff size={17} />}
         </button>
@@ -204,7 +204,7 @@ const ProfileSwitcher = () => {
           onClick={openGoalSettings}
           aria-label="Ajustes de Perfil y Metas"
           title="Ajustes de Perfil y Metas"
-          className="flex size-9 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
+          className="flex size-9 items-center justify-center rounded-lg bg-white text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
         >
           <Users size={17} />
         </button>

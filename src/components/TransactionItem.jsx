@@ -168,7 +168,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
           onTouchEnd={handleCardTouchEnd}
           onTouchCancel={() => { touchStartRef.current = null; }}
           style={{ transform: `translateX(${swipeOffset})` }}
-          className="relative z-10 cursor-pointer rounded-lg border border-slate-100 bg-white p-2.5 shadow-sm transition-transform duration-200 ease-out touch-pan-y hover:border-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-slate-600 dark:hover:bg-slate-800 sm:p-3"
+          className="relative z-10 cursor-pointer rounded-lg border border-slate-100 bg-white p-2.5 shadow-sm transition-transform duration-200 ease-out touch-pan-y hover:border-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-neutral-700 dark:hover:bg-black sm:p-3"
         >
         <div className="flex items-start gap-2.5 sm:gap-3">
           <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
@@ -254,7 +254,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
   return (
     <>
       <tr
-        className="group hidden cursor-pointer transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/70 xl:table-row"
+        className="group hidden cursor-pointer transition-colors hover:bg-slate-50/70 dark:hover:bg-black xl:table-row"
         tabIndex={0}
         aria-label={`Editar movimiento: ${description || transaction.category}`}
         onClick={openEditor}
@@ -297,7 +297,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
         >
           {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
         </td>
-        <td className="sticky right-0 z-10 w-12 bg-white px-2 py-3.5 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] group-hover:bg-slate-50 dark:bg-slate-900 dark:group-hover:bg-slate-800">
+        <td className="sticky right-0 z-10 w-12 bg-white px-2 py-3.5 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] group-hover:bg-slate-50 dark:bg-slate-800 dark:group-hover:bg-black">
           <button
             type="button"
             onClick={(event) => {

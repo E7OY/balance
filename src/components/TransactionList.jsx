@@ -127,7 +127,7 @@ const TransactionList = () => {
                   <th scope="col" className="px-4 py-3">Método</th>
                   {renderSortHeader('Fecha', 'date', 'px-4 py-3')}
                   {renderSortHeader('Importe', 'amount', 'px-5 py-3 text-right sm:px-6 [&>button]:w-full [&>button]:justify-end')}
-                  <th scope="col" className="sticky right-0 z-20 w-12 bg-slate-50/95 px-2 py-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] dark:bg-slate-800/95">
+                  <th scope="col" className="sticky right-0 z-20 w-12 bg-slate-50/95 px-2 py-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] dark:bg-slate-800">
                     <span className="sr-only">Acciones</span>
                   </th>
                 </tr>
