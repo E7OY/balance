@@ -349,7 +349,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
           <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1.5 dark:bg-slate-800">
             {[
               { value: 'Gasto', label: 'Gasto', Icon: ArrowDownLeft },
-              { value: 'Ingreso', label: ' ingreso', Icon: ArrowUpRight },
+              { value: 'Ingreso', label: 'Ingreso', Icon: ArrowUpRight },
             ].map(({ value, label, Icon }) => (
               <button
                 key={value}
@@ -358,7 +358,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
                 aria-pressed={type === value}
                 className={`inline-flex h-9 items-center justify-center gap-2 rounded-md px-2 text-sm font-medium transition-all ${
                   type === value
-                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-50'
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-50'
                     : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'
                 }`}
               >

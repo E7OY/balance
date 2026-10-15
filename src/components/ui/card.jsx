@@ -2,8 +2,7 @@ import React from 'react';
 
 const Card = ({ as: Component = 'div', className = '', ...props }) => (
   <Component
-    className={`rounded-3xl border-0 bg-white text-slate-950 shadow-none transition-colors dark:bg-zinc-900 dark:text-white ${className}`}
-    //className={`rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 ${className}`}
+    className={`rounded-3xl border-0 bg-white text-slate-950 transition-colors dark:bg-zinc-900 dark:text-white shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] ${className}`}
     {...props}
   />
 );

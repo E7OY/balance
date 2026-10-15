@@ -79,7 +79,7 @@ const TransactionList = () => {
   return (
     <Card as="section" className="overflow-hidden">
       <div className="flex flex-row items-center justify-between gap-2 border-b border-slate-100 px-3 py-3 dark:border-slate-700 sm:gap-3 sm:px-5 sm:py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="min-w-0">
+        <div className="min-w-0 p-2">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 sm:text-base">
             Movimientos del mes
           </h2>

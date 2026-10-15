@@ -168,7 +168,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
           onTouchEnd={handleCardTouchEnd}
           onTouchCancel={() => { touchStartRef.current = null; }}
           style={{ transform: `translateX(${swipeOffset})` }}
-          className="relative z-10 cursor-pointer rounded-lg border border-slate-100 bg-white p-2.5 shadow-sm transition-transform duration-200 ease-out touch-pan-y hover:border-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-neutral-700 dark:hover:bg-black sm:p-3"
+          className="relative z-10 cursor-pointer border-b border-slate-50 bg-white p-2.5 shadow-sm transition-transform duration-200 ease-out touch-pan-y hover:border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-neutral-700 dark:hover:bg-black sm:p-3"
         >
         <div className="flex items-start gap-2.5 sm:gap-3">
           <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>

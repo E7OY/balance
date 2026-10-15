@@ -211,7 +211,7 @@ const App = () => {
         onTouchEnd={handleTouchEnd}
         onTouchCancel={() => { monthSwipeStart.current = null; }}
       >
-        <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div className="mb-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
             <p className="mb-2 text-sm font-medium capitalize text-slate-500 dark:text-slate-400">
               Tu resumen financiero
@@ -224,31 +224,7 @@ const App = () => {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
-              aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
-              title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-              className="inline-flex size-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600  transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              {theme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
-            </button>
-            <button
-              type="button"
-              aria-label={activeFilterCount > 0 ? `Mes y filtros, ${activeFilterCount} filtros activos` : 'Mes y filtros'}
-              title="Mes y filtros"
-              aria-expanded={isMobileFiltersOpen}
-              aria-controls="transaction-filters"
-              onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
-              className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
-            >
-              <Filter size={18} aria-hidden="true" />
-              {activeFilterCount > 0 && (
-                <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-semibold leading-none text-white">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+
             <ProfileSwitcher />
             <div className="hidden lg:block">
               <Button

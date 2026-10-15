@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, Eye, EyeOff, Plus, Users, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { Filter, MoonStar,  SunMedium } from 'lucide-react';
 import {
   getPushNotificationsEnabled,
   requestPushNotificationPermission,
@@ -39,6 +40,27 @@ const ProfileSwitcher = () => {
   );
   const [notificationError, setNotificationError] = useState('');
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const storedTheme = localStorage.getItem('balance-theme');
+    if (storedTheme) return storedTheme;
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    root.style.colorScheme = theme;
+    localStorage.setItem('balance-theme', theme);
+  }, [theme]);
+
+  const activeFilterCount = [
+    filters.searchTerm.trim().length > 0,
+    filters.type !== 'Todos',
+    filters.category !== 'Todas',
+  ].filter(Boolean).length;
+
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -188,14 +210,40 @@ const ProfileSwitcher = () => {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
-        <button
+        <div className="flex items-center gap-0.5 rounded-full bg-white p-1 shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] dark:bg-slate-900 md:contents">        
+                        <button
+                type="button"
+                onClick={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
+                aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+                title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                className="inline-flex size-10 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
+              >
+                {theme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
+              </button>
+              <button
+                type="button"
+                aria-label={activeFilterCount > 0 ? `Mes y filtros, ${activeFilterCount} filtros activos` : 'Mes y filtros'}
+                title="Mes y filtros"
+                aria-expanded={isMobileFiltersOpen}
+                aria-controls="transaction-filters"
+                onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
+                className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800 md:hidden"
+              >
+                <Filter size={18} aria-hidden="true" />
+                {activeFilterCount > 0 && (
+                  <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-semibold leading-none text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+          
+          <button
           type="button"
           onClick={toggleAmountVisibility}
           aria-label={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
           aria-pressed={isAmountsHidden}
           title={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
-          className="flex size-9 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
+          className="flex size-10 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:size-9 md:rounded-lg md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
         >
           {isAmountsHidden ? <Eye size={17} /> : <EyeOff size={17} />}
         </button>
@@ -204,7 +252,7 @@ const ProfileSwitcher = () => {
           onClick={openGoalSettings}
           aria-label="Ajustes de Perfil y Metas"
           title="Ajustes de Perfil y Metas"
-          className="flex size-9 items-center justify-center rounded-lg bg-white text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
+          className="flex size-10 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:size-9 md:rounded-lg md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
         >
           <Users size={17} />
         </button>
@@ -213,22 +261,21 @@ const ProfileSwitcher = () => {
           id="active-profile"
           value={activeProfile.id}
           onChange={(event) => switchProfile(event.target.value)}
-          className="h-10 max-w-44 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="h-10 max-w-28 rounded-full bg-transparent px-3 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-slate-100 dark:text-slate-200 md:max-w-44 md:rounded-md md:bg-white md:text-slate-700 md:shadow-sm md:dark:bg-slate-900"
         >
           {profiles.map((profile) => (
             <option key={profile.id} value={profile.id}>{profile.name}</option>
           ))}
         </select>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="icon"
           onClick={() => setIsAdding(true)}
           aria-label="Añadir perfil"
           title="Añadir perfil"
+          className="inline-flex size-10 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:size-9 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
         >
           <Plus size={17} />
-        </Button>
+        </button>
       </div>
 
       {isAdding && (
