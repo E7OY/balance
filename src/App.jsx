@@ -225,7 +225,10 @@ const App = () => {
           </div>
 <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
 
-            <ProfileSwitcher />
+            <ProfileSwitcher
+              isMobileFiltersOpen={isMobileFiltersOpen}
+              onToggleMobileFilters={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
+            />
             <div className="hidden lg:block">
               <Button
                 size="default"
@@ -259,7 +262,7 @@ const App = () => {
         onClick={() => setIsModalOpen(true)}
         aria-label="Añadir movimiento"
         title="Añadir movimiento"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-white px-4 text-emerald-800 shadow-lg shadow-slate-900/10 transition-all duration-200 hover:scale-101 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800 lg:hidden"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-white px-4 text-emerald-800 shadow-lg shadow-slate-900/10 transition-all duration-200 hover:scale-101 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800 lg:hidden"
       >
         <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-700 text-white">
           <Plus size={16} strokeWidth={2.5} />

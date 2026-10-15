@@ -10,7 +10,7 @@ import {
 import { triggerHaptic } from '../utils/haptics';
 import { Button } from './ui/button';
 
-const ProfileSwitcher = () => {
+const ProfileSwitcher = ({ isMobileFiltersOpen, onToggleMobileFilters }) => {
   const {
     profiles,
     activeProfile,
@@ -58,9 +58,6 @@ const ProfileSwitcher = () => {
     filters.type !== 'Todos',
     filters.category !== 'Todas',
   ].filter(Boolean).length;
-
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -226,7 +223,7 @@ const ProfileSwitcher = () => {
                 title="Mes y filtros"
                 aria-expanded={isMobileFiltersOpen}
                 aria-controls="transaction-filters"
-                onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
+                onClick={onToggleMobileFilters}
                 className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800 md:hidden"
               >
                 <Filter size={18} aria-hidden="true" />
