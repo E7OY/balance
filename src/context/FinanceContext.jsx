@@ -510,7 +510,16 @@ export const FinanceProvider = ({ children }) => {
         invoice: { ...transaction.invoice, dataUrl },
       };
     }));
-    const dataStr = JSON.stringify({ version: 2, transactions: exportTransactions, customCategories }, null, 2);
+    
+    // AQUÍ ESTÁ EL CAMBIO: Se añaden las metas y topes mensuales al JSON de exportación
+    const dataStr = JSON.stringify({ 
+      version: 2, 
+      transactions: exportTransactions, 
+      customCategories,
+      monthlyGoalsByMonth,         // Nuevo
+      monthlyCategoryCapsByMonth   // Nuevo
+    }, null, 2);
+    
     const fileUrl = URL.createObjectURL(new Blob([dataStr], { type: 'application/json' }));
     const downloadLink = document.createElement('a');
     downloadLink.href = fileUrl;
@@ -568,7 +577,16 @@ export const FinanceProvider = ({ children }) => {
           Gasto: Array.isArray(importedCategories.Gasto) ? importedCategories.Gasto.filter((name) => typeof name === 'string') : [],
         });
       }
+      
+      // AQUÍ ESTÁ EL CAMBIO: Restaurar metas y topes desde el backup
+      if (backup.monthlyGoalsByMonth && typeof backup.monthlyGoalsByMonth === 'object') {
+        setMonthlyGoalsByMonth(backup.monthlyGoalsByMonth);
+      }
+      if (backup.monthlyCategoryCapsByMonth && typeof backup.monthlyCategoryCapsByMonth === 'object') {
+        setMonthlyCategoryCapsByMonth(backup.monthlyCategoryCapsByMonth);
+      }
     }
+    
     setTransactions(restoredTransactions);
   };
 
