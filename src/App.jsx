@@ -220,12 +220,35 @@ const App = () => {
               {monthLabel} {filters.year}
             </p>
           </div>
-<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
-
-            <ProfileSwitcher
-              isMobileFiltersOpen={isMobileFiltersOpen}
-              onToggleMobileFilters={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
-            />
+<div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full items-center justify-between gap-0.5 rounded-full bg-white p-1 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] dark:bg-slate-900 md:contents">
+              <button
+                type="button"
+                onClick={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
+                aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+                title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
+              >
+                {theme === 'dark' ? <MoonStar size={18} /> : <SunMedium size={18} />}
+              </button>
+              <button
+                type="button"
+                aria-label={activeFilterCount > 0 ? `Mes y filtros, ${activeFilterCount} filtros activos` : 'Mes y filtros'}
+                title="Mes y filtros"
+                aria-expanded={isMobileFiltersOpen}
+                aria-controls="transaction-filters"
+                onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
+                className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800 md:hidden"
+              >
+                <Filter size={18} aria-hidden="true" />
+                {activeFilterCount > 0 && (
+                  <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-semibold leading-none text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              <ProfileSwitcher />
+            </div>
             <div className="hidden lg:block">
               <Button
                 size="default"
@@ -239,10 +262,7 @@ const App = () => {
           </div>
         </div>
 
-        <Filters
-          isMobileFiltersOpen={isMobileFiltersOpen}
-          onCloseMobileFilters={() => setIsMobileFiltersOpen(false)}
-        />
+        <Filters isMobileFiltersOpen={isMobileFiltersOpen} />
         <SummaryCards />
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
@@ -253,39 +273,22 @@ const App = () => {
         <div className="mt-6 flex justify-end">
           <ExportImportButtons />
         </div>
-
-    {!isModalOpen && !editingTransaction && (
-      <button
-        type="button"
-        onClick={() => setIsModalOpen(true)}
-        aria-label="Añadir movimiento"
-        title="Añadir movimiento"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-neutral-900 px-4 text-white shadow-lg shadow-black/10 transition-transform duration-100 ease-out hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-neutral-400/30 active:scale-[0.97] dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 lg:hidden"
-      >
-        <span className="inline-flex size-8 items-center justify-center rounded-full bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900">
-          <Plus size={16} strokeWidth={2.5} />
-        </span>
-        <span className="text-sm font-semibold">
-          Añadir movimiento
-        </span>
-      </button>
-    )}
       </main>
-        
-{/*
-        {!isModalOpen && !editingTransaction && (
-      <button
-        type="button"
-        onClick={() => setIsModalOpen(true)}
-        aria-label="Añadir movimiento"
-        title="Añadir movimiento"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex size-14 items-center justify-center rounded-full bg-white text-emerald-800 shadow-lg shadow-slate-900/10 transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800 lg:hidden"
-      >
-        <span className="inline-flex size-8 items-center justify-center rounded-full bg-emerald-700 text-white">
-          <Plus size={18} strokeWidth={2.5} />
-        </span>
-      </button>
-    )}*/}
+
+      {!isModalOpen && !editingTransaction && (
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          aria-label="Añadir movimiento"
+          title="Añadir movimiento"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex h-14 items-center gap-3 rounded-full bg-white py-2 pl-2 pr-5 text-base font-semibold text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-transform focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-white lg:hidden"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white dark:bg-emerald-600">
+            <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
+          </span>
+          Añadir movimiento
+        </button>
+      )}
 
       {(isModalOpen || editingTransaction) && (
         <TransactionForm

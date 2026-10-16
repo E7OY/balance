@@ -180,7 +180,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
                 {description || transaction.category}
               </p>
               <div className="flex shrink-0 items-center gap-1">
-                <p className={`privacy-sensitive whitespace-nowrap text-[13px] tabular-nums sm:text-sm ${isExpense ? 'font-medium text-neutral-700 dark:text-neutral-300' : 'font-semibold text-neutral-900 dark:text-white'}`}>
+                <p className={`privacy-sensitive whitespace-nowrap text-[13px] tabular-nums sm:text-sm ${isExpense ? 'font-semibold !text-rose-600 dark:!text-rose-400' : 'font-semibold !text-emerald-600 dark:!text-emerald-400'}`}>
                   {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
                 </p>
               </div>
@@ -221,7 +221,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
           <section role="dialog" aria-modal="true" aria-labelledby="split-expense-title" className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <h2 id="split-expense-title" className="text-base font-semibold text-slate-950 dark:text-slate-50">Dividir gasto en cuotas</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {description || transaction.categoory} · {formatCurrency(Number(transaction.amount))}
+              {description || transaction.category} · {formatCurrency(Number(transaction.amount))}
             </p>
             <label htmlFor="split-installment-count" className="mb-1.5 mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Número de cuotas
@@ -262,7 +262,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
       >
         <td className="px-5 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
-            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
+            <span data-color-icon={isExpense ? 'expense' : 'income'} className={`flex size-9 shrink-0 items-center justify-center rounded-full ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
               {isExpense ? <ArrowDownLeft size={17} /> : <ArrowUpRight size={17} />}
             </span>
             <div className="min-w-0">
@@ -293,7 +293,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
         <td className="whitespace-nowrap px-4 py-3.5 text-slate-500 dark:text-slate-400">{formatDate(transaction.date)}</td>
         <td
           aria-label={isAmountsHidden ? 'Importe oculto' : undefined}
-          className={`privacy-sensitive whitespace-nowrap px-5 py-3.5 text-right tabular-nums sm:px-6 ${isExpense ? 'font-medium text-neutral-700 dark:text-neutral-300' : 'font-semibold text-neutral-900 dark:text-white'}`}
+          className={`privacy-sensitive whitespace-nowrap px-5 py-3.5 text-right tabular-nums sm:px-6 ${isExpense ? 'font-semibold !text-rose-600 dark:!text-rose-400' : 'font-semibold !text-emerald-600 dark:!text-emerald-400'}`}
         >
           {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
         </td>
