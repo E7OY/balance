@@ -266,7 +266,7 @@ const App = () => {
               {monthLabel} {filters.year}
             </p>
           </div>
-<div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex w-full items-center justify-between gap-0.5 rounded-full bg-white p-1 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] dark:bg-slate-900 md:contents">
               <button
                 type="button"
@@ -327,7 +327,7 @@ const App = () => {
           onClick={() => setIsModalOpen(true)}
           aria-label="Añadir movimiento"
           title="Añadir movimiento"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-40 inline-flex h-14 items-center gap-3 rounded-full bg-white py-2 pl-2 pr-5 text-base font-semibold text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-transform focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-white lg:hidden"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-10 inline-flex h-14 items-center gap-3 rounded-full bg-white py-2 pl-2 pr-5 text-base font-semibold text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-transform focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-white lg:hidden"
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white dark:bg-emerald-600">
             <Plus size={22} strokeWidth={2.5} aria-hidden="true" />

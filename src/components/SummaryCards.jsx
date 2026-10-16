@@ -316,8 +316,8 @@ const SummaryCards = () => {
 
               {/* AVISO DE TIRAR DE AHORROS / INVERSIÓN */}
               {realSpendableBalance < 0 && (
-                <p role="alert" className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs leading-5 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
-                  ⚠️ Estás tirando de {consumedInvestment > 0 ? 'tus ahorros e inversiones' : 'tus ahorros'}.
+                <p role="alert" className="mt-3 rounded-md !bg-rose-50 px-2.5 py-2 text-xs leading-5 text-rose-800 dark:border-rose-500/30 dark:!bg-rose-500/10 dark:text-rose-300">
+                  Estás tirando de {consumedInvestment > 0 ? 'tus ahorros e inversiones' : 'tus ahorros'}.
                 </p>
               )}
             </>
