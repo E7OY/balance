@@ -60,6 +60,7 @@ const App = () => {
     return () => navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
   }, [setIsModalOpen]);
 
+  // EFECTO ORIGINAL: Aviso de día sin gastos
   useEffect(() => {
     let isChecking = false;
     let isDisposed = false;
@@ -84,7 +85,7 @@ const App = () => {
       try {
         await showAppNotification({
           title: 'Día sin gastos',
-          body: `Ayer (${new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' }).format(new Date(`${date}T12:00:00`))}) no registraste ningún gasto. ¡Buen trabajo!`,
+          body: `Ayer (${new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' }).format(new Date(`\${date}T12:00:00`))}) no registraste ningún gasto. ¡Buen trabajo!`,
           tag: `balance-no-spend-${activeProfileId}-${date}`,
           action: 'dashboard',
         });
@@ -119,6 +120,51 @@ const App = () => {
       window.removeEventListener('balance:push-notifications-changed', handleNotificationPreferenceChange);
     };
   }, [activeProfileId, transactions]);
+
+  useEffect(() => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!getPushNotificationsEnabled(activeProfileId)) return;
+
+    const fechaActual = new Date();
+    const mesActual = String(fechaActual.getMonth() + 1).padStart(2, '0');
+    const añoActual = fechaActual.getFullYear();
+    const prefijoMes = `${añoActual}-${mesActual}`;
+
+    // 1. Calcular el total de gastos e ingresos del mes natural en curso (independiente de los filtros)
+    let gastosDelMes = 0;
+    let ingresosDelMes = 0;
+
+    transactions.forEach((tx) => {
+      if (tx.date.startsWith(prefijoMes)) {
+        if (tx.type === 'Gasto') gastosDelMes += Number(tx.amount);
+        if (tx.type === 'Ingreso') ingresosDelMes += Number(tx.amount);
+      }
+    });
+
+    // Si no hay ingresos, no hay forma de calcular el 80% del "dinero libre"
+    if (ingresosDelMes === 0) return;
+
+    // 2. Calcular los umbrales (80% del ingreso total del mes actual)
+    const limite80 = ingresosDelMes * 0.8;
+    const claveNotificacion = `balance-80-aviso-${activeProfileId}-${prefijoMes}`;
+    const yaAvisado = localStorage.getItem(claveNotificacion);
+
+    // 3. Disparar notificación si supera el 80% pero no llega al 100%
+    if (gastosDelMes >= limite80 && gastosDelMes < ingresosDelMes && !yaAvisado) {
+      ////--ALTERNATIVA-- 3. Disparar notificación si está al 80% o más (y aún no se ha avisado este mes)
+      ///if (gastosDelMes >= limite80 && !yaAvisado) {
+      showAppNotification({
+        title: 'Aviso de límite cercano',
+        body: `Tus gastos han alcanzado el 80% de tus ingresos de este mes.`,
+        tag: claveNotificacion,
+        action: 'dashboard',
+      }).then(() => {
+        localStorage.setItem(claveNotificacion, 'true');
+      }).catch(error => {
+        console.error('No se pudo mostrar el aviso del 80%.', error);
+      });
+    }
+  }, [transactions, activeProfileId]);
 
   useEffect(() => {
     if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
