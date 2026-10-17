@@ -18,12 +18,6 @@ const userTransactions = (uid, profileId) => collection(userProfile(uid, profile
 const userTransaction = (uid, profileId, transactionId) =>
   doc(userProfile(uid, profileId), 'transactions', transactionId);
 
-const transactionForCloud = (transaction) => {
-  const cloudTransaction = { ...transaction };
-  delete cloudTransaction.invoice;
-  return cloudTransaction;
-};
-
 const cleanUndefined = (value) => {
   if (Array.isArray(value)) return value.map(cleanUndefined);
   if (!value || typeof value !== 'object') return value;
@@ -115,9 +109,7 @@ export const initializeAccountSync = async (user) => {
       : { docs: [] };
     const localTransactionsById = new Map(local.transactions.map((transaction) => [transaction.id, transaction]));
     const cloudTransactions = remoteTransactionSnapshots.docs.map((snapshot) => {
-      const fields = { ...snapshot.data() };
-      delete fields.invoice;
-      const transaction = { ...fields, id: snapshot.id };
+      const transaction = { ...snapshot.data(), id: snapshot.id };
       const localInvoice = localTransactionsById.get(transaction.id)?.invoice;
       return localInvoice ? { ...transaction, invoice: localInvoice } : transaction;
     });
@@ -148,7 +140,7 @@ export const initializeAccountSync = async (user) => {
 
     await saveInBatches(localOnlyTransactions.map((transaction) => ({
       reference: userTransaction(user.uid, profile.id, transaction.id),
-      data: transactionForCloud(transaction),
+      data: transaction,
     })));
 
     writeLocalProfile(profile.id, data);
@@ -195,9 +187,7 @@ export const loadCloudProfileLocally = async (uid, profileId) => {
   const localTransactionsById = new Map(readLocalProfile(profileId).transactions.map((transaction) => [transaction.id, transaction]));
   const data = {
     transactions: transactionSnapshots.docs.map((item) => {
-      const fields = { ...item.data() };
-      delete fields.invoice;
-      const transaction = { ...fields, id: item.id };
+      const transaction = { ...item.data(), id: item.id };
       const localInvoice = localTransactionsById.get(transaction.id)?.invoice;
       return localInvoice ? { ...transaction, invoice: localInvoice } : transaction;
     }),
@@ -221,7 +211,7 @@ export const saveTransactionsToCloud = async (uid, profileId, transactions) => {
   const nextIds = new Set(transactions.map((transaction) => transaction.id));
   const writes = transactions.map((transaction) => ({
     reference: userTransaction(uid, profileId, transaction.id),
-    data: transactionForCloud(transaction),
+    data: transaction,
   }));
   currentIds.forEach((id) => {
     if (!nextIds.has(id)) {
@@ -240,7 +230,7 @@ export const deleteTransactionsFromCloud = async (uid, profileId, transactionIds
 export const saveTransactionToCloud = (uid, profileId, transaction) =>
   saveInBatches([{
     reference: userTransaction(uid, profileId, transaction.id),
-    data: transactionForCloud(transaction),
+    data: transaction,
   }]);
 
 export const deleteTransactionFromCloud = (uid, profileId, transactionId) =>

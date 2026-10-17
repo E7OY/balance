@@ -10,6 +10,7 @@ import { incomeCategories, expenseCategories } from '../utils/categories';
 import { getMonthYear } from '../utils/helpers';
 import { deleteInvoice, getInvoice, saveInvoice } from '../utils/invoiceStorage';
 import { firebaseAuth, isFirebaseConfigured } from '../utils/firebaseClient';
+import { getFirebaseErrorMessage } from '../utils/firebaseErrors';
 import {
   deleteTransactionFromCloud,
   deleteTransactionsFromCloud,
@@ -167,9 +168,11 @@ export const FinanceProvider = ({ children }) => {
   const [syncStatus, setSyncStatus] = useState(isFirebaseConfigured ? 'local' : 'unconfigured');
   const [syncError, setSyncError] = useState('');
   const [syncRetryKey, setSyncRetryKey] = useState(0);
+  const [pendingSyncOperations, setPendingSyncOperations] = useState(0);
   const syncMetadataRef = useRef('');
   const syncTransactionsRef = useRef('');
   const knownProfileIdsRef = useRef(new Set());
+  const syncFailureVersionRef = useRef(0);
   const syncErrorHandler = useRef(null);
   const [isAmountsHidden, setIsAmountsHidden] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,8 +187,9 @@ export const FinanceProvider = ({ children }) => {
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || profiles[0];
 
   syncErrorHandler.current = (error) => {
+    syncFailureVersionRef.current += 1;
     console.error('No se pudieron sincronizar los datos con Firebase.', error);
-    setSyncError(error.message || 'No se pudieron sincronizar los datos con Firebase.');
+    setSyncError(getFirebaseErrorMessage(error, 'No se pudieron sincronizar los datos con Firebase.'));
     setSyncStatus('error');
   };
 
@@ -292,10 +296,8 @@ export const FinanceProvider = ({ children }) => {
         setTransactions((previous) => {
           const localTransactions = new Map(previous.map((transaction) => [transaction.id, transaction]));
           const transactionsWithLocalInvoices = remoteTransactions.map((transaction) => {
-            const cloudTransaction = { ...transaction };
-            delete cloudTransaction.invoice;
             const localInvoice = localTransactions.get(transaction.id)?.invoice;
-            return localInvoice ? { ...cloudTransaction, invoice: localInvoice } : cloudTransaction;
+            return localInvoice ? { ...transaction, invoice: localInvoice } : transaction;
           });
           const remoteJson = JSON.stringify(transactionsWithLocalInvoices);
           syncTransactionsRef.current = remoteJson;
@@ -355,15 +357,24 @@ export const FinanceProvider = ({ children }) => {
   const retrySync = () => {
     if (!syncUser) return;
     setSyncError('');
+    syncFailureVersionRef.current += 1;
     setSyncStatus('syncing');
     setSyncRetryKey((previousKey) => previousKey + 1);
   };
 
   const runCloudOperation = (operation) => {
+    const failureVersionAtStart = syncFailureVersionRef.current;
+    setPendingSyncOperations((count) => count + 1);
     operation.then(() => {
-      setSyncError('');
-      setSyncStatus((previous) => (previous === 'error' ? 'synced' : previous));
-    }).catch((error) => syncErrorHandler.current?.(error));
+      if (failureVersionAtStart === syncFailureVersionRef.current) {
+        setSyncError('');
+        setSyncStatus((previous) => (previous === 'error' ? 'synced' : previous));
+      }
+    }).catch((error) => {
+      syncErrorHandler.current?.(error);
+    }).finally(() => {
+      setPendingSyncOperations((count) => Math.max(0, count - 1));
+    });
   };
 
   useEffect(() => {
@@ -878,6 +889,7 @@ export const FinanceProvider = ({ children }) => {
         syncUser,
         syncStatus,
         syncError,
+        pendingSyncOperations,
         isFirebaseConfigured,
         createSyncAccount,
         loginToSyncAccount,

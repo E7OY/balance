@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, Cloud, Eye, EyeOff, LoaderCircle, LogOut, Plus, Users } from 'lucide-react';
+import { Bell, Eye, EyeOff, LogOut, Plus, Users } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import useSwipeToClose from '../hooks/useSwipeToClose';
 import {
@@ -8,6 +8,7 @@ import {
   setPushNotificationsEnabled,
 } from '../utils/pushNotifications';
 import { triggerHaptic } from '../utils/haptics';
+import { getFirebaseErrorMessage } from '../utils/firebaseErrors';
 import { Button } from './ui/button';
 
 const ProfileSwitcher = ({ onOverlayOpenChange }) => {
@@ -26,6 +27,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
     syncUser,
     syncStatus,
     syncError,
+    pendingSyncOperations,
     isFirebaseConfigured,
     createSyncAccount,
     loginToSyncAccount,
@@ -70,7 +72,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
       else await loginToSyncAccount(syncEmail.trim(), syncPassword);
       setSyncPassword('');
     } catch (error) {
-      setSyncFormError(error.message || 'No se pudo iniciar la sincronización.');
+      setSyncFormError(getFirebaseErrorMessage(error, 'No se pudo iniciar la sincronización.'));
     }
   };
 
@@ -203,6 +205,18 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
     : notificationPermission === 'denied'
       ? 'bg-rose-100 text-rose-800 dark:!bg-rose-500/15 dark:text-rose-300'
       : 'bg-amber-100 text-amber-800 dark:!bg-amber-500/15 dark:text-amber-300';
+  const indicatorStatus = syncStatus === 'error'
+    ? 'error'
+    : syncStatus === 'syncing' || pendingSyncOperations > 0
+      ? 'syncing'
+      : syncStatus;
+  const syncStatusLabel = indicatorStatus === 'synced'
+    ? 'Sincronizado'
+    : indicatorStatus === 'syncing'
+      ? 'Sincronizando'
+      : indicatorStatus === 'error'
+        ? 'Error de sincronización'
+        : 'Sin conexión';
 
   const toggleAmountVisibility = () => {
     setIsAmountsHidden((hidden) => !hidden);
@@ -244,20 +258,6 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
           <Users size={17} />
         </button>
         <label htmlFor="active-profile" className="sr-only">Perfil activo</label>
-        <button
-          type="button"
-          onClick={() => {
-            setSyncFormError('');
-            setIsSyncPanelOpen(true);
-          }}
-          aria-label={syncUser ? `Sincronización: ${syncStatus}` : 'Configurar sincronización'}
-          title={syncUser ? `Sincronización: ${syncStatus}` : 'Configurar sincronización'}
-          className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 md:size-9 md:rounded-lg md:bg-white md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800 ${syncStatus === 'synced' ? 'text-emerald-600 dark:text-emerald-400' : syncStatus === 'error' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-300'}`}
-        >
-          {syncStatus === 'syncing'
-            ? <LoaderCircle size={17} className="animate-spin" />
-            : <Cloud size={17} />}
-        </button>
         <select
           id="active-profile"
           value={activeProfile.id}
@@ -278,6 +278,41 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
           <Plus size={17} />
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          setSyncFormError('');
+          setIsSyncPanelOpen(true);
+        }}
+        aria-label={syncUser
+          ? `Cuenta ${syncUser.email || ''}. ${syncStatusLabel}`
+          : 'Iniciar sesión para sincronizar'}
+        title={syncUser
+          ? `${syncUser.email || 'Cuenta conectada'} · ${syncStatusLabel}`
+          : 'Iniciar sesión para sincronizar'}
+        className={`absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] z-40 inline-flex min-h-10 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-slate-900 dark:text-slate-100 dark:ring-black dark:hover:bg-slate-800 ${
+          syncUser ? 'size-10' : 'px-4'
+        }`}
+      >
+        {syncUser ? (
+          <span className="relative inline-flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-300 text-md font-bold uppercase text-slate-700 dark:from-slate-700 dark:to-slate-800 dark:text-slate-100">
+            {(syncUser.email?.trim().charAt(0) || '?').toLocaleUpperCase()}
+            <span
+              aria-hidden="true"
+              className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white dark:border-slate-900 ${
+                indicatorStatus === 'synced'
+                  ? 'bg-emerald-500'
+                  : indicatorStatus === 'error'
+                    ? 'bg-rose-500'
+                    : indicatorStatus === 'syncing'
+                      ? 'animate-pulse bg-amber-400'
+                      : 'bg-slate-400'
+              }`}
+            />
+          </span>
+        ) : 'Iniciar sesión'}
+      </button>
 
       {isAdding && (
         <div
@@ -523,7 +558,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
                       await logoutFromSyncAccount();
                       setIsSyncPanelOpen(false);
                     } catch (error) {
-                      setSyncFormError(error.message);
+                      setSyncFormError(getFirebaseErrorMessage(error, 'No se pudo cerrar la sesión.'));
                     }
                   }}
                 >
