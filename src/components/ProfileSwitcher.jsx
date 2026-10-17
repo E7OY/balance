@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, Eye, EyeOff, Plus, Users } from 'lucide-react';
+import { Bell, Cloud, Eye, EyeOff, LoaderCircle, LogOut, Plus, Users } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import useSwipeToClose from '../hooks/useSwipeToClose';
 import {
@@ -23,10 +23,23 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
     filters,
     isAmountsHidden,
     setIsAmountsHidden,
+    syncUser,
+    syncStatus,
+    syncError,
+    isFirebaseConfigured,
+    createSyncAccount,
+    loginToSyncAccount,
+    logoutFromSyncAccount,
+    retrySync,
   } = useFinance();
   const motionPermissionRequested = useRef(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingGoals, setIsEditingGoals] = useState(false);
+  const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
+  const [isCreatingSyncAccount, setIsCreatingSyncAccount] = useState(false);
+  const [syncEmail, setSyncEmail] = useState('');
+  const [syncPassword, setSyncPassword] = useState('');
+  const [syncFormError, setSyncFormError] = useState('');
   const [name, setName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [goalValues, setGoalValues] = useState({ savings: 0, investment: 0 });
@@ -42,11 +55,24 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
   const addingDialogSwipeHandlers = useSwipeToClose(() => setIsAdding(false));
   const goalsDialogSwipeHandlers = useSwipeToClose(() => setIsEditingGoals(false));
+  const syncDialogSwipeHandlers = useSwipeToClose(() => setIsSyncPanelOpen(false));
 
   useEffect(() => {
-    onOverlayOpenChange('profile', isAdding || isEditingGoals);
+    onOverlayOpenChange('profile', isAdding || isEditingGoals || isSyncPanelOpen);
     return () => onOverlayOpenChange('profile', false);
-  }, [isAdding, isEditingGoals, onOverlayOpenChange]);
+  }, [isAdding, isEditingGoals, isSyncPanelOpen, onOverlayOpenChange]);
+
+  const handleSyncFormSubmit = async (event) => {
+    event.preventDefault();
+    setSyncFormError('');
+    try {
+      if (isCreatingSyncAccount) await createSyncAccount(syncEmail.trim(), syncPassword);
+      else await loginToSyncAccount(syncEmail.trim(), syncPassword);
+      setSyncPassword('');
+    } catch (error) {
+      setSyncFormError(error.message || 'No se pudo iniciar la sincronización.');
+    }
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -218,6 +244,20 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
           <Users size={17} />
         </button>
         <label htmlFor="active-profile" className="sr-only">Perfil activo</label>
+        <button
+          type="button"
+          onClick={() => {
+            setSyncFormError('');
+            setIsSyncPanelOpen(true);
+          }}
+          aria-label={syncUser ? `Sincronización: ${syncStatus}` : 'Configurar sincronización'}
+          title={syncUser ? `Sincronización: ${syncStatus}` : 'Configurar sincronización'}
+          className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 md:size-9 md:rounded-lg md:bg-white md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800 ${syncStatus === 'synced' ? 'text-emerald-600 dark:text-emerald-400' : syncStatus === 'error' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-300'}`}
+        >
+          {syncStatus === 'syncing'
+            ? <LoaderCircle size={17} className="animate-spin" />
+            : <Cloud size={17} />}
+        </button>
         <select
           id="active-profile"
           value={activeProfile.id}
@@ -255,8 +295,10 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
           >
             <h2 id="new-profile-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">Crear perfil</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Cada perfil tendrá sus propios movimientos, categorías y facturas en este dispositivo.
-              Los perfiles no se sincronizan ni tienen contraseña.
+              Cada perfil tendrá sus propios movimientos, categorías y facturas.
+              {syncUser
+                ? ' Los perfiles se sincronizan en los dispositivos que usen esta cuenta, pero las facturas adjuntas solo se guardan en este dispositivo.'
+                : ' Inicia sesión con Firebase para sincronizar los perfiles y movimientos entre dispositivos. Las facturas adjuntas solo se guardan en este dispositivo.'}
             </p>
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
               <div>
@@ -431,6 +473,119 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
                 </p>
               )}
             </div>
+          </section>
+        </div>
+      )}
+
+      {isSyncPanelOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsSyncPanelOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sync-account-title"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            {...syncDialogSwipeHandlers}
+          >
+            <h2 id="sync-account-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+              Sincronización entre dispositivos
+            </h2>
+            {!isFirebaseConfigured ? (
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                Firebase todavía no está configurado. Copia <code>.env.example</code> a <code>.env.local</code>,
+                completa las claves de tu app web de Firebase y vuelve a iniciar la aplicación.
+              </p>
+            ) : syncUser ? (
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Sesión iniciada como <strong className="font-semibold text-slate-900 dark:text-slate-100">{syncUser.email}</strong>.
+                </p>
+                <p role={syncError ? 'alert' : 'status'} className="text-sm text-slate-500 dark:text-slate-400">
+                  {syncError || (syncStatus === 'syncing'
+                    ? 'Sincronizando tus perfiles y movimientos…'
+                    : 'Los perfiles, movimientos, objetivos y topes se sincronizan con esta cuenta. Las facturas adjuntas permanecen en este dispositivo.')}
+                </p>
+                {syncStatus === 'error' && (
+                  <Button type="button" variant="outline" onClick={retrySync}>
+                    Reintentar sincronización
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={syncStatus === 'syncing'}
+                  onClick={async () => {
+                    try {
+                      await logoutFromSyncAccount();
+                      setIsSyncPanelOpen(false);
+                    } catch (error) {
+                      setSyncFormError(error.message);
+                    }
+                  }}
+                >
+                  <LogOut size={16} />
+                  Cerrar sesión
+                </Button>
+                {syncFormError && <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{syncFormError}</p>}
+              </div>
+            ) : (
+              <form onSubmit={handleSyncFormSubmit} className="mt-4 space-y-4">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Usa la misma cuenta en tus dispositivos para sincronizar los datos.
+                </p>
+                <div>
+                  <label htmlFor="sync-email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Correo electrónico
+                  </label>
+                  <input
+                    id="sync-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={syncEmail}
+                    onChange={(event) => setSyncEmail(event.target.value)}
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="sync-password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Contraseña
+                  </label>
+                  <input
+                    id="sync-password"
+                    type="password"
+                    autoComplete={isCreatingSyncAccount ? 'new-password' : 'current-password'}
+                    minLength={6}
+                    required
+                    value={syncPassword}
+                    onChange={(event) => setSyncPassword(event.target.value)}
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Mínimo 6 caracteres.</p>
+                </div>
+                {syncFormError && <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{syncFormError}</p>}
+                {syncError && <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">{syncError}</p>}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingSyncAccount((creating) => !creating);
+                      setSyncFormError('');
+                    }}
+                    className="text-sm font-medium text-slate-600 underline-offset-4 hover:underline dark:text-slate-300"
+                  >
+                    {isCreatingSyncAccount ? 'Ya tengo una cuenta' : 'Crear cuenta'}
+                  </button>
+                  <Button type="submit" disabled={syncStatus === 'syncing'}>
+                    {syncStatus === 'syncing' ? 'Sincronizando…' : isCreatingSyncAccount ? 'Crear cuenta' : 'Iniciar sesión'}
+                  </Button>
+                </div>
+              </form>
+            )}
           </section>
         </div>
       )}

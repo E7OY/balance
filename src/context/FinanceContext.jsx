@@ -1,8 +1,27 @@
-import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo, useRef } from 'react';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
 import { incomeCategories, expenseCategories } from '../utils/categories';
 import { getMonthYear } from '../utils/helpers';
 import { deleteInvoice, getInvoice, saveInvoice } from '../utils/invoiceStorage';
+import { firebaseAuth, isFirebaseConfigured } from '../utils/firebaseClient';
+import {
+  deleteTransactionFromCloud,
+  deleteTransactionsFromCloud,
+  initializeAccountSync,
+  loadCloudProfileLocally,
+  saveProfileToCloud,
+  saveTransactionToCloud,
+  saveTransactionsToCloud,
+  subscribeToProfile,
+  subscribeToProfiles,
+  subscribeToTransactions,
+} from '../utils/firebaseSync';
 
 const FinanceContext = createContext();
 
@@ -144,6 +163,14 @@ export const FinanceProvider = ({ children }) => {
   const [customCategories, setCustomCategories] = useState(initialProfileSetup.customCategories);
   const [monthlyGoalsByMonth, setMonthlyGoalsByMonth] = useState(initialProfileSetup.monthlyGoalsByMonth);
   const [monthlyCategoryCapsByMonth, setMonthlyCategoryCapsByMonth] = useState(initialProfileSetup.monthlyCategoryCapsByMonth);
+  const [syncUser, setSyncUser] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(isFirebaseConfigured ? 'local' : 'unconfigured');
+  const [syncError, setSyncError] = useState('');
+  const [syncRetryKey, setSyncRetryKey] = useState(0);
+  const syncMetadataRef = useRef('');
+  const syncTransactionsRef = useRef('');
+  const knownProfileIdsRef = useRef(new Set());
+  const syncErrorHandler = useRef(null);
   const [isAmountsHidden, setIsAmountsHidden] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -154,6 +181,190 @@ export const FinanceProvider = ({ children }) => {
     category: 'Todas',
     searchTerm: '',
   });
+  const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || profiles[0];
+
+  syncErrorHandler.current = (error) => {
+    console.error('No se pudieron sincronizar los datos con Firebase.', error);
+    setSyncError(error.message || 'No se pudieron sincronizar los datos con Firebase.');
+    setSyncStatus('error');
+  };
+
+  useEffect(() => {
+    if (!firebaseAuth) return undefined;
+    let active = true;
+    let authChange = 0;
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+      const currentChange = ++authChange;
+      setSyncUser(user);
+      setSyncError('');
+      syncMetadataRef.current = '';
+      syncTransactionsRef.current = '';
+      if (!user) {
+        setSyncStatus('local');
+        return;
+      }
+
+      setSyncStatus('syncing');
+      try {
+        const synced = await initializeAccountSync(user);
+        if (!active || currentChange !== authChange) return;
+        knownProfileIdsRef.current = new Set(synced.profiles.map((profile) => profile.id));
+        setProfiles(synced.profiles);
+        setActiveProfileId(synced.activeProfileId);
+        setTransactions(synced.transactions);
+        setCustomCategories(synced.customCategories);
+        setMonthlyGoalsByMonth(synced.monthlyGoalsByMonth);
+        setMonthlyCategoryCapsByMonth(synced.monthlyCategoryCapsByMonth);
+        setSyncStatus('synced');
+      } catch (error) {
+        if (active && currentChange === authChange) {
+          syncErrorHandler.current?.(error);
+        }
+      }
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [syncRetryKey]);
+
+  useEffect(() => {
+    if (!syncUser || syncStatus !== 'synced') return undefined;
+    return subscribeToProfiles(syncUser.uid, (remoteProfiles) => {
+      const profilesToLoad = remoteProfiles.filter((profile) => (
+        !knownProfileIdsRef.current.has(profile.id)
+      ));
+      profilesToLoad.forEach((profile) => {
+        knownProfileIdsRef.current.add(profile.id);
+      });
+      Promise.all(profilesToLoad.map((profile) => (
+        loadCloudProfileLocally(syncUser.uid, profile.id)
+      ))).then(() => {
+        setProfiles((previousProfiles) => (
+          remoteProfiles.length > 0 ? remoteProfiles : previousProfiles
+        ));
+      }).catch((error) => {
+        syncErrorHandler.current?.(error);
+      });
+    }, (error) => syncErrorHandler.current?.(error));
+  }, [syncUser, syncStatus]);
+
+  useEffect(() => {
+    if (!syncUser || syncStatus !== 'synced') return undefined;
+    const unsubscribeMetadata = subscribeToProfile(
+      syncUser.uid,
+      activeProfileId,
+      (metadata) => {
+        const remoteState = {
+          name: metadata.name || activeProfile.name,
+          customCategories: metadata.customCategories || { Ingreso: [], Gasto: [] },
+          monthlyGoalsByMonth: metadata.monthlyGoalsByMonth || {},
+          monthlyCategoryCapsByMonth: metadata.monthlyCategoryCapsByMonth || {},
+        };
+        syncMetadataRef.current = JSON.stringify(remoteState);
+        setProfiles((previousProfiles) => previousProfiles.map((profile) => (
+          profile.id === activeProfileId && profile.name !== remoteState.name
+            ? { ...profile, name: remoteState.name }
+            : profile
+        )));
+        setCustomCategories((previous) => (
+          JSON.stringify(previous) === JSON.stringify(remoteState.customCategories)
+            ? previous
+            : remoteState.customCategories
+        ));
+        setMonthlyGoalsByMonth((previous) => (
+          JSON.stringify(previous) === JSON.stringify(remoteState.monthlyGoalsByMonth)
+            ? previous
+            : remoteState.monthlyGoalsByMonth
+        ));
+        setMonthlyCategoryCapsByMonth((previous) => (
+          JSON.stringify(previous) === JSON.stringify(remoteState.monthlyCategoryCapsByMonth)
+            ? previous
+            : remoteState.monthlyCategoryCapsByMonth
+        ));
+      },
+      (error) => syncErrorHandler.current?.(error),
+    );
+    const unsubscribeTransactions = subscribeToTransactions(
+      syncUser.uid,
+      activeProfileId,
+      (remoteTransactions) => {
+        setTransactions((previous) => {
+          const localTransactions = new Map(previous.map((transaction) => [transaction.id, transaction]));
+          const transactionsWithLocalInvoices = remoteTransactions.map((transaction) => {
+            const cloudTransaction = { ...transaction };
+            delete cloudTransaction.invoice;
+            const localInvoice = localTransactions.get(transaction.id)?.invoice;
+            return localInvoice ? { ...cloudTransaction, invoice: localInvoice } : cloudTransaction;
+          });
+          const remoteJson = JSON.stringify(transactionsWithLocalInvoices);
+          syncTransactionsRef.current = remoteJson;
+          return JSON.stringify(previous) === remoteJson ? previous : transactionsWithLocalInvoices;
+        });
+      },
+      (error) => syncErrorHandler.current?.(error),
+    );
+    return () => {
+      unsubscribeMetadata();
+      unsubscribeTransactions();
+    };
+  }, [syncUser, syncStatus, activeProfileId]);
+
+  useEffect(() => {
+    if (!syncUser || syncStatus !== 'synced') return;
+    const metadata = {
+      id: activeProfileId,
+      name: activeProfile.name,
+      customCategories,
+      monthlyGoalsByMonth,
+      monthlyCategoryCapsByMonth,
+    };
+    const metadataJson = JSON.stringify(metadata);
+    if (metadataJson === syncMetadataRef.current) return;
+    syncMetadataRef.current = metadataJson;
+    saveProfileToCloud(syncUser.uid, activeProfile, {
+      customCategories,
+      monthlyGoalsByMonth,
+      monthlyCategoryCapsByMonth,
+    }).catch((error) => syncErrorHandler.current?.(error));
+  }, [
+    syncUser,
+    syncStatus,
+    activeProfileId,
+    activeProfile,
+    customCategories,
+    monthlyGoalsByMonth,
+    monthlyCategoryCapsByMonth,
+  ]);
+
+  const createSyncAccount = async (email, password) => {
+    if (!firebaseAuth) throw new Error('Configura Firebase antes de activar la sincronización.');
+    await createUserWithEmailAndPassword(firebaseAuth, email, password);
+  };
+
+  const loginToSyncAccount = async (email, password) => {
+    if (!firebaseAuth) throw new Error('Configura Firebase antes de activar la sincronización.');
+    await signInWithEmailAndPassword(firebaseAuth, email, password);
+  };
+
+  const logoutFromSyncAccount = async () => {
+    if (!firebaseAuth) return;
+    await signOut(firebaseAuth);
+  };
+
+  const retrySync = () => {
+    if (!syncUser) return;
+    setSyncError('');
+    setSyncStatus('syncing');
+    setSyncRetryKey((previousKey) => previousKey + 1);
+  };
+
+  const runCloudOperation = (operation) => {
+    operation.then(() => {
+      setSyncError('');
+      setSyncStatus((previous) => (previous === 'error' ? 'synced' : previous));
+    }).catch((error) => syncErrorHandler.current?.(error));
+  };
 
   useEffect(() => {
     saveToLocalStorage(profileStorageKey(activeProfileId, 'transactions'), transactions);
@@ -227,10 +438,15 @@ export const FinanceProvider = ({ children }) => {
     saveToLocalStorage(profileStorageKey(id, 'monthlyGoals'), {});
     saveToLocalStorage(profileStorageKey(id, 'monthlyCategoryCaps'), {});
     saveToLocalStorage(ACTIVE_PROFILE_KEY, id);
+    if (syncUser && syncStatus === 'synced') {
+      runCloudOperation(saveProfileToCloud(syncUser.uid, newProfile, {
+        customCategories: { Ingreso: [], Gasto: [] },
+        monthlyGoalsByMonth: {},
+        monthlyCategoryCapsByMonth: {},
+      }));
+    }
     return newProfile;
   };
-
-  const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || profiles[0];
 
   const addCategory = (type, name) => {
     const normalizedName = name.trim();
@@ -298,6 +514,11 @@ export const FinanceProvider = ({ children }) => {
     }
 
     setTransactions((prevTransactions) => [...entriesToAdd, ...prevTransactions]);
+    if (syncUser && syncStatus === 'synced') {
+      runCloudOperation(Promise.all(entriesToAdd.map((entry) => (
+        saveTransactionToCloud(syncUser.uid, activeProfileId, entry)
+      ))));
+    }
   };
 
   const updateTransaction = async (id, updates) => {
@@ -327,6 +548,24 @@ export const FinanceProvider = ({ children }) => {
         ...(removeInvoice && !invoiceFile && { invoice: undefined }),
       };
     }));
+    if (syncUser && syncStatus === 'synced') {
+      const nextTransaction = {
+        ...existingTransaction,
+        ...Object.fromEntries(Object.entries(updates).filter(([key]) => (
+          !['invoiceFile', 'removeInvoice'].includes(key)
+        ))),
+      };
+      if (updates.invoiceFile) {
+        nextTransaction.invoice = {
+          name: updates.invoiceFile.name,
+          type: updates.invoiceFile.type,
+          size: updates.invoiceFile.size,
+        };
+      } else if (updates.removeInvoice) {
+        delete nextTransaction.invoice;
+      }
+      runCloudOperation(saveTransactionToCloud(syncUser.uid, activeProfileId, nextTransaction));
+    }
   };
 
   const splitTransaction = (id, totalInstallments) => {
@@ -348,6 +587,14 @@ export const FinanceProvider = ({ children }) => {
     setTransactions((previousTransactions) => previousTransactions.flatMap((transaction) => (
       transaction.id === id ? installmentRecords : [transaction]
     )));
+    if (syncUser && syncStatus === 'synced') {
+      runCloudOperation((async () => {
+        await deleteTransactionFromCloud(syncUser.uid, activeProfileId, id);
+        await Promise.all(installmentRecords.map((record) => (
+          saveTransactionToCloud(syncUser.uid, activeProfileId, record)
+        )));
+      })());
+    }
   };
 
   const deleteTransaction = async (id) => {
@@ -358,6 +605,13 @@ export const FinanceProvider = ({ children }) => {
       await deleteInvoice(id, activeProfileId);
     }
 
+    const removedTransactions = targetTransaction?.installment?.seriesId
+      ? transactions.filter((transaction) => transaction.installment?.seriesId === seriesId)
+      : [targetTransaction];
+    const nextTransactions = targetTransaction?.installment?.seriesId
+      ? transactions.filter((transaction) => transaction.installment?.seriesId !== seriesId)
+      : transactions.filter((transaction) => transaction.id !== id);
+
     setTransactions((prevTransactions) => {
       if (!seriesId) {
         return prevTransactions.filter((transaction) => transaction.id !== id);
@@ -365,18 +619,31 @@ export const FinanceProvider = ({ children }) => {
 
       return prevTransactions.filter((transaction) => transaction.installment?.seriesId !== seriesId);
     });
+    if (syncUser && syncStatus === 'synced') {
+      runCloudOperation((async () => {
+        await deleteTransactionsFromCloud(
+          syncUser.uid,
+          activeProfileId,
+          removedTransactions.filter(Boolean).map((transaction) => transaction.id),
+        );
+      })());
+    }
   };
 
   const previewInvoice = async (id) => {
     const invoice = await getInvoice(id, activeProfileId);
-    if (!invoice?.blob) throw new Error('No se ha encontrado el archivo de esta factura.');
+    if (!invoice?.blob) {
+      throw new Error('La factura solo está disponible en el dispositivo donde se adjuntó.');
+    }
 
     return URL.createObjectURL(invoice.blob);
   };
 
   const downloadInvoice = async (id, filename) => {
     const invoice = await getInvoice(id, activeProfileId);
-    if (!invoice?.blob) throw new Error('No se ha encontrado el archivo de esta factura.');
+    if (!invoice?.blob) {
+      throw new Error('La factura solo está disponible en el dispositivo donde se adjuntó.');
+    }
 
     const objectUrl = URL.createObjectURL(invoice.blob);
     const link = document.createElement('a');
@@ -497,7 +764,7 @@ export const FinanceProvider = ({ children }) => {
       if (!transaction.invoice) return transaction;
       const invoice = await getInvoice(transaction.id, activeProfileId);
       if (!invoice?.blob) {
-        throw new Error(`No se encontró la factura de "${transaction.invoice.name}".`);
+        throw new Error(`La factura "${transaction.invoice.name}" solo está disponible en el dispositivo donde se adjuntó.`);
       }
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -588,6 +855,11 @@ export const FinanceProvider = ({ children }) => {
     }
     
     setTransactions(restoredTransactions);
+    if (syncUser && syncStatus === 'synced') {
+      runCloudOperation((async () => {
+        await saveTransactionsToCloud(syncUser.uid, activeProfileId, restoredTransactions);
+      })());
+    }
   };
 
   const allCategories = useMemo(() => ({
@@ -603,6 +875,14 @@ export const FinanceProvider = ({ children }) => {
         profiles,
         activeProfile,
         activeProfileId,
+        syncUser,
+        syncStatus,
+        syncError,
+        isFirebaseConfigured,
+        createSyncAccount,
+        loginToSyncAccount,
+        logoutFromSyncAccount,
+        retrySync,
         monthlyGoals,
         monthlyGoalsByMonth,
         setMonthlyGoals,

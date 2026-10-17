@@ -53,11 +53,33 @@ En **Exportar datos** puedes descargar:
 
 ## Datos y privacidad
 
-Los movimientos y ajustes se guardan en el almacenamiento local del navegador; las facturas se guardan en IndexedDB. No hay sincronización entre dispositivos ni cuentas con contraseña. Si borras los datos del sitio en el navegador, puedes perder la información local; exporta copias periódicamente.
+Sin iniciar sesión, los movimientos y ajustes se guardan en el almacenamiento local del navegador y las facturas en IndexedDB. Al iniciar sesión con Firebase, los perfiles, movimientos y ajustes también se sincronizan con la cuenta; los archivos de facturas nunca se suben y permanecen solo en el dispositivo donde se adjuntaron. Si borras los datos del sitio, puedes perder los archivos de facturas locales; exporta copias periódicamente.
 
-La exportación JSON no incluye los perfiles ni los objetivos de ahorro, inversión y topes mensuales. Guarda esos ajustes por separado si necesitas recrearlos en otro dispositivo.
+La exportación JSON contiene los movimientos, las facturas adjuntas, las categorías personalizadas y los objetivos y topes mensuales del perfil activo. No incluye la lista ni el nombre de los perfiles.
 
 La aplicación puede instalarse como PWA en navegadores compatibles. En producción, el service worker almacena la interfaz para poder abrirla tras una primera carga con conexión. Algunas funciones del navegador, como la cámara y las notificaciones, requieren permiso y pueden necesitar HTTPS. Las fotos adjuntas admiten PDF, JPG, PNG o WebP y un máximo de 10 MB.
+
+### Sincronizar con Firebase
+
+La sincronización requiere una cuenta de Firebase y conexión a Internet. En la consola de Firebase:
+
+1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/).
+2. En **Configuración del proyecto → General**, añade una aplicación web con el icono `</>` y copia sus valores de configuración.
+3. En **Authentication → Sign-in method**, activa **Correo electrónico/contraseña**.
+4. En **Firestore Database**, crea una base de datos y publica las reglas de `firestore.rules` desde la pestaña **Reglas**.
+5. En la raíz del proyecto, copia `.env.example` como `.env.local` y pega los valores de la aplicación web:
+
+```env
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+6. Reinicia Vite (`npm run dev`). Pulsa el icono de nube, crea una cuenta y usa el mismo correo y contraseña en los demás dispositivos.
+
+En el primer inicio de sesión se combinan los datos locales y los de la nube: se conservan los perfiles y movimientos únicos, y para IDs repetidos prevalece el dato que ya estaba en Firebase. Se sincronizan los perfiles, movimientos, categorías, metas y topes. Las facturas adjuntas se guardan solo en IndexedDB del dispositivo donde se añadieron; sus archivos no se suben a Firebase y no aparecen en otros dispositivos. Cada cuenta solo puede leer y modificar sus propios datos según las reglas incluidas en este proyecto. No publiques `.env.local`; las claves se mantienen fuera de Git por `.gitignore`.
 
 ### Aplicación nativa para iPhone
 
