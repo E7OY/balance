@@ -20,7 +20,6 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
     monthlyGoals,
     setMonthlyGoals,
     previousMonthGoals,
-    totalIncome,
     filters,
     isAmountsHidden,
     setIsAmountsHidden,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Filter, MoonStar, Plus, SunMedium } from 'lucide-react';
+import { Filter, MoonStar, Plus, SunMedium, X } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import SummaryCards from './components/SummaryCards';
 import TransactionForm from './components/TransactionForm';
@@ -9,6 +9,7 @@ import Filters from './components/Filters';
 import ExportImportButtons from './components/ExportImportButtons';
 import { Button } from './components/ui/button';
 import ProfileSwitcher from './components/ProfileSwitcher';
+import { getFromLocalStorage } from './utils/localStorage';
 import {
   claimDailyCheck,
   getPushNotificationsEnabled,
@@ -28,11 +29,13 @@ const App = () => {
     isAmountsHidden,
     setIsAmountsHidden,
     transactions,
+    profiles,
     activeProfileId,
   } = useFinance();
   const monthSwipeStart = useRef(null);
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [dismissedSpendingAlertKeys, setDismissedSpendingAlertKeys] = useState([]);
   const [openOverlays, setOpenOverlays] = useState({});
   const handleOverlayOpenChange = useCallback((overlay, isOpen) => {
     setOpenOverlays((previous) => (
@@ -210,6 +213,81 @@ const App = () => {
   const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(
     new Date(filters.year, filters.month, 1),
   );
+  const monthStorageKey = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
+  const spendingAlerts = profiles
+    .filter((profile) => profile.id !== activeProfileId)
+    .flatMap((profile) => {
+      const profileTransactions = getFromLocalStorage(`finance:${profile.id}:transactions`);
+      const profileCapsByMonth = getFromLocalStorage(`finance:${profile.id}:monthlyCategoryCaps`);
+      const profileTransactionsForMonth = (Array.isArray(profileTransactions) ? profileTransactions : [])
+        .filter((transaction) => transaction.date?.startsWith(monthStorageKey));
+      const profileIncome = profileTransactionsForMonth.reduce(
+        (sum, transaction) => sum + (transaction.type === 'Ingreso' ? Number(transaction.amount) || 0 : 0),
+        0,
+      );
+      const profileExpenses = profileTransactionsForMonth.reduce(
+        (sum, transaction) => sum + (transaction.type === 'Gasto' ? Number(transaction.amount) || 0 : 0),
+        0,
+      );
+      const expensesByCategory = profileTransactionsForMonth.reduce((totals, transaction) => {
+        if (transaction.type === 'Gasto') {
+          totals[transaction.category] = (totals[transaction.category] || 0) + (Number(transaction.amount) || 0);
+        }
+        return totals;
+      }, {});
+      const caps = profileCapsByMonth && typeof profileCapsByMonth === 'object'
+        ? profileCapsByMonth[monthStorageKey] || {}
+        : {};
+      const alerts = [];
+
+      if (profileIncome > 0 && profileExpenses >= profileIncome) {
+        alerts.push({
+          type: 'overspent',
+          message: profileExpenses > profileIncome
+            ? `🔥 ${profile.name} está gastando más de lo que ingresa. ¡Cartera en llamas!`
+            : `🔥 ${profile.name} ya ha gastado todo lo que ingresó este mes.`,
+          className: 'border-rose-300 bg-gradient-to-r from-rose-500 to-orange-500 text-white dark:border-rose-300/40 dark:from-rose-700 dark:to-orange-700',
+        });
+      }
+
+      Object.entries(caps).forEach(([category, cap]) => {
+        if ((expensesByCategory[category] || 0) <= Number(cap)) return;
+        alerts.push({
+          type: `cap-${category}`,
+          message: `🚨 ${profile.name} se ha pasado del tope de ${category}.`,
+          className: 'border-orange-300 bg-gradient-to-r from-orange-400 to-amber-400 text-orange-950 dark:border-orange-300/40 dark:from-orange-700 dark:to-amber-700 dark:text-white',
+        });
+      });
+
+      if (
+        profileIncome > 0
+        && profileExpenses < profileIncome
+        && profileExpenses >= profileIncome * 0.8
+      ) {
+        alerts.push({
+          type: 'warning',
+          message: `🔥 ${profile.name} está quemando la cartera: ya gastó el 80 % de sus ingresos.`,
+          className: 'border-amber-300 bg-gradient-to-r from-amber-300 to-yellow-300 text-amber-950 dark:border-amber-300/40 dark:from-amber-700 dark:to-yellow-700 dark:text-white',
+        });
+      }
+
+      if (profileIncome >= 1000 || (profileExpenses > 0 && profileIncome >= profileExpenses * 2)) {
+        alerts.push({
+          type: 'large-income',
+          message: `🎉 ¡${profile.name} va genial! Lleva ${new Intl.NumberFormat('es-ES', {
+            style: 'currency',
+            currency: 'EUR',
+            maximumFractionDigits: 0,
+          }).format(profileIncome)} de ingresos este mes.`,
+          className: 'border-emerald-300 bg-gradient-to-r from-emerald-400 to-teal-400 text-emerald-950 dark:border-emerald-300/40 dark:from-emerald-700 dark:to-teal-700 dark:text-white',
+        });
+      }
+
+      return alerts.map((alert) => ({
+        ...alert,
+        key: `${profile.id}-${filters.year}-${filters.month}-${alert.type}`,
+      }));
+    });
   const activeFilterCount = [
     filters.searchTerm.trim().length > 0,
     filters.type !== 'Todos',
@@ -264,13 +342,35 @@ const App = () => {
         onTouchCancel={() => { monthSwipeStart.current = null; }}
       >
         <div className="mb-4 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
               Balance
             </h1>
             <p className="mt-1 font-semibold text-2xl  capitalize text-neutral-400">
               {monthLabel} {filters.year}
             </p>
+            {spendingAlerts
+              .filter((alert) => !dismissedSpendingAlertKeys.includes(alert.key))
+              .map((alert) => (
+                <div
+                  key={alert.key}
+                  role="status"
+                  className={`mt-3 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm ${alert.className}`}
+                >
+                  <span>{alert.message}</span>
+                  <button
+                    type="button"
+                    onClick={() => setDismissedSpendingAlertKeys((previousKeys) => (
+                      previousKeys.includes(alert.key) ? previousKeys : [...previousKeys, alert.key]
+                    ))}
+                    aria-label={`Cerrar aviso de gastos de ${alert.message.split(' ')[1]}`}
+                    title="Cerrar aviso"
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-black/10 transition-colors hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+                  >
+                    <X size={17} />
+                  </button>
+                </div>
+              ))}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex w-full items-center justify-between gap-0.5 rounded-full bg-white p-1 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] dark:bg-slate-900 md:contents">
