@@ -58,3 +58,18 @@ Los movimientos y ajustes se guardan en el almacenamiento local del navegador; l
 La exportación JSON no incluye los perfiles ni los objetivos de ahorro, inversión y topes mensuales. Guarda esos ajustes por separado si necesitas recrearlos en otro dispositivo.
 
 La aplicación puede instalarse como PWA en navegadores compatibles. En producción, el service worker almacena la interfaz para poder abrirla tras una primera carga con conexión. Algunas funciones del navegador, como la cámara y las notificaciones, requieren permiso y pueden necesitar HTTPS. Las fotos adjuntas admiten PDF, JPG, PNG o WebP y un máximo de 10 MB.
+
+### Aplicación nativa para iPhone
+
+La integración nativa usa Capacitor y el plugin de hápticos para proporcionar vibración en iPhone. Safari como página web o PWA no ofrece esa API; en navegador la vibración solo funciona en dispositivos que admiten `navigator.vibrate`.
+
+El proyecto nativo ya está incluido en `ios/`. Para instalar las dependencias,
+sincronizar la aplicación y abrirla en Xcode, se necesita macOS:
+
+```bash
+npm install
+npm run ios:sync
+npm run ios:open
+```
+
+Después de cambiar la aplicación web, ejecuta `npm run ios:sync` para compilar y sincronizar los cambios con el proyecto iOS. `npm run ios:open` vuelve a abrir el proyecto en Xcode. La compilación, firma y ejecución en un iPhone requieren Xcode en macOS.

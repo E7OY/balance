@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ios:sync": "npm run build && cap sync ios",
+    "ios:open": "cap open ios"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.4.3",
     "@tailwindcss/postcss": "^4.3.3",
     "autoprefixer": "^10.6.1",
     "postcss": "^8.5.29",
@@ -17,6 +20,9 @@
     "vite": "^8.3.0"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.3",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.55.0",
     "react": "^19.3.0",

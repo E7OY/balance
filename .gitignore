@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+ios/App/App/public/
 
 # Editor directories and files
 .vscode/*
