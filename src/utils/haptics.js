@@ -1,7 +1,7 @@
 const hapticPatterns = {
-  tap: [10],
-  income: [8, 24, 14, 18, 22],
-  heavy: [55],
+  tap: [20],
+  income: [25, 35, 25, 35, 45],
+  heavy: [80],
 };
 
 export const triggerHaptic = (pattern = 'tap') => {

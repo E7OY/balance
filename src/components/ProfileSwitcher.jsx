@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, Eye, EyeOff, Plus, Users, X } from 'lucide-react';
+import { Bell, Eye, EyeOff, Plus, Users } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import useSwipeToClose from '../hooks/useSwipeToClose';
 import {
   getPushNotificationsEnabled,
   requestPushNotificationPermission,
@@ -39,6 +40,8 @@ const ProfileSwitcher = () => {
   );
   const [notificationError, setNotificationError] = useState('');
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
+  const addingDialogSwipeHandlers = useSwipeToClose(() => setIsAdding(false));
+  const goalsDialogSwipeHandlers = useSwipeToClose(() => setIsEditingGoals(false));
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -165,10 +168,10 @@ const ProfileSwitcher = () => {
       ? 'Denegado'
       : 'Pendiente';
   const permissionClass = notificationPermission === 'granted'
-    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
+    ? 'bg-emerald-100 text-emerald-800 dark:!bg-emerald-500/15 dark:text-emerald-300'
     : notificationPermission === 'denied'
-      ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300'
-      : 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300';
+      ? 'bg-rose-100 text-rose-800 dark:!bg-rose-500/15 dark:text-rose-300'
+      : 'bg-amber-100 text-amber-800 dark:!bg-amber-500/15 dark:text-amber-300';
 
   const toggleAmountVisibility = () => {
     setIsAmountsHidden((hidden) => !hidden);
@@ -243,15 +246,8 @@ const ProfileSwitcher = () => {
             aria-modal="true"
             aria-labelledby="new-profile-title"
             className="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            {...addingDialogSwipeHandlers}
           >
-            <button
-              type="button"
-              onClick={() => setIsAdding(false)}
-              aria-label="Cerrar"
-              className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              <X size={17} />
-            </button>
             <h2 id="new-profile-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">Crear perfil</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Cada perfil tendrá sus propios movimientos, categorías y facturas en este dispositivo.
@@ -301,15 +297,8 @@ const ProfileSwitcher = () => {
             aria-modal="true"
             aria-labelledby="profile-goals-title"
             className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            {...goalsDialogSwipeHandlers}
           >
-            <button
-              type="button"
-              onClick={() => setIsEditingGoals(false)}
-              aria-label="Cerrar"
-              className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              <X size={17} />
-            </button>
             <h2 id="profile-goals-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">
               Ajustes de Perfil y Metas
             </h2>
@@ -415,7 +404,11 @@ const ProfileSwitcher = () => {
                     onChange={handleNotificationsToggle}
                     className="peer sr-only"
                   />
-                  <span className="h-6 w-11 rounded-full bg-slate-300 transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-emerald-600 peer-checked:after:translate-x-5 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-60 dark:bg-slate-600" />
+                  <span
+                    data-preserve-colors
+                    className="h-6 w-11 rounded-full transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-60"
+                    style={{ backgroundColor: notificationsEnabled ? '#16a34a42' : '#dc262642' }}
+                  />
                 </label>
               </div>
               <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">

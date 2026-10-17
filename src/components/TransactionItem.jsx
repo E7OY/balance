@@ -25,9 +25,9 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
   const description = transaction.description?.trim();
 
   const handleDelete = async () => {
+    triggerHaptic('heavy');
     try {
       await deleteTransaction(transaction.id);
-      triggerHaptic('heavy');
     } catch (error) {
       setErrorMessage(`No se pudo eliminar el movimiento: ${error.message}`);
     }

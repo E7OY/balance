@@ -5,6 +5,7 @@ import { expenseCategories, incomeCategories } from '../utils/categories';
 import { getLocalDateString } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
 import { getPushNotificationsEnabled, showAppNotification } from '../utils/pushNotifications';
+import useSwipeToClose from '../hooks/useSwipeToClose';
 import { Button } from './ui/button';
 
 const MAX_INVOICE_SIZE = 10 * 1024 * 1024;
@@ -51,6 +52,10 @@ const TransactionForm = ({ transaction = null, onClose }) => {
   const categories = allCategories[type];
   const defaultCategories = type === 'Ingreso' ? incomeCategories : expenseCategories;
   const isCustomCategory = Boolean(category) && !defaultCategories.includes(category);
+  const swipeHandlers = useSwipeToClose(() => {
+    if (onClose) onClose();
+    else setIsModalOpen(false);
+  });
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -221,6 +226,8 @@ const TransactionForm = ({ transaction = null, onClose }) => {
       }
     }
 
+    if (!transaction) triggerHaptic(type === 'Ingreso' ? 'income' : 'heavy');
+
     try {
       const movement = {
         type,
@@ -263,7 +270,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
           }
         }
       }
-      triggerHaptic(type === 'Ingreso' ? 'income' : 'heavy');
+      if (transaction) triggerHaptic();
       setAmount('');
       setDescription('');
       setInvoiceFile(null);
@@ -285,16 +292,8 @@ const TransactionForm = ({ transaction = null, onClose }) => {
         aria-modal="true"
         aria-labelledby="transaction-title"
         className="relative my-auto max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:p-8"
+        {...swipeHandlers}
       >
-        <button
-          type="button"
-          onClick={closeForm}
-          aria-label="Cerrar"
-          className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-50"
-        >
-          <X size={17} />
-        </button>
-
         <div className="mb-6">
           <h2 id="transaction-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">
             {transaction ? 'Editar movimiento' : 'Añadir movimiento'}

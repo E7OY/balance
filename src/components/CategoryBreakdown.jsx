@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { CircleHelp, PieChart, SlidersHorizontal, X } from 'lucide-react';
+import { CircleHelp, PieChart, SlidersHorizontal } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
+import useSwipeToClose from '../hooks/useSwipeToClose';
 import { Card } from './ui/card';
 
 const chartColors = [
@@ -33,6 +34,7 @@ const CategoryBreakdown = () => {
   const [isEditingCaps, setIsEditingCaps] = useState(false);
   const [copyPreviousCaps, setCopyPreviousCaps] = useState(false);
   const capsSnapshot = useRef(null);
+  const capsDialogSwipeHandlers = useSwipeToClose(() => setIsEditingCaps(false));
   const categoriesToShow = [...new Set([
     ...expenseBreakdown.map((item) => item.category),
     ...Object.keys(monthlyCategoryCaps),
@@ -232,15 +234,8 @@ const CategoryBreakdown = () => {
           aria-modal="true"
           aria-labelledby="monthly-category-caps-title"
           className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:p-6"
+          {...capsDialogSwipeHandlers}
         >
-          <button
-            type="button"
-            onClick={() => setIsEditingCaps(false)}
-            aria-label="Cerrar"
-            className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <X size={17} />
-          </button>
           <h2 id="monthly-category-caps-title" className="pr-9 text-lg font-semibold text-slate-950 dark:text-slate-50">
             Topes mensuales
           </h2>

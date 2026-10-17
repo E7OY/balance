@@ -59,7 +59,7 @@ const ExportImportButtons = () => {
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={isWorking}
-        className="inline-flex h-9 shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] items-center justify-center gap-2 rounded-md bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+        className="inline-flex h-9 shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] items-center justify-center gap-2 rounded-lg bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
       >
         <Upload size={15} />
         Importar copia
@@ -67,7 +67,7 @@ const ExportImportButtons = () => {
       <details ref={exportMenuRef} className="relative">
         <summary
           aria-disabled={isWorking}
-          className={`inline-flex h-9 cursor-pointer list-none shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] items-center justify-center gap-2 rounded-md  bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100 ${isWorking ? 'pointer-events-none opacity-50' : ''}`}
+          className={`inline-flex h-9 cursor-pointer list-none shadow-[0_5px_15px_rgba(40,50,45,0.07),0_1px_4px_rgba(40,50,45,0.03)] items-center justify-center gap-2 rounded-lg  bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100 ${isWorking ? 'pointer-events-none opacity-50' : ''}`}
         >
           <Download size={15} />
           Exportar datos

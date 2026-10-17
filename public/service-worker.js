@@ -1,5 +1,5 @@
 const CACHE_NAME = 'balance-pwa-v2';
-const APP_SHELL = ['/manifest.webmanifest', '/pwa-icon.svg'];
+const APP_SHELL = ['/manifest.webmanifest', '/favicon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -94,8 +94,8 @@ self.addEventListener('push', (event) => {
       : {};
     await self.registration.showNotification(payload.title || 'Balance', {
       body: payload.body || 'Tienes una actualización financiera.',
-      icon: payload.icon || '/pwa-icon.svg',
-      badge: payload.badge || '/pwa-icon.svg',
+      icon: payload.icon || 'favicon.svg',
+      badge: payload.badge || '/favicon.svg',
       tag: payload.tag || 'balance-push',
       data: {
         url: notificationData.url || payload.url || '/',

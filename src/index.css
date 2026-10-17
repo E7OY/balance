@@ -37,6 +37,10 @@ body {
   color: #171717;
 }
 
+.app-shell:has([role="dialog"]) > button[aria-label="Añadir movimiento"] {
+  display: none;
+}
+
 .app-shell h1,
 .app-shell h2,
 .app-shell h3 {
@@ -93,7 +97,7 @@ body {
   [class*="text-violet-"],
   [class*="text-green-"],
   [class*="text-orange-"]
-):not([data-color-icon]) {
+):not([data-color-icon]):not([data-preserve-colors]) {
   color: #525252 !important;
 }
 
@@ -108,7 +112,7 @@ body {
   [class*="bg-violet-"],
   [class*="bg-green-"],
   [class*="bg-orange-"]
-):not([data-color-icon]) {
+):not([data-color-icon]):not([data-preserve-colors]) {
   background-color: #e5e5e5 !important;
 }
 
@@ -184,7 +188,7 @@ html.dark .app-shell [class~="dark:border-slate-600"] {
 }
 
 html.dark .app-shell .rounded-3xl {
-  border-color: rgba(64, 64, 64, 0.8);
+  border: 0;
   background-color: rgba(23, 23, 23, 0.96);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
 }
@@ -213,7 +217,7 @@ html.dark .app-shell :is(
   [class*="text-violet-"],
   [class*="text-green-"],
   [class*="text-orange-"]
-):not([data-color-icon]) {
+):not([data-color-icon]):not([data-preserve-colors]) {
   color: #d4d4d4 !important;
 }
 
@@ -228,7 +232,7 @@ html.dark .app-shell :is(
   [class*="bg-violet-"],
   [class*="bg-green-"],
   [class*="bg-orange-"]
-):not([data-color-icon]) {
+):not([data-color-icon]):not([data-preserve-colors]) {
   background-color: #404040 !important;
 }
 

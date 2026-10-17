@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 
 const monthNames = Array.from({ length: 12 }, (_, month) =>
@@ -8,6 +8,7 @@ const monthNames = Array.from({ length: 12 }, (_, month) =>
 
 const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters }) => {
   const { filters, setFilters, allCategories, transactions } = useFinance();
+  const touchStart = useRef(null);
   const availableYears = useMemo(() => {
     const years = transactions.map((transaction) => Number(transaction.date.slice(0, 4)));
     return [...new Set([filters.year, ...years])].sort((a, b) => b - a);
@@ -36,6 +37,36 @@ const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters }) => {
     : filters.type === 'Gasto'
       ? allCategories.Gasto
       : allCategories.Todas;
+
+  useEffect(() => {
+    if (!isMobileFiltersOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onCloseMobileFilters();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileFiltersOpen, onCloseMobileFilters]);
+
+  const handleTouchStart = (event) => {
+    if (event.touches.length !== 1 || event.currentTarget.scrollTop > 0) {
+      touchStart.current = null;
+      return;
+    }
+    const touch = event.touches[0];
+    touchStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || event.changedTouches.length !== 1) return;
+
+    const touch = event.changedTouches[0];
+    if (touch.clientY - start.y > 80 && Math.abs(touch.clientX - start.x) < 60) {
+      onCloseMobileFilters();
+    }
+  };
+
   return (
     <>
     {isMobileFiltersOpen && (
@@ -52,19 +83,12 @@ const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters }) => {
       aria-label="Seleccionar mes y filtrar movimientos"
       className={`${isMobileFiltersOpen ? 'fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[61] flex max-h-[min(75dvh,34rem)] overflow-y-auto rounded-t-3xl rounded-b-2xl border border-neutral-200/70 bg-white p-4 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 md:static md:max-h-none md:overflow-visible md:rounded-xl md:border-0 md:p-3 md:shadow-none' : 'hidden'} flex-col gap-2 transition-colors dark:text-white sm:gap-3 md:flex md:flex-row md:items-center md:justify-between`}
       onClick={(event) => event.stopPropagation()}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => { touchStart.current = null; }}
     >
-      <div className="mb-1 flex items-center justify-between md:hidden">
-        <div className="flex flex-1 flex-col items-center">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Filtros</h2>
-        </div>
-        <button
-          type="button"
-          onClick={onCloseMobileFilters}
-          aria-label="Cerrar filtros"
-          className="absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 transition-transform duration-100 ease-out active:scale-[0.97] dark:bg-neutral-800 dark:text-neutral-300"
-        >
-          <X size={18} />
-        </button>
+      <div className="mb-1 flex items-center justify-center md:hidden">
+        <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Filtros</h2>
       </div>
       <div className="hidden items-center gap-1 md:flex md:gap-2">
         <button

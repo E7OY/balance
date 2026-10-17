@@ -46,8 +46,8 @@ export const showAppNotification = async ({ title, body, tag, url = '/', action 
 
   const options = {
     body,
-    icon: '/pwa-icon.svg',
-    badge: '/pwa-icon.svg',
+    icon: '/favicon.svg',
+    badge: '/favicon.svg',
     tag,
     data: { url, action },
   };

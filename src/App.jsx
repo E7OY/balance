@@ -308,15 +308,18 @@ const App = () => {
           </div>
         </div>
 
-        <Filters isMobileFiltersOpen={isMobileFiltersOpen} />
+        <Filters
+          isMobileFiltersOpen={isMobileFiltersOpen}
+          onCloseMobileFilters={setIsMobileFiltersOpen}
+        />
         <SummaryCards />
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
           <TransactionList />
           <CategoryBreakdown />
         </div>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <ExportImportButtons />
         </div>
       </main>
