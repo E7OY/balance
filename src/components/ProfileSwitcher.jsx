@@ -10,7 +10,7 @@ import {
 import { triggerHaptic } from '../utils/haptics';
 import { Button } from './ui/button';
 
-const ProfileSwitcher = () => {
+const ProfileSwitcher = ({ onOverlayOpenChange }) => {
   const {
     profiles,
     activeProfile,
@@ -42,6 +42,11 @@ const ProfileSwitcher = () => {
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
   const addingDialogSwipeHandlers = useSwipeToClose(() => setIsAdding(false));
   const goalsDialogSwipeHandlers = useSwipeToClose(() => setIsEditingGoals(false));
+
+  useEffect(() => {
+    onOverlayOpenChange('profile', isAdding || isEditingGoals);
+    return () => onOverlayOpenChange('profile', false);
+  }, [isAdding, isEditingGoals, onOverlayOpenChange]);
 
   const handleSubmit = (event) => {
     event.preventDefault();

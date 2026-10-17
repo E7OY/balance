@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Filter, MoonStar, Plus, SunMedium } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import SummaryCards from './components/SummaryCards';
@@ -33,6 +33,12 @@ const App = () => {
   const monthSwipeStart = useRef(null);
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [openOverlays, setOpenOverlays] = useState({});
+  const handleOverlayOpenChange = useCallback((overlay, isOpen) => {
+    setOpenOverlays((previous) => (
+      previous[overlay] === isOpen ? previous : { ...previous, [overlay]: isOpen }
+    ));
+  }, []);
   const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('balance-theme');
     if (storedTheme) return storedTheme;
@@ -293,7 +299,7 @@ const App = () => {
                   </span>
                 )}
               </button>
-              <ProfileSwitcher />
+              <ProfileSwitcher onOverlayOpenChange={handleOverlayOpenChange} />
             </div>
             <div className="hidden lg:block">
               <Button
@@ -316,7 +322,7 @@ const App = () => {
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
           <TransactionList />
-          <CategoryBreakdown />
+          <CategoryBreakdown onOverlayOpenChange={handleOverlayOpenChange} />
         </div>
 
         <div className="mt-4 flex justify-end">
@@ -324,7 +330,10 @@ const App = () => {
         </div>
       </main>
 
-      {!isModalOpen && !editingTransaction && (
+      {!isModalOpen
+        && !editingTransaction
+        && !isMobileFiltersOpen
+        && !Object.values(openOverlays).some(Boolean) && (
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}

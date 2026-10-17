@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CircleHelp, PieChart, SlidersHorizontal } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
@@ -18,7 +18,7 @@ const chartColors = [
   '#f97316',
 ];
 
-const CategoryBreakdown = () => {
+const CategoryBreakdown = ({ onOverlayOpenChange }) => {
   const {
     expenseBreakdown,
     totalExpenses,
@@ -35,6 +35,10 @@ const CategoryBreakdown = () => {
   const [copyPreviousCaps, setCopyPreviousCaps] = useState(false);
   const capsSnapshot = useRef(null);
   const capsDialogSwipeHandlers = useSwipeToClose(() => setIsEditingCaps(false));
+  useEffect(() => {
+    onOverlayOpenChange('caps', isEditingCaps);
+    return () => onOverlayOpenChange('caps', false);
+  }, [isEditingCaps, onOverlayOpenChange]);
   const categoriesToShow = [...new Set([
     ...expenseBreakdown.map((item) => item.category),
     ...Object.keys(monthlyCategoryCaps),

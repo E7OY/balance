@@ -37,10 +37,6 @@ body {
   color: #171717;
 }
 
-.app-shell:has([role="dialog"]) > button[aria-label="Añadir movimiento"] {
-  display: none;
-}
-
 .app-shell h1,
 .app-shell h2,
 .app-shell h3 {
