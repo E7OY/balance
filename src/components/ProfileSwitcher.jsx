@@ -292,15 +292,15 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
           ? `${syncUser.email || 'Cuenta conectada'} · ${syncStatusLabel}`
           : 'Iniciar sesión para sincronizar'}
         className={`absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] z-40 inline-flex min-h-10 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-slate-900 dark:text-slate-100 dark:ring-black dark:hover:bg-slate-800 ${
-          syncUser ? 'size-10' : 'px-4'
+          syncUser ? 'size-12' : 'px-4'
         }`}
       >
         {syncUser ? (
-          <span className="relative inline-flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-300 text-md font-bold uppercase text-slate-700 dark:from-slate-700 dark:to-slate-800 dark:text-slate-100">
+          <span className="relative inline-flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-300 text-md font-bold uppercase text-slate-700 dark:from-slate-700 dark:to-slate-800 dark:text-slate-100">
             {(syncUser.email?.trim().charAt(0) || '?').toLocaleUpperCase()}
             <span
               aria-hidden="true"
-              className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white dark:border-slate-900 ${
+              className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-white dark:border-slate-900 ${
                 indicatorStatus === 'synced'
                   ? 'bg-emerald-500'
                   : indicatorStatus === 'error'
