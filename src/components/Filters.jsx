@@ -62,7 +62,9 @@ const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters }) => {
     if (!start || event.changedTouches.length !== 1) return;
 
     const touch = event.changedTouches[0];
-    if (touch.clientY - start.y > 80 && Math.abs(touch.clientX - start.x) < 60) {
+    const deltaY = touch.clientY - start.y;
+    const deltaX = Math.abs(touch.clientX - start.x);
+    if (deltaY > 60 && deltaY > deltaX * 1.2) {
       onCloseMobileFilters();
     }
   };
@@ -81,7 +83,7 @@ const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters }) => {
       role={isMobileFiltersOpen ? 'dialog' : undefined}
       aria-modal={isMobileFiltersOpen ? true : undefined}
       aria-label="Seleccionar mes y filtrar movimientos"
-      className={`${isMobileFiltersOpen ? 'fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[61] flex max-h-[min(75dvh,34rem)] overflow-y-auto rounded-t-3xl rounded-b-2xl border border-neutral-200/70 bg-white p-4 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 md:static md:max-h-none md:overflow-visible md:rounded-xl md:border-0 md:p-3 md:shadow-none' : 'hidden'} flex-col gap-2 transition-colors dark:text-white sm:gap-3 md:flex md:flex-row md:items-center md:justify-between`}
+      className={`${isMobileFiltersOpen ? 'fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[61] flex max-h-[min(75dvh,34rem)] overflow-y-auto overscroll-contain rounded-t-3xl rounded-b-2xl border border-neutral-200/70 bg-white p-4 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 md:static md:max-h-none md:overflow-visible md:rounded-xl md:border-0 md:p-3 md:shadow-none' : 'hidden'} flex-col gap-2 transition-colors dark:text-white sm:gap-3 md:flex md:flex-row md:items-center md:justify-between`}
       onClick={(event) => event.stopPropagation()}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}

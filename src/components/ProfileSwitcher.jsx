@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, Eye, EyeOff, LogOut, Plus, Users } from 'lucide-react';
+import { Bell, Eye, EyeOff, LogOut, Plus, Trash2, Users } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import useSwipeToClose from '../hooks/useSwipeToClose';
 import {
@@ -17,9 +17,11 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
     activeProfile,
     switchProfile,
     addProfile,
+    deleteActiveProfile,
     monthlyGoals,
     setMonthlyGoals,
     previousMonthGoals,
+    totalIncome,
     filters,
     isAmountsHidden,
     setIsAmountsHidden,
@@ -36,6 +38,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
   const motionPermissionRequested = useRef(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingGoals, setIsEditingGoals] = useState(false);
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false);
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
   const [isCreatingSyncAccount, setIsCreatingSyncAccount] = useState(false);
   const [syncEmail, setSyncEmail] = useState('');
@@ -108,6 +111,24 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
       setIsEditingGoals(false);
     } catch (error) {
       setErrorMessage(error.message);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    const confirmed = window.confirm(
+      `¿Eliminar el perfil "${activeProfile.name}"? Se borrarán permanentemente sus movimientos, metas y datos sincronizados. Esta acción no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+
+    setIsDeletingProfile(true);
+    setErrorMessage('');
+    try {
+      await deleteActiveProfile();
+      setIsEditingGoals(false);
+    } catch (error) {
+      setErrorMessage(error.message || 'No se pudo eliminar el perfil.');
+    } finally {
+      setIsDeletingProfile(false);
     }
   };
 
@@ -458,10 +479,15 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
                 </p>
               )}
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsEditingGoals(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isDeletingProfile}
+                  onClick={() => setIsEditingGoals(false)}
+                >
                   Cancelar
                 </Button>
-                <Button type="submit">Guardar metas</Button>
+                <Button type="submit" disabled={isDeletingProfile}>Guardar metas</Button>
               </div>
             </form>
             <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-700">
@@ -504,6 +530,23 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
               {notificationError && (
                 <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">
                   {notificationError}
+                </p>
+              )}
+            </div>
+            <div className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-700">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={profiles.length <= 1 || isDeletingProfile || (syncUser && syncStatus !== 'synced')}
+                onClick={handleDeleteProfile}
+                className="text-rose-700 hover:text-rose-800 dark:text-rose-300"
+              >
+                <Trash2 size={16} />
+                Eliminar perfil
+              </Button>
+              {profiles.length <= 1 && (
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  No se puede eliminar el único perfil que queda.
                 </p>
               )}
             </div>

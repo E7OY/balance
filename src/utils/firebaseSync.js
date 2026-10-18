@@ -205,6 +205,16 @@ export const saveProfileToCloud = (uid, profile, data) =>
     data: profileMetadata(profile, data),
   }]);
 
+export const deleteProfileFromCloud = async (uid, profileId) => {
+  const transactions = await getDocs(userTransactions(uid, profileId));
+  const writes = transactions.docs.map((transaction) => ({
+    reference: transaction.ref,
+    remove: true,
+  }));
+  writes.push({ reference: userProfile(uid, profileId), remove: true });
+  await saveInBatches(writes);
+};
+
 export const saveTransactionsToCloud = async (uid, profileId, transactions) => {
   const current = await getDocs(userTransactions(uid, profileId));
   const currentIds = new Set(current.docs.map((item) => item.id));

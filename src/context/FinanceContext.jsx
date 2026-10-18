@@ -5,7 +5,11 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
+import {
+  getFromLocalStorage,
+  removeFromLocalStorage,
+  saveToLocalStorage,
+} from '../utils/localStorage';
 import { incomeCategories, expenseCategories } from '../utils/categories';
 import { getMonthYear } from '../utils/helpers';
 import { deleteInvoice, getInvoice, saveInvoice } from '../utils/invoiceStorage';
@@ -14,6 +18,7 @@ import { getFirebaseErrorMessage } from '../utils/firebaseErrors';
 import {
   deleteTransactionFromCloud,
   deleteTransactionsFromCloud,
+  deleteProfileFromCloud,
   initializeAccountSync,
   loadCloudProfileLocally,
   saveProfileToCloud,
@@ -457,6 +462,34 @@ export const FinanceProvider = ({ children }) => {
       }));
     }
     return newProfile;
+  };
+
+  const deleteActiveProfile = async () => {
+    if (profiles.length <= 1) {
+      throw new Error('No puedes eliminar el único perfil que queda.');
+    }
+    if (syncUser && syncStatus !== 'synced') {
+      throw new Error('Espera a que termine la sincronización antes de eliminar este perfil.');
+    }
+
+    const profileId = activeProfileId;
+    const remainingProfiles = profiles.filter((profile) => profile.id !== profileId);
+    const nextProfile = remainingProfiles[0];
+    if (!nextProfile) throw new Error('No se encontró otro perfil al que cambiar.');
+
+    if (syncUser) {
+      await deleteProfileFromCloud(syncUser.uid, profileId);
+    }
+
+    await Promise.all(transactions
+      .filter((transaction) => transaction.invoice)
+      .map((transaction) => deleteInvoice(transaction.id, profileId)));
+
+    switchProfile(nextProfile.id);
+    setProfiles(remainingProfiles);
+    ['transactions', 'customCategories', 'monthlyGoals', 'monthlyCategoryCaps'].forEach((key) => {
+      removeFromLocalStorage(profileStorageKey(profileId, key));
+    });
   };
 
   const addCategory = (type, name) => {
@@ -906,6 +939,7 @@ export const FinanceProvider = ({ children }) => {
         isAmountsHidden,
         setIsAmountsHidden,
         addProfile,
+        deleteActiveProfile,
         switchProfile,
         addTransaction,
         splitTransaction,

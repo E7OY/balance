@@ -15,3 +15,11 @@ export const getFromLocalStorage = (key) => {
     return null;
   }
 };
+
+export const removeFromLocalStorage = (key) => {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.error('Error removing from localStorage', error);
+  }
+};
