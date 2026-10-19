@@ -144,7 +144,7 @@ const TransactionList = () => {
               type="button"
               aria-expanded={showAllTransactions}
               onClick={() => setShowAllTransactions((showAll) => !showAll)}
-              className="flex min-h-11 w-full items-center justify-center gap-1.5 border-t border-slate-100 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 dark:border-slate-700 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+              className="flex min-h-11 w-full items-center justify-center gap-1.5 border-t border-slate-100 px-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 dark:border-slate-700 dark:text-emerald-400 !bg-white dark:!bg-slate-900/10 dark:hover:bg-emerald-500/10"
             >
               {showAllTransactions
                 ? <>Mostrar menos <ChevronUp size={16} aria-hidden="true" /></>
