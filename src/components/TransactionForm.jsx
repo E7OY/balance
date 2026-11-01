@@ -359,7 +359,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="transaction-title"
-        className="relative my-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-slate-200 bg-slate-50 p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:max-h-[calc(100vh-2rem)] sm:rounded-2xl sm:p-8"
+        className="relative my-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] bg-slate-50 p-5 shadow-xl dark:bg-slate-900 sm:max-h-[calc(100vh-2rem)] sm:rounded-2xl sm:p-8"
         {...swipeHandlers}
       >
         <div className="relative mb-5 flex min-h-10 items-center justify-center">

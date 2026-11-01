@@ -383,17 +383,17 @@ const InvestmentsOverview = () => {
                   : 'El valor de la cartera se calculará automáticamente con la cotización del activo.'}
             </p>
           </div>
-          <label>
+          <label className="block min-w-0">
             <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-300">Fecha de registro</span>
             <input
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
               required
-              className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700"
+              className="box-border block h-11 min-w-0 w-full max-w-full rounded-xl border border-zinc-200 bg-white px-3 text-base text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700 sm:text-sm"
             />
           </label>
-          <label>
+          <label className="block min-w-0">
             <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-300">Capital aportado (€)</span>
             <input
               type="number"
@@ -402,7 +402,7 @@ const InvestmentsOverview = () => {
               value={investedAmount}
               onChange={(event) => setInvestedAmount(event.target.value)}
               required
-              className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700"
+              className="box-border block h-11 min-w-0 w-full max-w-full rounded-xl border border-zinc-200 bg-white px-3 text-base text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700 sm:text-sm"
             />
           </label>
           <div className="sm:col-span-2 lg:col-span-4">
