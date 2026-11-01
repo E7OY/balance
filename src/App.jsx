@@ -335,7 +335,7 @@ const App = () => {
 
   return (
     <div
-      className="app-shell min-h-screen bg-white text-zinc-950 transition-colors dark:bg-black dark:text-white pb-10"
+      className="app-shell min-h-screen bg-white text-zinc-950 transition-colors dark:bg-black dark:text-white pb-10 mx-6"
       data-amounts-hidden={isAmountsHidden}
     >
       <main
@@ -412,7 +412,7 @@ const App = () => {
       {!isModalOpen
         && !editingTransaction
         && !isMobileFiltersOpen
-        && !Object.values(openOverlays).some(Boolean) && (
+        && !Object.entries(openOverlays).some(([overlay, isOpen]) => overlay !== 'profile' && isOpen) && (
         <nav
           aria-label="Menú principal"
           className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:px-6"

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Bell,
   Eye,
@@ -633,9 +634,10 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
         </div>
       )}
 
-      {isSyncPanelOpen && (
+      {isSyncPanelOpen && createPortal(
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
+          data-sync-account-backdrop
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setIsSyncPanelOpen(false);
           }}
@@ -644,6 +646,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
             role="dialog"
             aria-modal="true"
             aria-labelledby="sync-account-title"
+            data-sync-account-dialog
             className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
             {...syncDialogSwipeHandlers}
           >
@@ -743,7 +746,8 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
               </form>
             )}
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

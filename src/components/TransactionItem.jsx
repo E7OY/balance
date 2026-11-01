@@ -234,10 +234,10 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
         >
         <div className={`flex items-center ${isList ? 'gap-3 sm:gap-4' : 'items-start gap-2.5 sm:gap-3'}`}>
           <span
-            data-color-icon={isList ? undefined : isExpense ? 'expense' : 'income'}
+            data-color-icon={isExpense ? 'expense' : 'income'}
             className={`flex shrink-0 items-center justify-center rounded-full ${
               isList
-                ? 'size-10 bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 sm:size-11'
+                ? `size-10 sm:size-11 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`
                 : `mt-0.5 size-7 sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`
             }`}
           >

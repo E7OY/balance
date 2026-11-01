@@ -529,6 +529,10 @@ export const FinanceProvider = ({ children }) => {
         units: quantity,
         currentPrice: price,
         lastPriceUpdated,
+        priceHistory: [{
+          timestamp: lastPriceUpdated || new Date().toISOString(),
+          price,
+        }],
       }),
     };
     setInvestmentRecords((previousRecords) => [record, ...previousRecords]);
@@ -555,7 +559,23 @@ export const FinanceProvider = ({ children }) => {
     }
     setInvestmentRecords((previousRecords) => previousRecords.map((record) => (
       record.id === recordId
-        ? { ...record, ...updates, name: normalizedName, date: nextDate, investedAmount: invested, currentValue: current }
+        ? {
+          ...record,
+          ...updates,
+          ...(updates.asset && {
+            priceHistory: record.asset?.provider === updates.asset.provider
+              && record.asset?.id === updates.asset.id
+              ? record.priceHistory || []
+              : [{
+                timestamp: updates.lastPriceUpdated || new Date().toISOString(),
+                price: Number(updates.currentPrice),
+              }],
+          }),
+          name: normalizedName,
+          date: nextDate,
+          investedAmount: invested,
+          currentValue: current,
+        }
         : record
     )));
   };
@@ -567,12 +587,22 @@ export const FinanceProvider = ({ children }) => {
     }
     setInvestmentRecords((previousRecords) => previousRecords.map((record) => {
       if (record.id !== recordId || !Number.isFinite(Number(record.units))) return record;
+      const timestamp = Number.isFinite(Date.parse(quote.updatedAt))
+        ? new Date(quote.updatedAt).toISOString()
+        : new Date().toISOString();
+      const priceHistory = Array.isArray(record.priceHistory) ? record.priceHistory : [];
+      const lastPoint = priceHistory[priceHistory.length - 1];
+      const nextPoint = { timestamp, price };
+      const nextHistory = lastPoint?.timestamp === timestamp
+        ? [...priceHistory.slice(0, -1), nextPoint]
+        : [...priceHistory, nextPoint].slice(-2000);
       return {
         ...record,
         asset: quote.image ? { ...record.asset, image: quote.image } : record.asset,
         currentPrice: price,
         currentValue: Number((price * Number(record.units)).toFixed(2)),
-        lastPriceUpdated: quote.updatedAt,
+        lastPriceUpdated: timestamp,
+        priceHistory: nextHistory,
       };
     }));
   }, []);

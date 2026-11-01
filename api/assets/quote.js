@@ -43,9 +43,7 @@ export default async function handler(request, response) {
       image: typeof profile.logo === 'string' && profile.logo.startsWith('https://')
         ? profile.logo
         : '',
-      updatedAt: Number.isFinite(Number(quote.t)) && Number(quote.t) > 0
-        ? new Date(Number(quote.t) * 1000).toISOString()
-        : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error(`No se pudo obtener la cotización de ${symbol}.`, error);

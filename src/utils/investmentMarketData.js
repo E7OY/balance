@@ -110,6 +110,46 @@ export const getInvestmentQuote = async (asset, signal) => {
   throw new Error('No se reconoce el proveedor de este activo.');
 };
 
+export const getInvestmentHistory = async (asset, period, signal) => {
+  if (asset.provider === 'coingecko') {
+    const daysByPeriod = {
+      LIVE: '1',
+      '1D': '1',
+      '1S': '7',
+      '1M': '30',
+      '1A': '365',
+      TODO: 'max',
+    };
+    const days = daysByPeriod[period];
+    if (!days) throw new Error('No se reconoce el periodo del gráfico.');
+    const url = new URL(`${COINGECKO_BASE_URL}/coins/${encodeURIComponent(asset.id)}/market_chart`);
+    url.searchParams.set('vs_currency', 'eur');
+    url.searchParams.set('days', days);
+    const response = await fetch(url, { signal });
+    const data = await readJson(response, 'No se pudo consultar el histórico de la criptomoneda.');
+    return (Array.isArray(data.prices) ? data.prices : []).flatMap(([timestamp, value]) => {
+      const price = Number(value);
+      return Number.isFinite(Number(timestamp)) && Number.isFinite(price) && price > 0
+        ? [{ timestamp: new Date(Number(timestamp)).toISOString(), price }]
+        : [];
+    });
+  }
+
+  if (asset.provider === 'finnhub') {
+    const url = new URL('/api/assets/history', window.location.origin);
+    url.searchParams.set('symbol', asset.id);
+    url.searchParams.set('period', period);
+    const response = await fetch(url, { signal });
+    const data = await readJson(response, 'No se pudo consultar el histórico del activo.');
+    if (!Array.isArray(data.points)) {
+      throw new Error('El proveedor devolvió un histórico no válido.');
+    }
+    return data.points;
+  }
+
+  throw new Error('No se reconoce el proveedor de este activo.');
+};
+
 export const getInvestmentQuotes = async (assets) => {
   const quotes = new Map();
   const failures = [];

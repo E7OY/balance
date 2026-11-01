@@ -465,11 +465,11 @@ const TransactionForm = ({ transaction = null, onClose }) => {
                 autoFocus
                 required
                 aria-label={isInvestment ? 'Capital aportado' : 'Importe'}
-                className="h-24 w-full border-0 bg-transparent px-3 pr-12 text-center text-6xl font-semibold tabular-nums text-slate-900 outline-none placeholder:text-slate-300 focus:ring-0 dark:text-slate-100 dark:placeholder:text-slate-600"
+                className="h-24 w-full border-0 bg-transparent px-3 pr-12 text-center text-6xl font-semibold tabular-nums text-black outline-none placeholder:text-black focus:ring-0 dark:text-white dark:placeholder:text-white"
               />
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-3xl font-medium text-slate-500 dark:text-slate-400">€</span>
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-3xl font-medium text-black dark:text-white">€</span>
             </div>
-            <p className="mt-1 text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-center text-sm text-black dark:text-white">
               {isInvestment ? 'Capital aportado' : type === 'Ingreso' ? 'Importe del ingreso' : 'Importe del gasto'}
             </p>
           </div>

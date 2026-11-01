@@ -98,9 +98,6 @@ const CategoryBreakdown = ({ onOverlayOpenChange }) => {
             <SlidersHorizontal size={15} aria-hidden="true" />
             Topes
           </button>
-          <span data-color-icon="chart" className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-            <PieChart size={18} />
-          </span>
         </div>
       </div>
 

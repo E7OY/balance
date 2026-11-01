@@ -152,8 +152,8 @@ const MovementsView = ({ isMobileFiltersOpen, onMobileFiltersOpenChange }) => {
             </div>
           </Card>
 
-          <Card as="section" aria-labelledby="selected-day-title" className="overflow-hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+          <Card as="section" data-phantom-surface aria-labelledby="selected-day-title" className="overflow-hidden">
+            <div className="flex items-center justify-between gap-3 px-1 py-4">
               <div>
                 <h3 id="selected-day-title" className="text-base font-semibold text-slate-900 dark:text-slate-100">
                   {selectedDate ? formatDate(selectedDate) : 'Movimientos del día'}
@@ -165,9 +165,9 @@ const MovementsView = ({ isMobileFiltersOpen, onMobileFiltersOpenChange }) => {
               </div>
             </div>
             {selectedTransactions.length > 0 ? (
-              <div className="space-y-1.5 p-2 sm:p-3">
+              <div className="px-1">
                 {selectedTransactions.map((transaction) => (
-                  <TransactionItem key={transaction.id} transaction={transaction} layout="card" />
+                  <TransactionItem key={transaction.id} transaction={transaction} layout="list" />
                 ))}
               </div>
             ) : (
