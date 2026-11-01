@@ -302,7 +302,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
             ? 'flex min-h-12 w-full min-w-0 items-center justify-center rounded-2xl px-1 py-2.5 text-slate-500 transition-colors hover:bg-slate-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-400 dark:hover:bg-white/10'
             : 'flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15'}
         >
-          <UserRound size={22} aria-hidden="true" />
+          <UserRound size={24} aria-hidden="true" />
           {placement === 'navigation' && <span className="sr-only">Cuenta</span>}
         </button>
         {isSettingsOpen && (

@@ -415,9 +415,9 @@ const App = () => {
         && !Object.entries(openOverlays).some(([overlay, isOpen]) => overlay !== 'profile' && isOpen) && (
         <nav
           aria-label="Menú principal"
-          className="fixed inset-x-0 bottom-2 z-30 px-6 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:px-6"
+          className="fixed inset-x-10 bottom-2 z-30 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:inset-x-6"
         >
-          <div className="mx-auto flex max-w-2xl items-center justify-between gap-0.5 rounded-[1.75rem] bg-white/80 p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-zinc-900/80 dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
+          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-0.5 rounded-[1.75rem] bg-white/80 p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-zinc-900/80 dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
             {[
               { id: 'home', label: 'Inicio', Icon: House },
               { id: 'transactions', label: 'Movimientos', Icon: ReceiptText },
@@ -433,7 +433,7 @@ const App = () => {
                 aria-current={activeTab === id ? 'page' : undefined}
               className={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
             >
-              <Icon size={22} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
+              <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
               </button>
             ))}
             <button
@@ -441,9 +441,9 @@ const App = () => {
               onClick={() => setIsModalOpen(true)}
               aria-label="Añadir movimiento"
               title="Añadir movimiento"
-              className="inline-flex !size-12 shrink-0 !items-center !justify-center !rounded-full !bg-emerald-700 p-0 text-white shadow-md transition-colors hover:!bg-emerald-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 dark:!bg-emerald-600 dark:hover:!bg-emerald-500"
+              className="inline-flex !size-[3.25rem] shrink-0 !items-center !justify-center !rounded-full !bg-emerald-700 p-0 text-white shadow-md transition-colors hover:!bg-emerald-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 dark:!bg-emerald-600 dark:hover:!bg-emerald-500"
             >
-              <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
+              <Plus size={24} strokeWidth={2.5} aria-hidden="true" />
             </button>
             {[
               { id: 'investments', label: 'Inversiones', Icon: TrendingUp },
@@ -459,7 +459,7 @@ const App = () => {
                 aria-current={activeTab === id ? 'page' : undefined}
               className={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
             >
-              <Icon size={22} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
+              <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
               </button>
             ))}
             <ProfileSwitcher

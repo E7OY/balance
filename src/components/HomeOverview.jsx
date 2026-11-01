@@ -48,9 +48,41 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
   );
   const available = totals.income - totals.expenses;
   const getMonthChange = (current, previous) => {
-    if (previous === 0) return current === 0 ? null : 'Nuevo este mes';
-    const change = ((current - previous) / previous) * 100;
-    return `${change > 0 ? '+' : ''}${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(change)}% vs. mes anterior`;
+    const difference = current - previous;
+    if (difference === 0) return null;
+    return {
+      difference,
+      percent: previous === 0 ? null : (difference / previous) * 100,
+    };
+  };
+  const renderMonthChange = (current, previous) => {
+    const change = getMonthChange(current, previous);
+    if (!change) return 'Sin cambios vs. mes anterior';
+    const sign = change.difference > 0 ? '+' : '-';
+    const formattedDifference = new Intl.NumberFormat('es-ES', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Math.abs(change.difference));
+    const formattedPercent = change.percent === null
+      ? null
+      : `${change.percent > 0 ? '+' : '-'}${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(Math.abs(change.percent))}%`;
+
+    return (
+      <span className="text-zinc-500 dark:text-zinc-400">
+        {sign}{formattedDifference} € (
+        {formattedPercent ? (
+          <span
+            data-preserve-colors
+            className={change.difference > 0
+              ? 'text-emerald-700 dark:text-emerald-400'
+              : 'text-rose-700 dark:text-rose-400'}
+          >
+            {formattedPercent}
+          </span>
+        ) : 'Nuevo este mes'}
+        ) vs. mes anterior
+      </span>
+    );
   };
 
   return (
@@ -73,7 +105,7 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
           {formatCurrency(available)}
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-white p-3 dark:bg-zinc-900/50 sm:p-4">
+          <div className="rounded-2xl bg-white p-3 dark:!bg-zinc-900 sm:p-4">
             <p className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               <ArrowUpRight size={15} className="text-zinc-500 dark:text-zinc-400" aria-hidden="true" />
               Ingresos del mes
@@ -81,14 +113,11 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
             <p data-preserve-colors className="privacy-sensitive mt-1 text-base font-semibold text-emerald-700 dark:text-emerald-400">
               {formatCurrency(totals.income)}
             </p>
-            <p className="mt-1 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {totals.income >= previousTotals.income
-                ? <ArrowUpRight size={13} aria-hidden="true" />
-                : <ArrowDownLeft size={13} aria-hidden="true" />}
-              {getMonthChange(totals.income, previousTotals.income) || 'Sin cambios vs. mes anterior'}
+            <p className="mt-1 min-w-0 text-xs text-zinc-500 dark:text-zinc-400">
+              {renderMonthChange(totals.income, previousTotals.income)}
             </p>
           </div>
-          <div className="rounded-2xl bg-white p-3 dark:bg-zinc-900/50 sm:p-4">
+          <div className="rounded-2xl bg-white p-3 dark:!bg-zinc-900 sm:p-4">
             <p className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               <ArrowDownLeft size={15} className="text-zinc-500 dark:text-zinc-400" aria-hidden="true" />
               Gastos del mes
@@ -96,11 +125,8 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
             <p data-preserve-colors className="privacy-sensitive mt-1 text-base font-semibold text-rose-700 dark:text-rose-400">
               {formatCurrency(totals.expenses)}
             </p>
-            <p className="mt-1 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {totals.expenses >= previousTotals.expenses
-                ? <ArrowUpRight size={13} aria-hidden="true" />
-                : <ArrowDownLeft size={13} aria-hidden="true" />}
-              {getMonthChange(totals.expenses, previousTotals.expenses) || 'Sin cambios vs. mes anterior'}
+            <p className="mt-1 min-w-0 text-xs text-zinc-500 dark:text-zinc-400">
+              {renderMonthChange(totals.expenses, previousTotals.expenses)}
             </p>
           </div>
         </div>
