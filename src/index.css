@@ -247,12 +247,6 @@ html.dark .app-shell [data-color-icon="chart"] {
   background-color: rgba(14, 165, 233, 0.18);
 }
 
-button,
-input,
-select {
-  font: inherit;
-}
-
 .app-shell input,
 .app-shell select {
   accent-color: #525252;

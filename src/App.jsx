@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Filter, MoonStar, Plus, SunMedium, X } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import SummaryCards from './components/SummaryCards';
+import AnnualOverview from './components/AnnualOverview';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import CategoryBreakdown from './components/CategoryBreakdown';
@@ -35,6 +36,7 @@ const App = () => {
   const monthSwipeStart = useRef(null);
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [isAnnualView, setIsAnnualView] = useState(false);
   const [dismissedSpendingAlertKeys, setDismissedSpendingAlertKeys] = useState([]);
   const [openOverlays, setOpenOverlays] = useState({});
   const handleOverlayOpenChange = useCallback((overlay, isOpen) => {
@@ -288,13 +290,13 @@ const App = () => {
         key: `${profile.id}-${filters.year}-${filters.month}-${alert.type}`,
       }));
     });
-  const activeFilterCount = [
+  const activeFilterCount = isAnnualView ? 0 : [
     filters.searchTerm.trim().length > 0,
     filters.type !== 'Todos',
     filters.category !== 'Todas',
   ].filter(Boolean).length;
   const handleTouchStart = (event) => {
-    if (!window.matchMedia('(max-width: 767px)').matches || event.touches.length !== 1) {
+    if (isAnnualView || !window.matchMedia('(max-width: 767px)').matches || event.touches.length !== 1) {
       monthSwipeStart.current = null;
       return;
     }
@@ -346,10 +348,16 @@ const App = () => {
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
               Balance
             </h1>
-            <p className="mt-1 font-semibold text-2xl  capitalize text-neutral-400">
-              {monthLabel} {filters.year}
-            </p>
-            {spendingAlerts
+            <button
+              type="button"
+              onClick={() => setIsAnnualView((isAnnual) => !isAnnual)}
+              aria-label={`Cambiar a vista ${isAnnualView ? 'mensual' : 'anual'}`}
+              title={`Cambiar a vista ${isAnnualView ? 'mensual' : 'anual'}`}
+              className="mt-1 block rounded-md text-left text-2xl font-semibold capitalize text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:hover:text-neutral-200 sm:text-5xl"
+            >
+              {isAnnualView ? filters.year : `${monthLabel} ${filters.year}`}
+            </button>
+            {!isAnnualView && spendingAlerts
               .filter((alert) => !dismissedSpendingAlertKeys.includes(alert.key))
               .map((alert) => (
                 <div
@@ -385,8 +393,8 @@ const App = () => {
               </button>
               <button
                 type="button"
-                aria-label={activeFilterCount > 0 ? `Mes y filtros, ${activeFilterCount} filtros activos` : 'Mes y filtros'}
-                title="Mes y filtros"
+                aria-label={activeFilterCount > 0 ? `${isAnnualView ? 'Año' : 'Mes'} y filtros, ${activeFilterCount} filtros activos` : `${isAnnualView ? 'Año' : 'Mes'} y filtros`}
+                title={`${isAnnualView ? 'Año' : 'Mes'} y filtros`}
                 aria-expanded={isMobileFiltersOpen}
                 aria-controls="transaction-filters"
                 onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
@@ -417,14 +425,19 @@ const App = () => {
         <Filters
           isMobileFiltersOpen={isMobileFiltersOpen}
           onCloseMobileFilters={setIsMobileFiltersOpen}
+          isAnnualView={isAnnualView}
         />
-        <SummaryCards />
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
-          <TransactionList />
-          <CategoryBreakdown onOverlayOpenChange={handleOverlayOpenChange} />
-        </div>
-
+        {isAnnualView ? (
+          <AnnualOverview />
+        ) : (
+          <>
+            <SummaryCards />
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
+              <TransactionList />
+              <CategoryBreakdown onOverlayOpenChange={handleOverlayOpenChange} />
+            </div>
+          </>
+        )}
         <div className="mt-4 flex justify-end">
           <ExportImportButtons />
         </div>
