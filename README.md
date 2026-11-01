@@ -41,6 +41,14 @@ El panel superior permite elegir mes y año, buscar movimientos y filtrar por ti
 
 El resumen muestra ingresos, gastos y saldo. En el gráfico **¿En qué se va?**, pulsa **Topes** para fijar un máximo mensual por categoría. Las barras indican cuánto llevas gastado frente al límite. En **Ajustes de Perfil y Metas** puedes definir objetivos mensuales de ahorro e inversión.
 
+### Inversiones y cotizaciones
+
+Busca criptomonedas en CoinGecko y acciones, ETF y fondos disponibles en Finnhub. Al registrar una inversión, Balance consulta el precio y estima las unidades a partir del capital aportado; el valor de la cartera y las ganancias se calculan con esas unidades y se actualizan automáticamente cada minuto mientras está abierta la pantalla de inversiones. También puedes pulsar **Actualizar precios**.
+
+CoinGecko no requiere clave. Para usar la búsqueda de acciones y fondos, crea una clave gratuita de Finnhub y configúrala como `FINNHUB_API_KEY` en las variables de entorno de Vercel. La clave se utiliza solo en las funciones de servidor de `api/` y no se incluye en el JavaScript del navegador. Para probar esas funciones localmente, añade la variable a `.env.local` y ejecuta `npx vercel dev`.
+
+La cobertura y la frecuencia de cotización dependen del proveedor, el mercado y el tipo de activo; algunos fondos solo publican su valor liquidativo una vez al día. Los activos registrados antes de vincular un símbolo conservan su valor guardado y no se actualizan hasta asociarlos a un activo encontrado. Las unidades se estiman con el precio disponible al registrar; la fecha indicada es la fecha de registro, no una valoración histórica.
+
 ### Perfiles y copias
 
 Los perfiles separan los movimientos, las categorías y los ajustes de cada persona en este dispositivo. Usa el menú de perfil para cambiar o crear uno.

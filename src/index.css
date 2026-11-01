@@ -59,6 +59,24 @@ body {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.035);
 }
 
+.app-shell .rounded-3xl[data-home-card] {
+  border-color: #e4e4e7;
+  background-color: #fff;
+  box-shadow: none;
+}
+
+.app-shell .rounded-3xl[data-home-card-flat] {
+  border: 0;
+  background-color: #fff;
+  box-shadow: none;
+}
+
+.app-shell [data-phantom-surface] {
+  border: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
+
 .app-shell [role="dialog"] {
   border-color: rgba(229, 229, 229, 0.8);
   background-color: rgba(255, 255, 255, 0.96);
@@ -187,6 +205,23 @@ html.dark .app-shell .rounded-3xl {
   border: 0;
   background-color: rgba(23, 23, 23, 0.96);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .app-shell .rounded-3xl[data-home-card] {
+  border: 1px solid #27272a;
+  background-color: rgba(24, 24, 27, 0.5);
+  box-shadow: none;
+}
+
+html.dark .app-shell .rounded-3xl[data-home-card-flat] {
+  border: 0;
+  background-color: rgba(24, 24, 27, 0.5);
+  box-shadow: none;
+}
+
+html.dark .app-shell [data-phantom-surface] {
+  background-color: transparent;
+  box-shadow: none;
 }
 
 html.dark .app-shell [role="dialog"] {

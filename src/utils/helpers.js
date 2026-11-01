@@ -6,6 +6,15 @@ export const formatCurrency = (amount) => {
   }).format(amount);
 };
 
+export const formatUnitPrice = (amount) => {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+    useGrouping: 'always',
+    maximumFractionDigits: 12,
+  }).format(amount);
+};
+
 export const formatDate = (dateString) => {
   const [year, month, day] = dateString.split('-').map(Number);
   const date = new Date(year, month - 1, day);

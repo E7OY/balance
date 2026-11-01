@@ -1,8 +1,64 @@
 import React, { useRef, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Paperclip, Pencil, Scissors, Trash2, X } from 'lucide-react';
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  BriefcaseBusiness,
+  Bus,
+  CircleHelp,
+  CreditCard,
+  Film,
+  Gift,
+  Ham,
+  HeartPulse,
+  House,
+  PawPrint,
+  Plane,
+  ReceiptText,
+  Shirt,
+  TrendingUp,
+  Wallet,
+  Paperclip,
+  Pencil,
+  Scissors,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
+
+const categoryIcons = {
+  comida: Ham,
+  alquilerhipoteca: House,
+  transporte: Bus,
+  ocio: Film,
+  suscripciones: ReceiptText,
+  mascotas: PawPrint,
+  salud: HeartPulse,
+  ropa: Shirt,
+  hogar: House,
+  viajes: Plane,
+  regalos: Gift,
+  inversiones: TrendingUp,
+  deudas: CreditCard,
+  salario: BriefcaseBusiness,
+  regalo: Gift,
+  reembolso: Wallet,
+  ventas: Wallet,
+  freelance: BriefcaseBusiness,
+  otros: CircleHelp,
+};
+
+const getCategoryIcon = (category) => {
+  const normalizedCategory = String(category || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
+    .replace(/[^a-z]/g, '');
+  return Object.hasOwn(categoryIcons, normalizedCategory)
+    ? categoryIcons[normalizedCategory]
+    : CircleHelp;
+};
 
 const TransactionItem = ({ transaction, layout = 'table' }) => {
   const {
@@ -112,14 +168,16 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
     }
   };
 
-  if (layout === 'card') {
+  if (layout === 'card' || layout === 'list') {
+    const isList = layout === 'list';
+    const CategoryIcon = isList ? getCategoryIcon(transaction.category) : null;
     const swipeOffset = swipeActions === 'delete'
       ? '-80px'
       : swipeActions === 'edit' ? (isExpense ? '160px' : '80px') : '0px';
 
     return (
       <>
-      <div className="relative overflow-hidden rounded-lg" data-month-swipe-ignore>
+      <div className={`relative overflow-hidden ${isList ? 'rounded-none' : 'rounded-lg'}`} data-month-swipe-ignore>
         {swipeActions === 'edit' && (
           <div className={`absolute inset-y-0 left-0 flex items-center gap-1 bg-emerald-50 px-2 dark:bg-emerald-500/10 ${isExpense ? 'w-40' : 'w-20'}`}>
             <button
@@ -168,24 +226,43 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
           onTouchEnd={handleCardTouchEnd}
           onTouchCancel={() => { touchStartRef.current = null; }}
           style={{ transform: `translateX(${swipeOffset})` }}
-          className="relative z-10 cursor-pointer border-b border-slate-50 bg-white p-2.5 shadow-sm transition-transform duration-200 ease-out touch-pan-y hover:border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-neutral-700 dark:hover:bg-black sm:p-3"
+          className={`relative z-10 cursor-pointer border-b transition-transform duration-200 ease-out touch-pan-y ${
+            isList
+              ? 'border-transparent bg-transparent px-1 py-3 hover:bg-transparent sm:px-2'
+              : 'border-slate-50 bg-white p-2.5 shadow-sm hover:border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-neutral-700 dark:hover:bg-black sm:p-3'
+          }`}
         >
-        <div className="flex items-start gap-2.5 sm:gap-3">
-          <span data-color-icon={isExpense ? 'expense' : 'income'} className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
-            {isExpense ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
+        <div className={`flex items-center ${isList ? 'gap-3 sm:gap-4' : 'items-start gap-2.5 sm:gap-3'}`}>
+          <span
+            data-color-icon={isList ? undefined : isExpense ? 'expense' : 'income'}
+            className={`flex shrink-0 items-center justify-center rounded-full ${
+              isList
+                ? 'size-10 bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 sm:size-11'
+                : `mt-0.5 size-7 sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`
+            }`}
+          >
+            {isList
+              ? <CategoryIcon size={19} strokeWidth={1.8} aria-hidden="true" />
+              : isExpense ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <p className="min-w-0 break-words text-[13px] font-medium leading-5 text-slate-900 dark:text-slate-100 sm:text-sm">
+            <div className={`flex gap-2 ${isList ? 'items-center justify-between' : 'items-start justify-between'}`}>
+              <p className={`min-w-0 break-words font-medium leading-5 text-zinc-900 dark:text-zinc-100 ${
+                isList ? 'truncate text-sm sm:text-base' : 'text-[13px] sm:text-sm'
+              }`}>
                 {description || transaction.category}
               </p>
               <div className="flex shrink-0 items-center gap-1">
-                <p className={`privacy-sensitive whitespace-nowrap text-[13px] tabular-nums sm:text-sm ${isExpense ? 'font-semibold !text-rose-600 dark:!text-rose-400' : 'font-semibold !text-emerald-600 dark:!text-emerald-400'}`}>
+                <p className={`privacy-sensitive whitespace-nowrap tabular-nums ${
+                  isList ? 'text-sm font-semibold sm:text-base' : 'text-[13px] font-semibold sm:text-sm'
+                } ${isExpense ? '!text-rose-600 dark:!text-rose-400' : '!text-emerald-600 dark:!text-emerald-400'}`}>
                   {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
                 </p>
               </div>
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 sm:mt-2 sm:gap-x-2 sm:text-xs">
+            <div className={`mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-slate-500 dark:text-slate-400 ${
+              isList ? 'text-xs sm:text-sm' : 'mt-1.5 text-[11px] sm:mt-2 sm:gap-x-2 sm:text-xs'
+            }`}>
               <span>{transaction.category}</span>
               <span aria-hidden="true">·</span>
               <span>{transaction.paymentMethod || 'Sin método'}</span>

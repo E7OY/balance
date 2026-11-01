@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useMemo, useRef } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo, useRef, useCallback } from 'react';
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -66,6 +66,7 @@ const loadProfileSetup = () => {
   const namespacedCategories = getFromLocalStorage(profileStorageKey(activeProfileId, 'customCategories'));
   const savedGoals = getFromLocalStorage(profileStorageKey(activeProfileId, 'monthlyGoals'));
   const savedCategoryCaps = getFromLocalStorage(profileStorageKey(activeProfileId, 'monthlyCategoryCaps'));
+  const savedInvestments = getFromLocalStorage(profileStorageKey(activeProfileId, 'investments'));
   const initialGoalsMonthKey = getGoalsMonthKey(new Date().getFullYear(), new Date().getMonth());
   const monthlyGoalsByMonth = savedGoals && typeof savedGoals === 'object'
     ? (Object.hasOwn(savedGoals, 'savings') || Object.hasOwn(savedGoals, 'investment')
@@ -96,6 +97,7 @@ const loadProfileSetup = () => {
     profiles,
     activeProfileId,
     transactions: Array.isArray(transactions) ? transactions : [],
+    investmentRecords: Array.isArray(savedInvestments) ? savedInvestments : [],
     monthlyGoalsByMonth,
     monthlyCategoryCapsByMonth,
     customCategories: {
@@ -166,6 +168,7 @@ export const FinanceProvider = ({ children }) => {
   const [transactions, setTransactions] = useState(() => {
     return initialProfileSetup.transactions;
   });
+  const [investmentRecords, setInvestmentRecords] = useState(initialProfileSetup.investmentRecords);
   const [customCategories, setCustomCategories] = useState(initialProfileSetup.customCategories);
   const [monthlyGoalsByMonth, setMonthlyGoalsByMonth] = useState(initialProfileSetup.monthlyGoalsByMonth);
   const [monthlyCategoryCapsByMonth, setMonthlyCategoryCapsByMonth] = useState(initialProfileSetup.monthlyCategoryCapsByMonth);
@@ -221,6 +224,7 @@ export const FinanceProvider = ({ children }) => {
         setProfiles(synced.profiles);
         setActiveProfileId(synced.activeProfileId);
         setTransactions(synced.transactions);
+        setInvestmentRecords(synced.investmentRecords);
         setCustomCategories(synced.customCategories);
         setMonthlyGoalsByMonth(synced.monthlyGoalsByMonth);
         setMonthlyCategoryCapsByMonth(synced.monthlyCategoryCapsByMonth);
@@ -269,6 +273,7 @@ export const FinanceProvider = ({ children }) => {
           customCategories: metadata.customCategories || { Ingreso: [], Gasto: [] },
           monthlyGoalsByMonth: metadata.monthlyGoalsByMonth || {},
           monthlyCategoryCapsByMonth: metadata.monthlyCategoryCapsByMonth || {},
+          investmentRecords: metadata.investmentRecords || [],
         };
         syncMetadataRef.current = JSON.stringify(remoteState);
         setProfiles((previousProfiles) => previousProfiles.map((profile) => (
@@ -290,6 +295,11 @@ export const FinanceProvider = ({ children }) => {
           JSON.stringify(previous) === JSON.stringify(remoteState.monthlyCategoryCapsByMonth)
             ? previous
             : remoteState.monthlyCategoryCapsByMonth
+        ));
+        setInvestmentRecords((previous) => (
+          JSON.stringify(previous) === JSON.stringify(remoteState.investmentRecords)
+            ? previous
+            : remoteState.investmentRecords
         ));
       },
       (error) => syncErrorHandler.current?.(error),
@@ -325,6 +335,7 @@ export const FinanceProvider = ({ children }) => {
       customCategories,
       monthlyGoalsByMonth,
       monthlyCategoryCapsByMonth,
+      investmentRecords,
     };
     const metadataJson = JSON.stringify(metadata);
     if (metadataJson === syncMetadataRef.current) return;
@@ -333,6 +344,7 @@ export const FinanceProvider = ({ children }) => {
       customCategories,
       monthlyGoalsByMonth,
       monthlyCategoryCapsByMonth,
+      investmentRecords,
     }).catch((error) => syncErrorHandler.current?.(error));
   }, [
     syncUser,
@@ -342,6 +354,7 @@ export const FinanceProvider = ({ children }) => {
     customCategories,
     monthlyGoalsByMonth,
     monthlyCategoryCapsByMonth,
+    investmentRecords,
   ]);
 
   const createSyncAccount = async (email, password) => {
@@ -399,6 +412,10 @@ export const FinanceProvider = ({ children }) => {
   }, [activeProfileId, monthlyCategoryCapsByMonth]);
 
   useEffect(() => {
+    saveToLocalStorage(profileStorageKey(activeProfileId, 'investments'), investmentRecords);
+  }, [activeProfileId, investmentRecords]);
+
+  useEffect(() => {
     saveToLocalStorage(PROFILES_KEY, profiles);
   }, [profiles]);
 
@@ -408,7 +425,10 @@ export const FinanceProvider = ({ children }) => {
 
     saveToLocalStorage(profileStorageKey(activeProfileId, 'transactions'), transactions);
     saveToLocalStorage(profileStorageKey(activeProfileId, 'customCategories'), customCategories);
+    saveToLocalStorage(profileStorageKey(activeProfileId, 'investments'), investmentRecords);
     setTransactions(getFromLocalStorage(profileStorageKey(profileId, 'transactions')) || []);
+    const storedInvestments = getFromLocalStorage(profileStorageKey(profileId, 'investments'));
+    setInvestmentRecords(Array.isArray(storedInvestments) ? storedInvestments : []);
     const storedCategories = getFromLocalStorage(profileStorageKey(profileId, 'customCategories'));
     setCustomCategories({
       Ingreso: Array.isArray(storedCategories?.Ingreso) ? storedCategories.Ingreso : [],
@@ -446,6 +466,7 @@ export const FinanceProvider = ({ children }) => {
     setCustomCategories({ Ingreso: [], Gasto: [] });
     setMonthlyGoalsByMonth({});
     setMonthlyCategoryCapsByMonth({});
+    setInvestmentRecords([]);
     setEditingTransaction(null);
     setIsModalOpen(false);
     setActiveProfileId(id);
@@ -453,15 +474,113 @@ export const FinanceProvider = ({ children }) => {
     saveToLocalStorage(profileStorageKey(id, 'customCategories'), { Ingreso: [], Gasto: [] });
     saveToLocalStorage(profileStorageKey(id, 'monthlyGoals'), {});
     saveToLocalStorage(profileStorageKey(id, 'monthlyCategoryCaps'), {});
+    saveToLocalStorage(profileStorageKey(id, 'investments'), []);
     saveToLocalStorage(ACTIVE_PROFILE_KEY, id);
     if (syncUser && syncStatus === 'synced') {
       runCloudOperation(saveProfileToCloud(syncUser.uid, newProfile, {
         customCategories: { Ingreso: [], Gasto: [] },
         monthlyGoalsByMonth: {},
         monthlyCategoryCapsByMonth: {},
+        investmentRecords: [],
       }));
     }
     return newProfile;
+  };
+
+  const addInvestmentRecord = ({
+    name,
+    date,
+    investedAmount,
+    currentValue,
+    asset,
+    units,
+    currentPrice,
+    lastPriceUpdated,
+  }) => {
+    const normalizedName = name.trim();
+    const invested = Number(investedAmount);
+    const price = Number(currentPrice);
+    const quantity = Number(units);
+    const current = asset && Number.isFinite(price) && Number.isFinite(quantity)
+      ? Number((price * quantity).toFixed(2))
+      : Number(currentValue);
+    if (!normalizedName) throw new Error('Escribe el nombre de la inversión.');
+    if (normalizedName.length > 60) throw new Error('El nombre no puede superar los 60 caracteres.');
+    if (!date || !Number.isFinite(Date.parse(`${date}T00:00:00`))) {
+      throw new Error('Selecciona una fecha válida.');
+    }
+    if (!Number.isFinite(invested) || invested <= 0) {
+      throw new Error('La cantidad invertida debe ser mayor que cero.');
+    }
+    if (!Number.isFinite(current) || current < 0) {
+      throw new Error('El valor actual debe ser igual o mayor que cero.');
+    }
+    if (asset && (!Number.isFinite(price) || price <= 0 || !Number.isFinite(quantity) || quantity <= 0)) {
+      throw new Error('No se pudo registrar una cantidad válida de unidades para este activo.');
+    }
+    const record = {
+      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: normalizedName,
+      date,
+      investedAmount: invested,
+      currentValue: current,
+      ...(asset && {
+        asset,
+        units: quantity,
+        currentPrice: price,
+        lastPriceUpdated,
+      }),
+    };
+    setInvestmentRecords((previousRecords) => [record, ...previousRecords]);
+    return record;
+  };
+
+  const updateInvestmentRecord = (recordId, updates) => {
+    const existingRecord = investmentRecords.find((record) => record.id === recordId);
+    if (!existingRecord) throw new Error('No se encontró la inversión que quieres editar.');
+    const normalizedName = (updates.name ?? existingRecord.name).trim();
+    const invested = Number(updates.investedAmount ?? existingRecord.investedAmount);
+    const current = Number(updates.currentValue ?? existingRecord.currentValue);
+    const nextDate = updates.date ?? existingRecord.date;
+    if (!normalizedName) throw new Error('Escribe el nombre de la inversión.');
+    if (normalizedName.length > 60) throw new Error('El nombre no puede superar los 60 caracteres.');
+    if (!nextDate || !Number.isFinite(Date.parse(`${nextDate}T00:00:00`))) {
+      throw new Error('Selecciona una fecha válida.');
+    }
+    if (!Number.isFinite(invested) || invested <= 0) {
+      throw new Error('La cantidad invertida debe ser mayor que cero.');
+    }
+    if (!Number.isFinite(current) || current < 0) {
+      throw new Error('El valor actual debe ser igual o mayor que cero.');
+    }
+    setInvestmentRecords((previousRecords) => previousRecords.map((record) => (
+      record.id === recordId
+        ? { ...record, ...updates, name: normalizedName, date: nextDate, investedAmount: invested, currentValue: current }
+        : record
+    )));
+  };
+
+  const updateInvestmentPrice = useCallback((recordId, quote) => {
+    const price = Number(quote.priceEur);
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new Error('La cotización recibida no es válida.');
+    }
+    setInvestmentRecords((previousRecords) => previousRecords.map((record) => {
+      if (record.id !== recordId || !Number.isFinite(Number(record.units))) return record;
+      return {
+        ...record,
+        asset: quote.image ? { ...record.asset, image: quote.image } : record.asset,
+        currentPrice: price,
+        currentValue: Number((price * Number(record.units)).toFixed(2)),
+        lastPriceUpdated: quote.updatedAt,
+      };
+    }));
+  }, []);
+
+  const deleteInvestmentRecord = (recordId) => {
+    const exists = investmentRecords.some((record) => record.id === recordId);
+    if (!exists) throw new Error('No se encontró la inversión que quieres eliminar.');
+    setInvestmentRecords((previousRecords) => previousRecords.filter((record) => record.id !== recordId));
   };
 
   const deleteActiveProfile = async () => {
@@ -487,7 +606,7 @@ export const FinanceProvider = ({ children }) => {
 
     switchProfile(nextProfile.id);
     setProfiles(remainingProfiles);
-    ['transactions', 'customCategories', 'monthlyGoals', 'monthlyCategoryCaps'].forEach((key) => {
+    ['transactions', 'customCategories', 'monthlyGoals', 'monthlyCategoryCaps', 'investments'].forEach((key) => {
       removeFromLocalStorage(profileStorageKey(profileId, key));
     });
   };
@@ -828,7 +947,8 @@ export const FinanceProvider = ({ children }) => {
       transactions: exportTransactions, 
       customCategories,
       monthlyGoalsByMonth,         // Nuevo
-      monthlyCategoryCapsByMonth   // Nuevo
+      monthlyCategoryCapsByMonth,  // Nuevo
+      investmentRecords,
     }, null, 2);
     
     const fileUrl = URL.createObjectURL(new Blob([dataStr], { type: 'application/json' }));
@@ -861,6 +981,23 @@ export const FinanceProvider = ({ children }) => {
     const importedTransactions = Array.isArray(backup) ? backup : backup?.transactions;
     if (!Array.isArray(importedTransactions)) {
       throw new Error('La copia no contiene una lista válida de movimientos.');
+    }
+    if (
+      !Array.isArray(backup)
+      && backup.investmentRecords !== undefined
+      && (!Array.isArray(backup.investmentRecords) || backup.investmentRecords.some((record) => (
+        !record?.id
+        || typeof record.name !== 'string'
+        || !record.name.trim()
+        || typeof record.date !== 'string'
+        || !Number.isFinite(Date.parse(`${record.date}T00:00:00`))
+        || !Number.isFinite(Number(record.investedAmount))
+        || Number(record.investedAmount) <= 0
+        || !Number.isFinite(Number(record.currentValue))
+        || Number(record.currentValue) < 0
+      )))
+    ) {
+      throw new Error('La copia contiene inversiones con datos no válidos.');
     }
 
     const restoredTransactions = await Promise.all(importedTransactions.map(async (transaction) => {
@@ -896,6 +1033,9 @@ export const FinanceProvider = ({ children }) => {
       if (backup.monthlyCategoryCapsByMonth && typeof backup.monthlyCategoryCapsByMonth === 'object') {
         setMonthlyCategoryCapsByMonth(backup.monthlyCategoryCapsByMonth);
       }
+      if (Array.isArray(backup.investmentRecords)) {
+        setInvestmentRecords(backup.investmentRecords);
+      }
     }
     
     setTransactions(restoredTransactions);
@@ -930,6 +1070,11 @@ export const FinanceProvider = ({ children }) => {
         retrySync,
         monthlyGoals,
         monthlyGoalsByMonth,
+        investmentRecords,
+        addInvestmentRecord,
+        updateInvestmentRecord,
+        updateInvestmentPrice,
+        deleteInvestmentRecord,
         setMonthlyGoals,
         previousMonthGoals,
         monthlyCategoryCaps,

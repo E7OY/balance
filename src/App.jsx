@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Filter, MoonStar, Plus, SunMedium, X } from 'lucide-react';
+import { House, Plus, ReceiptText, TrendingUp, X } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
-import SummaryCards from './components/SummaryCards';
 import AnnualOverview from './components/AnnualOverview';
+import HomeOverview from './components/HomeOverview';
+import InvestmentsOverview from './components/InvestmentsOverview';
+import MovementsView from './components/MovementsView';
 import TransactionForm from './components/TransactionForm';
-import TransactionList from './components/TransactionList';
-import CategoryBreakdown from './components/CategoryBreakdown';
-import Filters from './components/Filters';
 import ExportImportButtons from './components/ExportImportButtons';
 import { Button } from './components/ui/button';
 import ProfileSwitcher from './components/ProfileSwitcher';
@@ -37,6 +36,7 @@ const App = () => {
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isAnnualView, setIsAnnualView] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
   const [dismissedSpendingAlertKeys, setDismissedSpendingAlertKeys] = useState([]);
   const [openOverlays, setOpenOverlays] = useState({});
   const handleOverlayOpenChange = useCallback((overlay, isOpen) => {
@@ -56,6 +56,10 @@ const App = () => {
     root.style.colorScheme = theme;
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   useEffect(() => {
     const openAddTransaction = () => {
@@ -212,9 +216,6 @@ const App = () => {
     return () => window.removeEventListener('devicemotion', handleDeviceMotion);
   }, [setIsAmountsHidden]);
 
-  const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(
-    new Date(filters.year, filters.month, 1),
-  );
   const monthStorageKey = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
   const spendingAlerts = profiles
     .filter((profile) => profile.id !== activeProfileId)
@@ -290,13 +291,13 @@ const App = () => {
         key: `${profile.id}-${filters.year}-${filters.month}-${alert.type}`,
       }));
     });
-  const activeFilterCount = isAnnualView ? 0 : [
-    filters.searchTerm.trim().length > 0,
-    filters.type !== 'Todos',
-    filters.category !== 'Todas',
-  ].filter(Boolean).length;
   const handleTouchStart = (event) => {
-    if (isAnnualView || !window.matchMedia('(max-width: 767px)').matches || event.touches.length !== 1) {
+    if (
+      (activeTab !== 'home' && activeTab !== 'transactions')
+      || (activeTab === 'home' && isAnnualView)
+      || !window.matchMedia('(max-width: 767px)').matches
+      || event.touches.length !== 1
+    ) {
       monthSwipeStart.current = null;
       return;
     }
@@ -338,26 +339,31 @@ const App = () => {
       data-amounts-hidden={isAmountsHidden}
     >
       <main
-        className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-9 sm:px-6 lg:px-8"
+        className="relative z-10 mx-auto max-w-7xl px-4 pb-32 pt-9 sm:px-6 lg:px-8"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={() => { monthSwipeStart.current = null; }}
       >
-        <div className="mb-4 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              Balance
+              {activeTab === 'home' ? 'Patrimonio' : {
+                transactions: 'Movimientos',
+                investments: 'Inversiones',
+              }[activeTab]}
             </h1>
-            <button
-              type="button"
-              onClick={() => setIsAnnualView((isAnnual) => !isAnnual)}
-              aria-label={`Cambiar a vista ${isAnnualView ? 'mensual' : 'anual'}`}
-              title={`Cambiar a vista ${isAnnualView ? 'mensual' : 'anual'}`}
-              className="mt-1 block rounded-md text-left text-2xl font-semibold capitalize text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:hover:text-neutral-200 sm:text-5xl"
-            >
-              {isAnnualView ? filters.year : `${monthLabel} ${filters.year}`}
-            </button>
-            {!isAnnualView && spendingAlerts
+            {activeTab === 'home' && isAnnualView && (
+              <button
+                type="button"
+                onClick={() => setIsAnnualView(false)}
+                aria-label="Cambiar a vista mensual"
+                title="Cambiar a vista mensual"
+                className="mt-1 block rounded-md text-left text-2xl font-semibold capitalize text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:hover:text-neutral-200 sm:text-5xl"
+              >
+                {filters.year}
+              </button>
+            )}
+            {activeTab === 'home' && !isAnnualView && spendingAlerts
               .filter((alert) => !dismissedSpendingAlertKeys.includes(alert.key))
               .map((alert) => (
                 <div
@@ -380,85 +386,90 @@ const App = () => {
                 </div>
               ))}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex w-full items-center justify-between gap-0.5 rounded-full bg-white p-1 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] dark:bg-slate-900 md:contents">
-              <button
-                type="button"
-                onClick={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
-                aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
-                title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-                className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
-              >
-                {theme === 'dark' ? <MoonStar size={18} /> : <SunMedium size={18} />}
-              </button>
-              <button
-                type="button"
-                aria-label={activeFilterCount > 0 ? `${isAnnualView ? 'Año' : 'Mes'} y filtros, ${activeFilterCount} filtros activos` : `${isAnnualView ? 'Año' : 'Mes'} y filtros`}
-                title={`${isAnnualView ? 'Año' : 'Mes'} y filtros`}
-                aria-expanded={isMobileFiltersOpen}
-                aria-controls="transaction-filters"
-                onClick={() => setIsMobileFiltersOpen((isOpen) => !isOpen)}
-                className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800 md:hidden"
-              >
-                <Filter size={18} aria-hidden="true" />
-                {activeFilterCount > 0 && (
-                  <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-semibold leading-none text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-              <ProfileSwitcher onOverlayOpenChange={handleOverlayOpenChange} />
-            </div>
-            <div className="hidden lg:block">
-              <Button
-                size="default"
-                onClick={() => setIsModalOpen(true)}
-                className="h-10"
-              >
-                <span className="text-lg leading-none">+</span>
-                Añadir movimiento
-              </Button>
-            </div>
-          </div>
         </div>
 
-        <Filters
-          isMobileFiltersOpen={isMobileFiltersOpen}
-          onCloseMobileFilters={setIsMobileFiltersOpen}
-          isAnnualView={isAnnualView}
-        />
-        {isAnnualView ? (
+        {activeTab === 'home' && (isAnnualView ? (
           <AnnualOverview />
         ) : (
-          <>
-            <SummaryCards />
-            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
-              <TransactionList />
-              <CategoryBreakdown onOverlayOpenChange={handleOverlayOpenChange} />
-            </div>
-          </>
+          <HomeOverview
+            onOverlayOpenChange={handleOverlayOpenChange}
+            onAnnualViewToggle={() => setIsAnnualView(true)}
+            onShowMovements={() => setActiveTab('transactions')}
+          />
+        ))}
+        {activeTab === 'transactions' && (
+          <MovementsView
+            isMobileFiltersOpen={isMobileFiltersOpen}
+            onMobileFiltersOpenChange={setIsMobileFiltersOpen}
+          />
         )}
-        <div className="mt-4 flex justify-end">
+        {activeTab === 'investments' && <InvestmentsOverview />}
+        {activeTab === 'home' && <div className="mt-4 flex justify-end">
           <ExportImportButtons />
-        </div>
+        </div>}
       </main>
 
       {!isModalOpen
         && !editingTransaction
         && !isMobileFiltersOpen
         && !Object.values(openOverlays).some(Boolean) && (
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          aria-label="Añadir movimiento"
-          title="Añadir movimiento"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-10 inline-flex h-14 items-center gap-3 rounded-full bg-white py-2 pl-2 pr-5 text-base font-semibold text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.14)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-transform focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 active:scale-95 dark:bg-slate-900 dark:text-white lg:hidden"
+        <nav
+          aria-label="Menú principal"
+          className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:px-6"
         >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white dark:bg-emerald-600">
-            <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
-          </span>
-          Añadir movimiento
-        </button>
+          <div className="mx-auto flex max-w-2xl items-center justify-between gap-0.5 rounded-[1.75rem] bg-white/80 p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-zinc-900/80 dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
+            {[
+              { id: 'home', label: 'Inicio', Icon: House },
+              { id: 'transactions', label: 'Movimientos', Icon: ReceiptText },
+            ].map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-label={label}
+                onClick={() => {
+                  setActiveTab(id);
+                  setIsMobileFiltersOpen(false);
+                }}
+                aria-current={activeTab === id ? 'page' : undefined}
+              className={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
+            >
+              <Icon size={22} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              aria-label="Añadir movimiento"
+              title="Añadir movimiento"
+              className="inline-flex !size-12 shrink-0 !items-center !justify-center !rounded-full !bg-emerald-700 p-0 text-white shadow-md transition-colors hover:!bg-emerald-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 dark:!bg-emerald-600 dark:hover:!bg-emerald-500"
+            >
+              <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
+            </button>
+            {[
+              { id: 'investments', label: 'Inversiones', Icon: TrendingUp },
+            ].map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-label={label}
+                onClick={() => {
+                  setActiveTab(id);
+                  setIsMobileFiltersOpen(false);
+                }}
+                aria-current={activeTab === id ? 'page' : undefined}
+              className={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
+            >
+              <Icon size={22} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
+              </button>
+            ))}
+            <ProfileSwitcher
+              onOverlayOpenChange={handleOverlayOpenChange}
+              theme={theme}
+              setTheme={setTheme}
+              placement="navigation"
+            />
+          </div>
+        </nav>
       )}
 
       {(isModalOpen || editingTransaction) && (

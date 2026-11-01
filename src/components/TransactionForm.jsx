@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Camera, FileText, Paperclip, Plus, Trash2, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Camera, ChartNoAxesCombined, FileText, Paperclip, Plus, Trash2, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { expenseCategories, incomeCategories } from '../utils/categories';
-import { getLocalDateString } from '../utils/helpers';
+import { formatCurrency, formatUnitPrice, getLocalDateString } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
 import { getPushNotificationsEnabled, showAppNotification } from '../utils/pushNotifications';
+import { getInvestmentQuote } from '../utils/investmentMarketData';
 import useSwipeToClose from '../hooks/useSwipeToClose';
 import { Button } from './ui/button';
+import InvestmentAssetPicker from './InvestmentAssetPicker';
 
 const MAX_INVOICE_SIZE = 10 * 1024 * 1024;
 const paymentMethods = ['Efectivo', 'Tarjeta', 'Bizum', 'Transferencia', 'Domiciliación', 'Otro'];
@@ -15,6 +17,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
   const {
     addTransaction,
     updateTransaction,
+    addInvestmentRecord,
     addCategory,
     deleteCategory,
     setIsModalOpen,
@@ -34,6 +37,10 @@ const TransactionForm = ({ transaction = null, onClose }) => {
   const [type, setType] = useState(transaction?.type || 'Gasto');
   const [paymentMethod, setPaymentMethod] = useState(transaction?.paymentMethod || '');
   const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [investmentQuote, setInvestmentQuote] = useState(null);
+  const [isLoadingInvestmentQuote, setIsLoadingInvestmentQuote] = useState(false);
+  const [isSavingInvestment, setIsSavingInvestment] = useState(false);
   const [category, setCategory] = useState(transaction?.category || expenseCategories[0]);
   const [date, setDate] = useState(() => transaction?.date || getLocalDateString(defaultDate));
   const [description, setDescription] = useState(transaction?.description || '');
@@ -49,13 +56,38 @@ const TransactionForm = ({ transaction = null, onClose }) => {
   const [receiptNotice, setReceiptNotice] = useState('');
   const [receiptToScan, setReceiptToScan] = useState(null);
   const receiptPhotoInputRef = useRef(null);
-  const categories = allCategories[type];
+  const isInvestment = type === 'Inversiones';
+  const categories = isInvestment ? [] : allCategories[type];
   const defaultCategories = type === 'Ingreso' ? incomeCategories : expenseCategories;
-  const isCustomCategory = Boolean(category) && !defaultCategories.includes(category);
+  const isCustomCategory = !isInvestment && Boolean(category) && !defaultCategories.includes(category);
   const swipeHandlers = useSwipeToClose(() => {
     if (onClose) onClose();
     else setIsModalOpen(false);
   });
+
+  useEffect(() => {
+    if (!isInvestment || !selectedAsset) {
+      setInvestmentQuote(null);
+      setIsLoadingInvestmentQuote(false);
+      return undefined;
+    }
+
+    let isCancelled = false;
+    setInvestmentQuote(null);
+    setIsLoadingInvestmentQuote(true);
+    getInvestmentQuote(selectedAsset)
+      .then((quote) => {
+        if (!isCancelled) setInvestmentQuote(quote);
+      })
+      .catch((error) => {
+        if (!isCancelled) setErrorMessage(`No se pudo consultar el precio. ${error.message}`);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingInvestmentQuote(false);
+      });
+
+    return () => { isCancelled = true; };
+  }, [isInvestment, selectedAsset]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -141,8 +173,10 @@ const TransactionForm = ({ transaction = null, onClose }) => {
 
   const handleTypeChange = (nextType) => {
     setType(nextType);
-    setCategory(allCategories[nextType][0]);
-    if (nextType === 'Ingreso') {
+    if (nextType !== 'Inversiones') setSelectedAsset(null);
+    else setDate(getLocalDateString());
+    if (nextType !== 'Inversiones') setCategory(allCategories[nextType][0]);
+    if (nextType !== 'Gasto') {
       setIsInstallment(false);
     }
     setErrorMessage('');
@@ -213,7 +247,41 @@ const TransactionForm = ({ transaction = null, onClose }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0 || !category || !date || !paymentMethod) {
+    if (!Number.isFinite(value) || value <= 0 || !date) {
+      setErrorMessage('Completa un importe válido y una fecha.');
+      return;
+    }
+
+    if (isInvestment) {
+      if (!selectedAsset) {
+        setErrorMessage('Busca y selecciona el activo en el que has invertido.');
+        return;
+      }
+      setIsSavingInvestment(true);
+      try {
+        const quote = await getInvestmentQuote(selectedAsset);
+        const units = value / quote.priceEur;
+        addInvestmentRecord({
+          name: selectedAsset.name,
+          date,
+          investedAmount: value,
+          asset: selectedAsset,
+          units,
+          currentPrice: quote.priceEur,
+          currentValue: units * quote.priceEur,
+          lastPriceUpdated: quote.updatedAt,
+        });
+        triggerHaptic('income');
+        closeForm();
+      } catch (error) {
+        setErrorMessage(`No se pudo consultar el precio o guardar la inversión. ${error.message}`);
+      } finally {
+        setIsSavingInvestment(false);
+      }
+      return;
+    }
+
+    if (!category || !paymentMethod) {
       setErrorMessage('Completa el importe, la categoría, la fecha y el método de pago.');
       return;
     }
@@ -282,7 +350,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/40 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/40 pb-[env(safe-area-inset-bottom)] backdrop-blur-[2px] sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) closeForm();
       }}
@@ -291,19 +359,24 @@ const TransactionForm = ({ transaction = null, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="transaction-title"
-        className="relative my-auto max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:p-8"
+        className="relative my-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-slate-200 bg-slate-50 p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:max-h-[calc(100vh-2rem)] sm:rounded-2xl sm:p-8"
         {...swipeHandlers}
       >
-        <div className="mb-6">
-          <h2 id="transaction-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">
-            {transaction ? 'Editar movimiento' : 'Añadir movimiento'}
+        <div className="relative mb-5 flex min-h-10 items-center justify-center">
+          <button
+            type="button"
+            onClick={closeForm}
+            aria-label="Cerrar"
+            className="absolute left-0 inline-flex size-10 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <X size={21} aria-hidden="true" />
+          </button>
+          <h2 id="transaction-title" className="text-xl font-semibold text-slate-950 dark:text-slate-50">
+            {transaction ? 'Editar movimiento' : isInvestment ? 'Nueva inversión' : `Nuevo ${type.toLowerCase()}`}
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {transaction ? 'Actualiza los datos de este movimiento.' : 'Apunta el sueldo que entra o un gasto del mes.'}
-          </p>
         </div>
 
-        {!transaction && (
+        {!transaction && type === 'Gasto' && (
           <div className="mb-5">
             <input
               ref={receiptPhotoInputRef}
@@ -318,10 +391,19 @@ const TransactionForm = ({ transaction = null, onClose }) => {
               type="button"
               onClick={() => receiptPhotoInputRef.current?.click()}
               disabled={isReadingReceipt}
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="flex min-h-[4.5rem] w-full items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30"
             >
-              <Camera size={16} aria-hidden="true" />
-              Fotografiar recibo
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                <Camera size={20} aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {isReadingReceipt ? 'Leyendo recibo…' : 'Fotografiar recibo'}
+                </span>
+                <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                  Detecta el importe y completa los datos
+                </span>
+              </span>
             </button>
           </div>
         )}
@@ -344,50 +426,55 @@ const TransactionForm = ({ transaction = null, onClose }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1.5 dark:bg-slate-800">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className={`grid rounded-full bg-white p-1 dark:bg-slate-800 ${transaction ? 'grid-cols-2' : 'grid-cols-3'}`}>
             {[
               { value: 'Gasto', label: 'Gasto', Icon: ArrowDownLeft },
-              { value: 'Ingreso', label: 'Sueldo / ingreso', Icon: ArrowUpRight },
+              { value: 'Ingreso', label: 'Ingreso', Icon: ArrowUpRight },
+              ...(!transaction ? [{ value: 'Inversiones', label: 'Inversiones', Icon: ChartNoAxesCombined }] : []),
             ].map(({ value, label, Icon }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => handleTypeChange(value)}
                 aria-pressed={type === value}
-                className={`inline-flex h-9 items-center justify-center gap-2 rounded-md px-2 text-sm font-medium transition-all ${
+                className={`inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-1 text-xs font-medium transition-all sm:gap-2 sm:px-2 sm:text-sm ${
                   type === value
-                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-50'
+                    ? 'bg-emerald-50 text-emerald-800 shadow-sm dark:bg-emerald-950 dark:text-emerald-200'
                     : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'
                 }`}
               >
-                <Icon size={16} />
+                <Icon size={16} className="shrink-0" />
                 {label}
               </button>
             ))}
           </div>
 
-          <div>
-            <label htmlFor="amount" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">Importe</label>
-            <div className="relative">
+          <div className="py-2">
+            <label htmlFor="amount" className="sr-only">{isInvestment ? 'Capital aportado' : 'Importe'}</label>
+            <div className="relative mx-auto max-w-xs">
               <input
                 type="number"
                 id="amount"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                placeholder="0,00"
+                placeholder="0"
                 min="0.01"
                 step="0.01"
                 inputMode="decimal"
                 autoFocus
                 required
-                className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 pr-12 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                aria-label={isInvestment ? 'Capital aportado' : 'Importe'}
+                className="h-24 w-full border-0 bg-transparent px-3 pr-12 text-center text-6xl font-semibold tabular-nums text-slate-900 outline-none placeholder:text-slate-300 focus:ring-0 dark:text-slate-100 dark:placeholder:text-slate-600"
               />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-slate-500">EUR</span>
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-3xl font-medium text-slate-500 dark:text-slate-400">€</span>
             </div>
+            <p className="mt-1 text-center text-sm text-slate-500 dark:text-slate-400">
+              {isInvestment ? 'Capital aportado' : type === 'Ingreso' ? 'Importe del ingreso' : 'Importe del gasto'}
+            </p>
           </div>
 
-          <div>
+          {!isInvestment && <div>
             <div className="mb-1.5 flex items-center justify-between">
               <label htmlFor="category" className="text-sm font-medium text-slate-700 dark:text-slate-200">Categoría</label>
               <div className="flex items-center gap-3">
@@ -439,32 +526,52 @@ const TransactionForm = ({ transaction = null, onClose }) => {
                 <Button type="button" size="sm" onClick={handleAddCategory}>Añadir</Button>
               </div>
             )}
-          </div>
+          </div>}
+
+          {isInvestment && (
+            <div>
+              <InvestmentAssetPicker
+                value={selectedAsset}
+                onChange={(asset) => {
+                  setSelectedAsset(asset);
+                  setErrorMessage('');
+                }}
+              />
+              <p role="status" className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                {isLoadingInvestmentQuote
+                  ? 'Consultando precio de mercado…'
+                  : investmentQuote
+                    ? `Precio actual: ${formatUnitPrice(investmentQuote.priceEur)} por unidad · ${amount && Number(amount) > 0 ? `${(Number(amount) / investmentQuote.priceEur).toFixed(6)} unidades estimadas` : 'Elige el capital para estimar las unidades'}`
+                    : 'El valor de la cartera se calculará automáticamente con la cotización del activo.'}
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">Fecha</label>
+              <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{isInvestment ? 'Fecha de registro' : 'Fecha'}</label>
               <input
                 type="date"
                 id="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
                 required
-                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
-            <div>
-              <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">Concepto</label>
+            {!isInvestment && <div>
+              <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{isInvestment ? 'Inversión' : 'Concepto'}</label>
               <input
                 type="text"
                 id="description"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder={type === 'Ingreso' ? 'Sueldo de octubre' : 'Compra del súper'}
-                maxLength={100}
-                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                placeholder={isInvestment ? 'Ej. Fondo indexado' : type === 'Ingreso' ? 'Sueldo de octubre' : 'Compra del súper'}
+                maxLength={isInvestment ? 60 : 100}
+                required={isInvestment}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
-            </div>
+            </div>}
           </div>
 
           {transaction?.invoice && !removeExistingInvoice && (
@@ -495,7 +602,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
             </div>
           )}
 
-          {type === 'Gasto' && (
+          {!isInvestment && type === 'Gasto' && (
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
               <label className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium text-slate-700 dark:text-slate-200">
                 <span>¿Es un pago a plazos?</span>
@@ -525,7 +632,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
             </div>
           )}
 
-          <div>
+          {!isInvestment && <div>
             <label htmlFor="payment-method" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Método de pago
             </label>
@@ -541,9 +648,9 @@ const TransactionForm = ({ transaction = null, onClose }) => {
                 <option key={method} value={method}>{method}</option>
               ))}
             </select>
-          </div>
+          </div>}
 
-          <div>
+          {!isInvestment && <div>
             <label htmlFor="invoice" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Factura <span className="font-normal text-slate-400 dark:text-slate-500">(opcional)</span>
             </label>
@@ -570,7 +677,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
                 </button>
               )}
             </div>
-          </div>
+          </div>}
 
           {errorMessage && (
             <p role="alert" className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
@@ -589,9 +696,12 @@ const TransactionForm = ({ transaction = null, onClose }) => {
             </Button>
             <Button
               type="submit"
+              disabled={isInvestment && isSavingInvestment}
               className="h-10"
             >
-              {transaction ? 'Guardar cambios' : `Guardar en ${monthLabel}`}
+              {isInvestment && isSavingInvestment
+                ? 'Consultando precio…'
+                : transaction ? 'Guardar cambios' : isInvestment ? 'Guardar inversión' : `Guardar ${type.toLowerCase()} en ${monthLabel}`}
             </Button>
           </div>
         </form>

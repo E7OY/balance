@@ -45,6 +45,7 @@ const profileMetadata = (profile, localData) => ({
   customCategories: localData.customCategories,
   monthlyGoalsByMonth: localData.monthlyGoalsByMonth,
   monthlyCategoryCapsByMonth: localData.monthlyCategoryCapsByMonth,
+  investmentRecords: localData.investmentRecords,
 });
 
 const emptyProfileData = {
@@ -52,6 +53,7 @@ const emptyProfileData = {
   customCategories: { Ingreso: [], Gasto: [] },
   monthlyGoalsByMonth: {},
   monthlyCategoryCapsByMonth: {},
+  investmentRecords: [],
 };
 
 const readLocalProfile = (profileId) => ({
@@ -62,6 +64,7 @@ const readLocalProfile = (profileId) => ({
   },
   monthlyGoalsByMonth: getFromLocalStorage(profileKey(profileId, 'monthlyGoals')) || {},
   monthlyCategoryCapsByMonth: getFromLocalStorage(profileKey(profileId, 'monthlyCategoryCaps')) || {},
+  investmentRecords: getFromLocalStorage(profileKey(profileId, 'investments')) || [],
 });
 
 const writeLocalProfile = (profileId, data) => {
@@ -69,6 +72,7 @@ const writeLocalProfile = (profileId, data) => {
   saveToLocalStorage(profileKey(profileId, 'customCategories'), data.customCategories);
   saveToLocalStorage(profileKey(profileId, 'monthlyGoals'), data.monthlyGoalsByMonth);
   saveToLocalStorage(profileKey(profileId, 'monthlyCategoryCaps'), data.monthlyCategoryCapsByMonth);
+  saveToLocalStorage(profileKey(profileId, 'investments'), data.investmentRecords || []);
 };
 
 export const initializeAccountSync = async (user) => {
@@ -128,6 +132,7 @@ export const initializeAccountSync = async (user) => {
         customCategories: remoteMetadata.customCategories || local.customCategories,
         monthlyGoalsByMonth: remoteMetadata.monthlyGoalsByMonth || local.monthlyGoalsByMonth,
         monthlyCategoryCapsByMonth: remoteMetadata.monthlyCategoryCapsByMonth || local.monthlyCategoryCapsByMonth,
+        investmentRecords: remoteMetadata.investmentRecords || local.investmentRecords,
       }
       : local;
 
@@ -194,6 +199,7 @@ export const loadCloudProfileLocally = async (uid, profileId) => {
     customCategories: profileMetadata.customCategories || emptyProfileData.customCategories,
     monthlyGoalsByMonth: profileMetadata.monthlyGoalsByMonth || {},
     monthlyCategoryCapsByMonth: profileMetadata.monthlyCategoryCapsByMonth || {},
+    investmentRecords: profileMetadata.investmentRecords || [],
   };
   writeLocalProfile(profileId, data);
   return data;

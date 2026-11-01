@@ -1,5 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, Eye, EyeOff, LogOut, Plus, Trash2, Users } from 'lucide-react';
+import {
+  Bell,
+  Eye,
+  EyeOff,
+  LogOut,
+  MoonStar,
+  Plus,
+  Settings,
+  SunMedium,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import useSwipeToClose from '../hooks/useSwipeToClose';
 import {
@@ -11,7 +22,7 @@ import { triggerHaptic } from '../utils/haptics';
 import { getFirebaseErrorMessage } from '../utils/firebaseErrors';
 import { Button } from './ui/button';
 
-const ProfileSwitcher = ({ onOverlayOpenChange }) => {
+const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'top' }) => {
   const {
     profiles,
     activeProfile,
@@ -36,6 +47,8 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
     retrySync,
   } = useFinance();
   const motionPermissionRequested = useRef(false);
+  const settingsRef = useRef(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
@@ -60,6 +73,22 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
   const addingDialogSwipeHandlers = useSwipeToClose(() => setIsAdding(false));
   const goalsDialogSwipeHandlers = useSwipeToClose(() => setIsEditingGoals(false));
   const syncDialogSwipeHandlers = useSwipeToClose(() => setIsSyncPanelOpen(false));
+
+  useEffect(() => {
+    if (!isSettingsOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsSettingsOpen(false);
+    };
+    const handlePointerDown = (event) => {
+      if (!settingsRef.current?.contains(event.target)) setIsSettingsOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isSettingsOpen]);
 
   useEffect(() => {
     onOverlayOpenChange('profile', isAdding || isEditingGoals || isSyncPanelOpen);
@@ -257,82 +286,132 @@ const ProfileSwitcher = ({ onOverlayOpenChange }) => {
 
   return (
     <>
-      <div className="contents">
-        <button
-          type="button"
-          onClick={toggleAmountVisibility}
-          aria-label={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
-          aria-pressed={isAmountsHidden}
-          title={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:size-9 md:rounded-lg md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
-        >
-          {isAmountsHidden ? <Eye size={17} /> : <EyeOff size={17} />}
-        </button>
-        <button
-          type="button"
-          onClick={openGoalSettings}
-          aria-label="Ajustes de Perfil y Metas"
-          title="Ajustes de Perfil y Metas"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:size-9 md:rounded-lg md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
-        >
-          <Users size={17} />
-        </button>
-        <label htmlFor="active-profile" className="sr-only">Perfil activo</label>
-        <select
-          id="active-profile"
-          value={activeProfile.id}
-          onChange={(event) => switchProfile(event.target.value)}
-          className="h-10 min-w-0 flex-1 rounded-full bg-transparent px-3 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-slate-100 dark:text-slate-200 md:max-w-44 md:flex-none md:rounded-md md:bg-white md:text-slate-700 md:shadow-sm md:dark:bg-slate-900"
-        >
-          {profiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>{profile.name}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={() => setIsAdding(true)}
-          aria-label="Añadir perfil"
-          title="Añadir perfil"
-          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-slate-800 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-200 dark:hover:bg-slate-800 md:size-9 md:rounded-md md:bg-white md:text-slate-600 md:shadow-sm md:hover:bg-slate-50 md:dark:bg-slate-900 md:dark:hover:bg-slate-800"
-        >
-          <Plus size={17} />
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => {
-          setSyncFormError('');
-          setIsSyncPanelOpen(true);
-        }}
-        aria-label={syncUser
-          ? `Cuenta ${syncUser.email || ''}. ${syncStatusLabel}`
-          : 'Iniciar sesión para sincronizar'}
-        title={syncUser
-          ? `${syncUser.email || 'Cuenta conectada'} · ${syncStatusLabel}`
-          : 'Iniciar sesión para sincronizar'}
-        className={`absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] z-40 inline-flex min-h-10 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-slate-900 dark:text-slate-100 dark:ring-black dark:hover:bg-slate-800 ${
-          syncUser ? 'size-12' : 'px-4'
-        }`}
+      <div
+        ref={settingsRef}
+        className={placement === 'navigation' ? 'relative min-w-0 flex-1' : 'relative'}
       >
-        {syncUser ? (
-          <span className="relative inline-flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-300 text-md font-bold uppercase text-slate-700 dark:from-slate-700 dark:to-slate-800 dark:text-slate-100">
-            {(syncUser.email?.trim().charAt(0) || '?').toLocaleUpperCase()}
-            <span
-              aria-hidden="true"
-              className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-white dark:border-slate-900 ${
-                indicatorStatus === 'synced'
-                  ? 'bg-emerald-500'
-                  : indicatorStatus === 'error'
-                    ? 'bg-rose-500'
-                    : indicatorStatus === 'syncing'
-                      ? 'animate-pulse bg-amber-400'
-                      : 'bg-slate-400'
-              }`}
-            />
-          </span>
-        ) : 'Iniciar sesión'}
-      </button>
+        <button
+          type="button"
+          onClick={() => setIsSettingsOpen((isOpen) => !isOpen)}
+          aria-label="Cuenta y ajustes"
+          title="Cuenta y ajustes"
+          aria-expanded={isSettingsOpen}
+          aria-haspopup="dialog"
+          className={placement === 'navigation'
+            ? 'flex min-h-12 w-full min-w-0 items-center justify-center rounded-2xl px-1 py-2.5 text-slate-500 transition-colors hover:bg-slate-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:text-slate-400 dark:hover:bg-white/10'
+            : 'flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15'}
+        >
+          <UserRound size={22} aria-hidden="true" />
+          {placement === 'navigation' && <span className="sr-only">Cuenta</span>}
+        </button>
+        {isSettingsOpen && (
+          <section
+            role="dialog"
+            aria-label="Perfil y ajustes"
+            className={`absolute right-0 z-[70] max-h-[calc(100dvh-7rem)] w-[min(19rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-3xl border border-slate-200/80 bg-white/95 p-4 text-slate-900 shadow-[0_12px_40px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/95 dark:text-white ${
+              placement === 'navigation' ? 'bottom-full mb-2' : 'top-full mt-2'
+            }`}
+          >
+            <h2 className="mb-3 text-base font-semibold">Ajustes</h2>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
+                className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:hover:bg-white/10"
+              >
+                {theme === 'dark' ? <MoonStar size={18} aria-hidden="true" /> : <SunMedium size={18} aria-hidden="true" />}
+                <span className="flex-1">Apariencia</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">{theme === 'dark' ? 'Oscuro' : 'Claro'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={toggleAmountVisibility}
+                aria-pressed={isAmountsHidden}
+                className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:hover:bg-white/10"
+              >
+                {isAmountsHidden ? <Eye size={18} aria-hidden="true" /> : <EyeOff size={18} aria-hidden="true" />}
+                <span className="flex-1">{isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}</span>
+              </button>
+            </div>
+            <div className="my-3 border-t border-slate-200 dark:border-white/10" />
+            <label htmlFor="active-profile" className="mb-1.5 block px-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+              Perfil activo
+            </label>
+            <div className="flex items-center gap-2">
+              <select
+                id="active-profile"
+                value={activeProfile.id}
+                onChange={(event) => {
+                  switchProfile(event.target.value);
+                  setIsSettingsOpen(false);
+                }}
+                className="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 dark:border-white/10 dark:bg-zinc-800 dark:text-slate-100"
+              >
+                {profiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>{profile.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setIsAdding(true);
+                }}
+                aria-label="Añadir perfil"
+                title="Añadir perfil"
+                className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:bg-white/10 dark:hover:bg-white/15"
+              >
+                <Plus size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSettingsOpen(false);
+                openGoalSettings();
+              }}
+              className="mt-2 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:hover:bg-white/10"
+            >
+              <Settings size={18} aria-hidden="true" />
+              Perfil y metas
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSyncFormError('');
+                setIsSettingsOpen(false);
+                setIsSyncPanelOpen(true);
+              }}
+              aria-label={syncUser
+                ? `Cuenta ${syncUser.email || ''}. ${syncStatusLabel}`
+                : 'Iniciar sesión para sincronizar'}
+              className="mt-1 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:hover:bg-white/10"
+            >
+              <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold uppercase text-slate-700 dark:bg-white/10 dark:text-slate-200">
+                {(syncUser?.email?.trim().charAt(0) || <UserRound size={15} aria-hidden="true" />)}
+                {syncUser && (
+                  <span
+                    aria-hidden="true"
+                    className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white dark:border-zinc-900 ${
+                      indicatorStatus === 'synced'
+                        ? 'bg-emerald-500'
+                        : indicatorStatus === 'error'
+                          ? 'bg-rose-500'
+                          : indicatorStatus === 'syncing'
+                            ? 'animate-pulse bg-amber-400'
+                            : 'bg-slate-400'
+                    }`}
+                  />
+                )}
+              </span>
+              <span className="flex-1 truncate">
+                {syncUser ? syncUser.email || 'Cuenta sincronizada' : 'Iniciar sesión para sincronizar'}
+              </span>
+              {syncUser && <span className="text-xs text-slate-500 dark:text-slate-400">{syncStatusLabel}</span>}
+            </button>
+          </section>
+        )}
+      </div>
 
       {isAdding && (
         <div
