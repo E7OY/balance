@@ -311,7 +311,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
           <section
             role="dialog"
             aria-label="Perfil y ajustes"
-            className={`absolute right-0 z-[70] max-h-[calc(100dvh-7rem)] w-[min(19rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-full border border-slate-200/80 bg-white/95 p-4 text-slate-900 shadow-[0_12px_40px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/95 dark:text-white ${
+            className={`absolute right-0 z-[70] max-h-[calc(100dvh-7rem)] w-[min(19rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-3xl border border-slate-200/80 bg-white/95 p-4 text-slate-900 shadow-[0_12px_40px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/95 dark:text-white ${
               placement === 'navigation' ? 'bottom-full mb-2 max-sm:-right-8' : 'top-full mt-2'
             }`}
           >

@@ -5,6 +5,7 @@ const periods = {
   '1D': { duration: 24 * 60 * 60, resolution: '15' },
   '1S': { duration: 7 * 24 * 60 * 60, resolution: '60' },
   '1M': { duration: 30 * 24 * 60 * 60, resolution: 'D' },
+  '3M': { duration: 90 * 24 * 60 * 60, resolution: 'D' },
   '1A': { duration: 365 * 24 * 60 * 60, resolution: 'W' },
   TODO: { duration: 5 * 365 * 24 * 60 * 60, resolution: 'W' },
 };

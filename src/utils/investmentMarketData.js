@@ -117,6 +117,7 @@ export const getInvestmentHistory = async (asset, period, signal) => {
       '1D': '1',
       '1S': '7',
       '1M': '30',
+      '3M': '90',
       '1A': '365',
       TODO: 'max',
     };
