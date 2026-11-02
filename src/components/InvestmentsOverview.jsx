@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDownLeft, ArrowUpRight, Check, Pencil, Plus, RefreshCw, TrendingUp, Trash2, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
@@ -31,13 +31,18 @@ const getAllocationCategory = (assetType) => {
 
 const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const {
+    transactions,
     investmentRecords,
     addInvestmentRecord,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
     updateInvestmentRecord,
     updateInvestmentPrice,
     deleteInvestmentRecord,
   } = useFinance();
   const [editingId, setEditingId] = useState(null);
+  const [selectedAmountPreset, setSelectedAmountPreset] = useState('custom');
   const [successContribution, setSuccessContribution] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [date, setDate] = useState(getLocalDateString());
@@ -54,6 +59,36 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const [marketHistory, setMarketHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState('');
+  const amountInputRef = useRef(null);
+  const availableFunds = useMemo(() => {
+    const monthKey = date.slice(0, 7);
+    const cashBalance = transactions.reduce((balance, transaction) => {
+      if (!transaction.date?.startsWith(monthKey)) return balance;
+      const amount = Number(transaction.amount);
+      if (!Number.isFinite(amount) || amount <= 0) return balance;
+      if (transaction.type === 'Ingreso') return balance + amount;
+      if (transaction.type === 'Gasto') return balance - amount;
+      return balance;
+    }, 0);
+    const linkedInvestmentIds = new Set(
+      transactions.map((transaction) => transaction.investmentRecordId).filter(Boolean),
+    );
+    const unlinkedInvestments = investmentRecords
+      .filter((record) => record.id !== editingId
+        && record.date?.startsWith(monthKey)
+        && !linkedInvestmentIds.has(record.id))
+      .reduce((total, record) => total + (Number(record.investedAmount) || 0), 0);
+    const currentLinkedExpense = transactions.find((transaction) => (
+      transaction.investmentRecordId === editingId
+      && transaction.date?.startsWith(monthKey)
+    ));
+    return Math.max(0, cashBalance + (Number(currentLinkedExpense?.amount) || 0) - unlinkedInvestments);
+  }, [transactions, investmentRecords, date, editingId]);
+
+  const applyAmountPreset = (percentage) => {
+    setSelectedAmountPreset(String(percentage));
+    setInvestedAmount((availableFunds * (percentage / 100)).toFixed(2));
+  };
 
   useEffect(() => {
     if (!isFormOpen) return undefined;
@@ -467,6 +502,13 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       setErrorMessage('El capital aportado debe ser mayor que cero.');
       return;
     }
+    const existingContribution = Number(
+      investmentRecords.find((record) => record.id === editingId)?.investedAmount,
+    ) || 0;
+    if (invested > availableFunds && (!editingId || invested > existingContribution)) {
+      setErrorMessage(`El importe supera el dinero disponible (${formatCurrency(availableFunds)}).`);
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -489,14 +531,45 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
         currentValue: units * quote.priceEur,
         lastPriceUpdated: quote.updatedAt,
       };
-      if (editingId) updateInvestmentRecord(editingId, investment);
-      else addInvestmentRecord(investment);
+      if (editingId) {
+        updateInvestmentRecord(editingId, investment);
+        const linkedTransaction = transactions.find((transaction) => transaction.investmentRecordId === editingId);
+        if (linkedTransaction) {
+          await updateTransaction(linkedTransaction.id, {
+            date,
+            amount: invested,
+            description: `Aportación a ${selectedAsset.name}`,
+          });
+        } else {
+          await addTransaction({
+            type: 'Gasto',
+            paymentMethod: 'Transferencia',
+            amount: invested,
+            category: 'Inversiones',
+            date,
+            description: `Aportación a ${selectedAsset.name}`,
+            investmentRecordId: editingId,
+          });
+        }
+      } else {
+        const record = addInvestmentRecord(investment);
+        await addTransaction({
+          type: 'Gasto',
+          paymentMethod: 'Transferencia',
+          amount: invested,
+          category: 'Inversiones',
+          date,
+          description: `Aportación a ${selectedAsset.name}`,
+          investmentRecordId: record.id,
+        });
+      }
       if (!editingId) {
         setSuccessContribution({ amount: invested, assetName: selectedAsset.name, date });
       }
       setSelectedAsset(null);
       setDate(getLocalDateString());
       setInvestedAmount('');
+      setSelectedAmountPreset('custom');
       setEditingId(null);
       setPreviewQuote(null);
       onFormOpenChange(false);
@@ -507,10 +580,12 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     }
   };
 
-  const handleDelete = (recordId) => {
+  const handleDelete = async (recordId) => {
     const investment = investmentRecords.find((record) => record.id === recordId);
     if (!investment || !window.confirm(`¿Eliminar la inversión "${investment.name}"?`)) return;
     try {
+      const linkedTransaction = transactions.find((transaction) => transaction.investmentRecordId === recordId);
+      if (linkedTransaction) await deleteTransaction(linkedTransaction.id);
       deleteInvestmentRecord(recordId);
       setErrorMessage('');
     } catch (error) {
@@ -524,6 +599,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     setSelectedAsset(record.asset || null);
     setDate(record.date);
     setInvestedAmount(String(record.investedAmount));
+    setSelectedAmountPreset('custom');
     setErrorMessage('');
   };
   const cancelEditing = () => {
@@ -532,6 +608,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     setSelectedAsset(null);
     setDate(getLocalDateString());
     setInvestedAmount('');
+    setSelectedAmountPreset('custom');
     setPreviewQuote(null);
     setErrorMessage('');
   };
@@ -767,6 +844,54 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                   : 'El valor de la cartera se calculará automáticamente con la cotización del activo.'}
             </p>
           </div>
+              <div className="sm:col-span-2 lg:col-span-4">
+                <div className="grid grid-cols-4 gap-2 rounded-full bg-[#F4F2F4] p-1 dark:bg-[#1C1C1C]">
+                  {[
+                    { key: '25', label: '25%', percentage: 25 },
+                    { key: '50', label: '50%', percentage: 50 },
+                    { key: '100', label: '100%', percentage: 100 },
+                  ].map(({ key, label, percentage }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => applyAmountPreset(percentage)}
+                      disabled={availableFunds <= 0 || isSaving}
+                      aria-pressed={selectedAmountPreset === key}
+                      className={`h-9 min-w-0 rounded-full px-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                        selectedAmountPreset === key
+                          ? 'bg-[#AB9FF2] text-zinc-950'
+                          : 'text-zinc-600 hover:bg-white dark:text-zinc-300 dark:hover:bg-[#28282C]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedAmountPreset('custom');
+                      window.requestAnimationFrame(() => amountInputRef.current?.focus());
+                    }}
+                    aria-pressed={selectedAmountPreset === 'custom'}
+                    className={`h-9 min-w-0 rounded-full px-2 text-xs font-semibold transition-colors ${
+                      selectedAmountPreset === 'custom'
+                        ? 'bg-[#AB9FF2] text-zinc-950'
+                        : 'text-zinc-600 hover:bg-white dark:text-zinc-300 dark:hover:bg-[#28282C]'
+                    }`}
+                  >
+                    Personalizada
+                  </button>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#F4F2F4] px-3 py-2.5 dark:bg-[#28282C]">
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Desde</p>
+                    <p className="truncate text-xs font-semibold text-zinc-800 dark:text-zinc-100">Dinero disponible</p>
+                  </div>
+                  <p className="privacy-sensitive shrink-0 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+                    {formatCurrency(availableFunds)}
+                  </p>
+                </div>
+              </div>
           <label className="block min-w-0">
             <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-300">Fecha de registro</span>
             <input
@@ -780,11 +905,16 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
           <label className="block min-w-0">
             <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-300">Capital aportado (€)</span>
             <input
+              ref={amountInputRef}
               type="number"
               min="0.01"
+              max={availableFunds}
               step="0.01"
               value={investedAmount}
-              onChange={(event) => setInvestedAmount(event.target.value)}
+              onChange={(event) => {
+                setSelectedAmountPreset('custom');
+                setInvestedAmount(event.target.value);
+              }}
               required
               className="box-border block h-11 min-w-0 w-full max-w-full rounded-xl border border-zinc-200 bg-white px-3 text-base text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700 sm:text-sm"
             />
