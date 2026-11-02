@@ -1,13 +1,4 @@
 import React, { useMemo } from 'react';
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  CalendarDays,
-  PiggyBank,
-  ReceiptText,
-  TrendingUp,
-  Wallet,
-} from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
 import { Card } from './ui/card';
@@ -15,17 +6,6 @@ import { Card } from './ui/card';
 const monthNames = Array.from({ length: 12 }, (_, month) =>
   new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(2024, month, 1)),
 );
-
-const chartColors = [
-  '#10b981',
-  '#0ea5e9',
-  '#8b5cf6',
-  '#f59e0b',
-  '#f43f5e',
-  '#06b6d4',
-  '#6366f1',
-  '#84cc16',
-];
 
 const AnnualOverview = () => {
   const { transactions, filters, monthlyGoalsByMonth } = useFinance();
@@ -105,192 +85,100 @@ const AnnualOverview = () => {
       )), 1),
     };
   }, [yearTransactions, monthlyGoalsByMonth, filters.year]);
-  const topCategories = report.categories.slice(0, 8);
-  const otherCategoriesTotal = report.categories.slice(8).reduce((total, category) => total + category.amount, 0);
-  if (otherCategoriesTotal > 0) {
-    topCategories.push({ category: 'Otras categorías', amount: otherCategoriesTotal });
-  }
-  const topCategory = report.categories[0];
-  const metrics = [
-    {
-      label: 'Gastos del año',
-      amount: report.expenses,
-      detail: `${report.expenseCount} movimientos`,
-      icon: ArrowDownRight,
-      tone: 'expense',
-    },
-    {
-      label: 'Ingresos del año',
-      amount: report.income,
-      detail: report.income > 0
-        ? `${Math.round((report.expenses / report.income) * 100)}% destinado a gastos`
-        : 'Sin ingresos registrados',
-      icon: ArrowUpRight,
-      tone: 'income',
-    },
-    {
-      label: 'Balance anual',
-      amount: report.balance,
-      detail: 'Ingresos menos gastos',
-      icon: Wallet,
-      tone: 'balance',
-    },
-    {
-      label: 'Promedio mensual',
-      amount: report.expenses / 12,
-      detail: topCategory ? `Mayor categoría: ${topCategory.category}` : 'Gasto medio en 12 meses',
-      icon: CalendarDays,
-      tone: 'average',
-    },
-    {
-      label: 'Ahorrado',
-      amount: report.saved,
-      detail: 'Según saldo disponible y metas mensuales',
-      icon: PiggyBank,
-      tone: 'income',
-    },
-    {
-      label: 'Invertido',
-      amount: report.invested,
-      detail: 'Según saldo disponible y metas mensuales',
-      icon: TrendingUp,
-      tone: 'average',
-    },
-  ];
+  const currentDate = new Date();
+  const monthsElapsed = filters.year === currentDate.getFullYear()
+    ? currentDate.getMonth() + 1
+    : 12;
+  const averagePeriodLabel = `ene–${monthNames[monthsElapsed - 1].slice(0, 3)}`;
+  const bestMonth = report.monthlyTotals.reduce((best, month, index) => {
+    const balance = month.income - month.expenses;
+    return balance > best.balance ? { balance, index } : best;
+  }, { balance: Number.NEGATIVE_INFINITY, index: 0 });
+  const savingsPercent = report.income > 0 ? (report.balance / report.income) * 100 : 0;
+  const averageExpense = monthsElapsed > 0 ? report.expenses / monthsElapsed : 0;
+  const hasAnnualData = report.income > 0 || report.expenses > 0;
 
   return (
-    <div className="mt-4 space-y-4">
-      <section aria-label={`Resumen financiero de ${filters.year}`} className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        {metrics.map(({ label, amount, detail, icon: Icon, tone }) => (
-          <Card key={label} as="article" className="min-w-0 p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
-              <span
-                data-color-icon={tone === 'expense' ? 'expense' : tone === 'income' ? 'income' : 'chart'}
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg"
-              >
-                <Icon size={17} aria-hidden="true" />
-              </span>
-            </div>
-            <p className="privacy-sensitive mt-3 truncate text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-              {formatCurrency(amount)}
-            </p>
-            <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">{detail}</p>
-          </Card>
-        ))}
+    <div className="mt-3 space-y-4">
+      <section aria-label={`Resumen de ahorro de ${filters.year}`} className="py-2 text-center">
+        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Ahorro del año</p>
+        <p className={`privacy-sensitive mt-1 text-4xl font-bold tracking-tight tabular-nums ${report.balance < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-zinc-950 dark:text-white'}`}>
+          {formatCurrency(report.balance)}
+        </p>
+        <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${report.balance < 0 ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'}`}>
+          {Math.round(savingsPercent)}% de tus ingresos
+        </span>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.9fr)]">
-        <Card as="section" aria-labelledby="annual-monthly-title" className="p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 id="annual-monthly-title" className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                Evolución mensual
-              </h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Comparativa de ingresos y gastos en {filters.year}
+      <section aria-label={`Ingresos y gastos de ${filters.year}`} className="grid grid-cols-2 gap-3">
+        <Card as="article" className="min-w-0 rounded-2xl p-3">
+          <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Ingresos</p>
+          <p className="privacy-sensitive mt-1 truncate text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+            {formatCurrency(report.income)}
+          </p>
+        </Card>
+        <Card as="article" className="min-w-0 rounded-2xl p-3">
+          <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Gastos</p>
+          <p className="privacy-sensitive mt-1 truncate text-base font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+            {formatCurrency(report.expenses)}
+          </p>
+        </Card>
+      </section>
+
+      <Card as="section" aria-labelledby="annual-monthly-title" className="rounded-2xl p-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="annual-monthly-title" className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Por meses</h2>
+          <div className="flex items-center gap-2 text-[9px] text-zinc-500 dark:text-zinc-400">
+            <span className="inline-flex items-center gap-1"><i className="size-1.5 rounded-full bg-[#AB9FF2]" />Ingresos</span>
+            <span className="inline-flex items-center gap-1"><i className="size-1.5 rounded-full bg-zinc-500" />Gastos</span>
+          </div>
+        </div>
+        {!hasAnnualData && (
+          <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">Aún no hay movimientos en {filters.year}.</p>
+        )}
+        <div className="mt-3 grid grid-cols-12 gap-1" role="img" aria-label={`Ingresos y gastos mensuales de ${filters.year}`}>
+          {report.monthlyTotals.map(({ income, expenses }, index) => (
+            <div key={`${filters.year}-${index}`} className="min-w-0">
+              <div className="flex h-[4.75rem] items-end justify-center gap-[2px] border-b border-zinc-200 dark:border-white/10">
+                <span
+                  title={`${monthNames[index]}: ingresos ${formatCurrency(income)}`}
+                  className="w-[5px] rounded-t-sm bg-[#AB9FF2]"
+                  style={{ height: `${(income / report.maxMonthlyTotal) * 100}%` }}
+                />
+                <span
+                  title={`${monthNames[index]}: gastos ${formatCurrency(expenses)}`}
+                  className="w-[5px] rounded-t-sm bg-zinc-500 dark:bg-zinc-400"
+                  style={{ height: `${(expenses / report.maxMonthlyTotal) * 100}%` }}
+                />
+              </div>
+              <p className="mt-1 text-center text-[9px] font-semibold text-zinc-600 dark:text-zinc-300">
+                {monthNames[index].slice(0, 1).toUpperCase()}
               </p>
             </div>
-            <span data-color-icon="chart" className="flex size-9 shrink-0 items-center justify-center rounded-lg">
-              <ReceiptText size={18} aria-hidden="true" />
-            </span>
-          </div>
+          ))}
+        </div>
+      </Card>
 
-          {report.expenses === 0 && report.income === 0 ? (
-            <p className="flex min-h-52 items-center justify-center text-center text-sm text-zinc-500 dark:text-zinc-400">
-              Aún no hay movimientos registrados en {filters.year}.
-            </p>
-          ) : (
-            <div className="mt-5 space-y-3">
-              {report.monthlyTotals.map(({ income, expenses }, index) => (
-                <div key={monthNames[index]} className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-3">
-                  <span className="truncate text-xs capitalize text-zinc-500 dark:text-zinc-400">
-                    {monthNames[index].slice(0, 3)}
-                  </span>
-                  <div className="space-y-1.5" aria-label={`${monthNames[index]}: barras de gastos e ingresos`}>
-                    <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                      <div
-                        className="h-full rounded-full bg-rose-500"
-                        style={{ width: `${(expenses / report.maxMonthlyTotal) * 100}%` }}
-                      />
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                      <div
-                        className="h-full rounded-full bg-emerald-500"
-                        style={{ width: `${(income / report.maxMonthlyTotal) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <span className="privacy-sensitive min-w-[4.5rem] text-right text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                    {formatCurrency(expenses)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 border-t border-zinc-100 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />Gastos</span>
-            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />Ingresos</span>
-            <span className="ml-auto">El importe de la derecha muestra los gastos</span>
-          </div>
-          {report.biggestMonth.amount > 0 && (
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              Mes con más gastos: <span className="capitalize">{monthNames[report.biggestMonth.index]}</span>
-              {' '}· <span className="privacy-sensitive font-medium">{formatCurrency(report.biggestMonth.amount)}</span>
-            </p>
-          )}
-        </Card>
-
-        <Card as="section" aria-labelledby="annual-category-title" className="p-5 sm:p-6">
-          <div>
-            <h2 id="annual-category-title" className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              Gastos por categoría
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Distribución de los gastos de {filters.year}
-            </p>
-          </div>
-
-          {topCategories.length === 0 ? (
-            <p className="flex min-h-52 items-center justify-center text-center text-sm text-zinc-500 dark:text-zinc-400">
-              Aún no hay gastos para mostrar.
-            </p>
-          ) : (
-            <div className="mt-6 space-y-4">
-              {topCategories.map(({ category, amount }, index) => {
-                const percentage = report.expenses > 0 ? (amount / report.expenses) * 100 : 0;
-                return (
-                  <div key={category}>
-                    <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
-                      <span className="flex min-w-0 items-center gap-2 font-medium text-zinc-700 dark:text-zinc-300">
-                        <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: chartColors[index % chartColors.length] }} />
-                        <span className="truncate">{category}</span>
-                      </span>
-                      <span className="privacy-sensitive shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
-                        {formatCurrency(amount)} · {percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${percentage}%`, backgroundColor: chartColors[index % chartColors.length] }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {topCategory && (
-            <p className="mt-6 border-t border-zinc-100 pt-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              Tu mayor gasto está en <strong className="text-zinc-800 dark:text-zinc-200">{topCategory.category}</strong>
-              {' '}con <span className="privacy-sensitive font-semibold text-zinc-800 dark:text-zinc-200">{formatCurrency(topCategory.amount)}</span>.
-            </p>
-          )}
-        </Card>
-      </div>
+      <Card as="section" aria-label="Resumen anual" className="rounded-2xl divide-y divide-zinc-200/70 px-3.5 dark:divide-white/10">
+        <div className="flex items-center justify-between gap-3 py-3 text-[11px]">
+          <span className="text-zinc-500 dark:text-zinc-400">Mejor mes</span>
+          <span className={`privacy-sensitive truncate text-right font-semibold tabular-nums ${bestMonth.balance >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+            {hasAnnualData ? `${monthNames[bestMonth.index].slice(0, 1).toUpperCase()}${monthNames[bestMonth.index].slice(1)} · ${bestMonth.balance > 0 ? '+' : ''}${formatCurrency(bestMonth.balance)}` : '—'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3 py-3 text-[11px]">
+          <span className="text-zinc-500 dark:text-zinc-400">Mes con más gasto</span>
+          <span className="privacy-sensitive truncate text-right font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+            {report.biggestMonth.amount > 0
+              ? `${monthNames[report.biggestMonth.index].slice(0, 1).toUpperCase()}${monthNames[report.biggestMonth.index].slice(1)} · ${formatCurrency(report.biggestMonth.amount)}`
+              : '—'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3 py-3 text-[11px]">
+          <span className="text-zinc-500 dark:text-zinc-400">Gasto medio ({averagePeriodLabel})</span>
+          <span className="privacy-sensitive font-semibold tabular-nums text-zinc-800 dark:text-zinc-200">{formatCurrency(averageExpense)}</span>
+        </div>
+      </Card>
     </div>
   );
 };

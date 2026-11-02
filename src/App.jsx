@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { House, Plus, ReceiptText, TrendingUp, X } from 'lucide-react';
+import { ChartNoAxesCombined, ChevronLeft, House, Plus, ReceiptText, TrendingUp, X } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import AnnualOverview from './components/AnnualOverview';
 import HomeOverview from './components/HomeOverview';
@@ -334,20 +334,50 @@ const App = () => {
     triggerHaptic();
   };
 
+  const annualYears = [...new Set([
+    new Date().getFullYear(),
+    ...transactions
+      .map((transaction) => Number(transaction.date?.slice(0, 4)))
+      .filter((year) => Number.isInteger(year)),
+  ])].sort((left, right) => right - left);
+
   return (
     <div
       className="app-shell min-h-screen bg-white text-zinc-950 transition-colors dark:bg-black dark:text-white pb-10 mx-6"
       data-amounts-hidden={isAmountsHidden}
     >
       <main
-        className="relative z-10 mx-auto max-w-7xl px-4 pb-32 pt-9 sm:px-6 lg:px-8"
+        className={`relative z-10 mx-auto max-w-7xl px-4 pb-32 sm:px-6 lg:px-8 ${activeTab === 'home' && isAnnualView ? 'pt-3 sm:pt-4' : 'pt-9'}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={() => { monthSwipeStart.current = null; }}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            {activeTab === 'home' ? (
+            {activeTab === 'home' ? (isAnnualView ? (
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAnnualView(false)}
+                  aria-label="Volver a la vista mensual"
+                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-[#F4F2F4] text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#28282C] dark:text-zinc-200"
+                >
+                  <ChevronLeft size={17} aria-hidden="true" />
+                </button>
+                <h1 className="min-w-0 flex-1 text-center text-sm font-semibold text-zinc-900 dark:text-zinc-100">Vista anual</h1>
+                <label className="shrink-0">
+                  <span className="sr-only">Seleccionar año</span>
+                  <select
+                    aria-label="Seleccionar año"
+                    value={filters.year}
+                    onChange={(event) => setFilters((previous) => ({ ...previous, year: Number(event.target.value) }))}
+                    className="h-8 rounded-full border-0 bg-[#F4F2F4] px-2.5 text-[10px] font-semibold text-violet-800 outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#28282C] dark:text-violet-300"
+                  >
+                    {annualYears.map((year) => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                </label>
+              </div>
+            ) : (
               <div className="flex items-center justify-start gap-2">
                 <ProfileSwitcher
                   onOverlayOpenChange={handleOverlayOpenChange}
@@ -379,10 +409,10 @@ const App = () => {
                   onClick={() => setIsAnnualView((isAnnual) => !isAnnual)}
                   className="ml-auto h-9 shrink-0 rounded-full bg-[#AB9FF2] px-3 text-[11px] font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
                 >
-                  {isAnnualView ? 'Vista mensual' : 'Vista anual'}
+                  Vista anual
                 </button>
               </div>
-            ) : (
+            )) : (
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
                 {activeTab === 'transactions' ? 'Movimientos' : 'Inversiones'}
               </h1>
