@@ -85,15 +85,16 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     return Math.max(0, cashBalance + (Number(currentLinkedExpense?.amount) || 0) - unlinkedInvestments);
   }, [transactions, investmentRecords, date, editingId]);
 
-  const applyAmountPreset = (percentage) => {
-    setSelectedAmountPreset(String(percentage));
-    setInvestedAmount((availableFunds * (percentage / 100)).toFixed(2));
+  const applyAmountPreset = (amount, key) => {
+    setSelectedAmountPreset(key);
+    setInvestedAmount(Math.min(availableFunds, amount).toFixed(2));
   };
 
   useEffect(() => {
     if (!isFormOpen) return undefined;
     const frameId = window.requestAnimationFrame(() => {
-      document.querySelector('#investment-form input[type="search"]')?.focus();
+      const target = selectedAsset ? amountInputRef.current : document.querySelector('#investment-form input[type="search"]');
+      target?.focus();
     });
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') onFormOpenChange(false);
@@ -103,7 +104,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       window.cancelAnimationFrame(frameId);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isFormOpen]);
+  }, [isFormOpen, selectedAsset]);
 
   const [portfolioChartPeriod, setPortfolioChartPeriod] = useState('1M');
   const [portfolioHistoryByAsset, setPortfolioHistoryByAsset] = useState({});
@@ -809,123 +810,117 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
         aria-modal="true"
         aria-labelledby="investment-form-title"
         data-investment-dialog
-        className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-[#FFFDF8] p-5 text-zinc-900 shadow-xl dark:bg-[#28282C] dark:text-white sm:p-6"
+        className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-[#FFFDF8] p-4 text-zinc-900 shadow-xl dark:bg-[#28282C] dark:text-white sm:p-5"
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 id="investment-form-title" className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-            {editingId ? 'Editar inversión' : 'Registrar inversión'}
+        <div className="relative mb-3 flex items-center justify-center">
+          <h2 id="investment-form-title" className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {editingId ? 'Editar aportación' : 'Aportar'}
           </h2>
           <button
             type="button"
             onClick={() => onFormOpenChange(false)}
             aria-label="Cerrar formulario de inversión"
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-white/10"
+            className="absolute right-0 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-white/10"
           >
-            <X size={18} aria-hidden="true" />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
-        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-          Busca el activo: el valor de mercado y las ganancias se calcularán con su cotización y las unidades estimadas.
-        </p>
-        <form onSubmit={handleSubmit} className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="min-w-0 max-w-full sm:col-span-2 lg:col-span-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label htmlFor="investment-amount" className="sr-only">Importe de la aportación</label>
+            <div className="mx-auto flex max-w-[15rem] items-center justify-center border-b border-zinc-200 pb-1 dark:border-white/10">
+              <input
+                id="investment-amount"
+                ref={amountInputRef}
+                type="number"
+                min="0.01"
+                max={availableFunds}
+                step="0.01"
+                inputMode="decimal"
+                value={investedAmount}
+                onChange={(event) => {
+                  setSelectedAmountPreset('custom');
+                  setInvestedAmount(event.target.value);
+                }}
+                required
+                className="h-12 min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-4xl font-bold tabular-nums text-zinc-950 outline-none placeholder:text-zinc-300 focus:ring-0 dark:text-white dark:placeholder:text-zinc-600"
+                placeholder="0,00"
+              />
+              <span className="text-xl font-semibold text-zinc-800 dark:text-zinc-200">€</span>
+            </div>
+            <p className="mt-1 text-center text-[10px] text-zinc-500 dark:text-zinc-400">
+              Disponible: <span className="privacy-sensitive font-semibold tabular-nums">{formatCurrency(availableFunds)}</span>
+            </p>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              { key: '50', label: '50 €', amount: 50 },
+              { key: '100', label: '100 €', amount: 100 },
+              { key: '250', label: '250 €', amount: 250 },
+              { key: 'max', label: 'Máx.', amount: availableFunds },
+            ].map(({ key, label, amount }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => applyAmountPreset(amount, key)}
+                disabled={availableFunds <= 0 || isSaving || (key !== 'max' && amount > availableFunds)}
+                aria-pressed={selectedAmountPreset === key}
+                className={`h-9 min-w-0 rounded-full px-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${selectedAmountPreset === key ? 'bg-[#AB9FF2] text-zinc-950 dark:bg-[#302A4F] dark:text-[#AB9FF2]' : 'bg-[#F4F2F4] text-zinc-800 dark:bg-[#28282C] dark:text-zinc-200'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex min-h-12 items-center justify-between gap-3 rounded-xl bg-[#F4F2F4] px-3 dark:bg-[#28282C]">
+            <div className="min-w-0">
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Desde</p>
+              <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">Dinero disponible</p>
+            </div>
+          </div>
+
+          <div className="min-w-0">
             <InvestmentAssetPicker
               value={selectedAsset}
+              label="Hacia"
               onChange={(asset) => {
                 setSelectedAsset(asset);
                 setErrorMessage('');
+                if (asset) window.requestAnimationFrame(() => amountInputRef.current?.focus());
               }}
             />
-            <p role="status" className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-              {isLoadingQuote
-                ? 'Consultando precio de mercado…'
-                : previewQuote
-                  ? `Precio actual: ${formatCurrency(previewQuote.priceEur)} por unidad · ${investedAmount && Number(investedAmount) > 0 ? `${(Number(investedAmount) / previewQuote.priceEur).toFixed(6)} unidades estimadas` : 'Elige el capital para estimar las unidades'}`
-                  : 'El valor de la cartera se calculará automáticamente con la cotización del activo.'}
-            </p>
+            {selectedAsset && (
+              <p role="status" className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+                {isLoadingQuote
+                  ? 'Consultando precio…'
+                  : previewQuote
+                    ? `${formatCurrency(previewQuote.priceEur)} por unidad · ${investedAmount && Number(investedAmount) > 0 ? `${(Number(investedAmount) / previewQuote.priceEur).toFixed(6)} unidades` : 'unidades estimadas'}`
+                    : 'El valor se actualizará con la cotización.'}
+              </p>
+            )}
           </div>
-              <div className="sm:col-span-2 lg:col-span-4">
-                <div className="grid grid-cols-4 gap-2 rounded-full bg-[#F4F2F4] p-1 dark:bg-[#1C1C1C]">
-                  {[
-                    { key: '25', label: '25%', percentage: 25 },
-                    { key: '50', label: '50%', percentage: 50 },
-                    { key: '100', label: '100%', percentage: 100 },
-                  ].map(({ key, label, percentage }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => applyAmountPreset(percentage)}
-                      disabled={availableFunds <= 0 || isSaving}
-                      aria-pressed={selectedAmountPreset === key}
-                      className={`h-9 min-w-0 rounded-full px-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                        selectedAmountPreset === key
-                          ? 'bg-[#AB9FF2] text-zinc-950'
-                          : 'text-zinc-600 hover:bg-white dark:text-zinc-300 dark:hover:bg-[#28282C]'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedAmountPreset('custom');
-                      window.requestAnimationFrame(() => amountInputRef.current?.focus());
-                    }}
-                    aria-pressed={selectedAmountPreset === 'custom'}
-                    className={`h-9 min-w-0 rounded-full px-2 text-xs font-semibold transition-colors ${
-                      selectedAmountPreset === 'custom'
-                        ? 'bg-[#AB9FF2] text-zinc-950'
-                        : 'text-zinc-600 hover:bg-white dark:text-zinc-300 dark:hover:bg-[#28282C]'
-                    }`}
-                  >
-                    Personalizada
-                  </button>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#F4F2F4] px-3 py-2.5 dark:bg-[#28282C]">
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Desde</p>
-                    <p className="truncate text-xs font-semibold text-zinc-800 dark:text-zinc-100">Dinero disponible</p>
-                  </div>
-                  <p className="privacy-sensitive shrink-0 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                    {formatCurrency(availableFunds)}
-                  </p>
-                </div>
-              </div>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-300">Fecha de registro</span>
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              required
-              className="box-border block h-11 min-w-0 w-full max-w-full rounded-xl border border-zinc-200 bg-white px-3 text-base text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700 sm:text-sm"
-            />
-          </label>
-          <label className="block min-w-0">
-            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-300">Capital aportado (€)</span>
-            <input
-              ref={amountInputRef}
-              type="number"
-              min="0.01"
-              max={availableFunds}
-              step="0.01"
-              value={investedAmount}
-              onChange={(event) => {
-                setSelectedAmountPreset('custom');
-                setInvestedAmount(event.target.value);
-              }}
-              required
-              className="box-border block h-11 min-w-0 w-full max-w-full rounded-xl border border-zinc-200 bg-white px-3 text-base text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700 sm:text-sm"
-            />
-          </label>
-          <div className="sm:col-span-2 lg:col-span-4">
+
+          {editingId && (
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Fecha de aportación</span>
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                required
+                className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none focus:border-[#AB9FF2] focus:ring-2 focus:ring-violet-100 dark:border-white/10 dark:bg-[#1C1C1C] dark:text-zinc-100"
+              />
+            </label>
+          )}
+
+          <div>
             <button
               type="submit"
               disabled={isLoadingQuote || isSaving}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#AB9FF2] px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] disabled:cursor-wait disabled:opacity-60 dark:bg-[#AB9FF2] dark:text-zinc-950 dark:hover:bg-[#9A8BE8]"
+              className="h-10 w-full rounded-full bg-[#AB9FF2] text-xs font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] disabled:cursor-wait disabled:opacity-60"
             >
-              {isSaving ? 'Consultando precio…' : editingId ? 'Guardar cambios' : <><Plus size={17} aria-hidden="true" />Guardar inversión</>}
+              {isSaving ? 'Consultando precio…' : editingId ? 'Guardar cambios' : 'Continuar'}
             </button>
             {editingId && (
               <button

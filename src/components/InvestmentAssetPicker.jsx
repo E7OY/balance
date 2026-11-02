@@ -3,7 +3,7 @@ import { Search, X } from 'lucide-react';
 import { searchInvestmentAssets } from '../utils/investmentMarketData';
 import InvestmentAssetIcon from './InvestmentAssetIcon';
 
-const InvestmentAssetPicker = ({ value, onChange }) => {
+const InvestmentAssetPicker = ({ value, onChange, label = 'Buscar activo' }) => {
   const inputId = useId();
   const [query, setQuery] = useState('');
   const [assets, setAssets] = useState([]);
@@ -57,7 +57,7 @@ const InvestmentAssetPicker = ({ value, onChange }) => {
   return (
     <div className="min-w-0 w-full max-w-full">
       <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200">
-        Buscar activo
+        {label}
       </label>
       {value ? (
         <div className="flex min-h-14 min-w-0 w-full max-w-full items-center gap-3 overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 dark:border-white/10 dark:bg-zinc-900">

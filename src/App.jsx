@@ -423,7 +423,7 @@ const App = () => {
                   onClick={() => setIsInvestmentFormOpen((isOpen) => !isOpen)}
                   aria-expanded={isInvestmentFormOpen}
                   aria-controls="investment-form"
-                  className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#AB9FF2] px-3 text-xs font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#AB9FF2] dark:text-zinc-950 dark:hover:bg-[#9A8BE8]"
+                  className="inline-flex h-9 float-right shrink-0 items-center gap-1.5 rounded-full bg-[#AB9FF2] px-3 text-xs font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#AB9FF2] dark:text-zinc-950 dark:hover:bg-[#9A8BE8]"
                 >
                   {isInvestmentFormOpen ? <X size={14} aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
                   {isInvestmentFormOpen ? 'Cerrar' : 'Aportar'}
