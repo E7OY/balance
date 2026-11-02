@@ -417,7 +417,7 @@ const App = () => {
           aria-label="Menú principal"
           className="fixed inset-x-10 bottom-2 z-30 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:inset-x-6"
         >
-          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-0.5 rounded-[1.75rem] bg-white/80 p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-zinc-900/80 dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
+          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-0.5 rounded-[1.75rem] bg-[#F4F2F4] p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-[#28282C] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
             {[
               { id: 'home', label: 'Inicio', Icon: House },
               { id: 'transactions', label: 'Movimientos', Icon: ReceiptText },

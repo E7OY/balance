@@ -81,7 +81,7 @@ const CategoryBreakdown = ({ onOverlayOpenChange }) => {
 
   return (
     <>
-    <Card as="section" data-home-card-flat className="p-5 sm:p-6  dark:!bg-zinc-900">
+    <Card as="section" data-home-card-flat className="p-5 sm:p-6">
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">¿En qué se va?</h2>
