@@ -81,6 +81,62 @@ const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters, isAnnualView = fal
         onClick={onCloseMobileFilters}
       />
     )}
+    {!isAnnualView && (
+      <div className="mb-3 space-y-2 md:hidden">
+        <label className="relative block">
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
+          <span className="sr-only">Buscar movimientos</span>
+          <input
+            type="search"
+            name="searchTerm"
+            value={filters.searchTerm}
+            onChange={handleFilterChange}
+            placeholder="Buscar movimientos"
+            className="h-9 w-full rounded-full border-0 bg-[#F4F2F4] pl-9 pr-3 text-xs text-zinc-900 outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#28282C] dark:text-zinc-100 dark:placeholder:text-zinc-400"
+          />
+        </label>
+        <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto pb-0.5">
+          {[
+            ['Todos', 'Todos'],
+            ['Ingreso', 'Ingresos'],
+            ['Gasto', 'Gastos'],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilters((previous) => ({
+                ...previous,
+                type: value,
+                category: 'Todas',
+              }))}
+              aria-pressed={filters.type === value}
+              className={`h-8 shrink-0 rounded-full px-3 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] ${
+                filters.type === value
+                  ? 'bg-[#AB9FF2] text-zinc-950'
+                  : 'bg-[#F4F2F4] text-zinc-700 dark:bg-[#28282C] dark:text-zinc-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          <label className="sr-only" htmlFor="mobile-category-chip">Categoría</label>
+          <select
+            id="mobile-category-chip"
+            name="category"
+            value={filters.category}
+            onChange={handleFilterChange}
+            className={`h-8 min-w-0 max-w-36 shrink rounded-full border-0 px-3 text-[11px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] ${
+              filters.category !== 'Todas'
+                ? 'bg-[#AB9FF2] text-zinc-950'
+                : 'bg-[#F4F2F4] text-zinc-700 dark:bg-[#28282C] dark:text-zinc-200'
+            }`}
+          >
+            <option value="Todas">Categorías</option>
+            {categoriesForType.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select>
+        </div>
+      </div>
+    )}
     <section
       id="transaction-filters"
       role={isMobileFiltersOpen ? 'dialog' : undefined}
@@ -220,7 +276,7 @@ const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters, isAnnualView = fal
           </button>}
         </div>
 
-        {!isAnnualView && <label className="relative col-span-2 block sm:col-span-1">
+        {!isAnnualView && <label className="relative col-span-2 hidden sm:col-span-1 md:block">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <span className="sr-only">Buscar movimiento</span>
           <input
@@ -232,25 +288,25 @@ const Filters = ({ isMobileFiltersOpen, onCloseMobileFilters, isAnnualView = fal
             className="h-8 w-full rounded-md border border-slate-200 bg-white pl-9 pr-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 md:h-9 md:w-48 md:pr-3"
           />
         </label>}
-        {!isAnnualView && <label className="sr-only" htmlFor="type">Tipo de movimiento</label>}
+        {!isAnnualView && <label className="sr-only hidden md:block" htmlFor="type">Tipo de movimiento</label>}
         {!isAnnualView && <select
           id="type"
           name="type"
           value={filters.type}
           onChange={handleFilterChange}
-          className="h-8 min-w-0 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 sm:h-9 sm:px-3"
+          className="hidden h-8 min-w-0 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 sm:h-9 sm:px-3 md:block"
         >
           <option value="Todos">Todos</option>
           <option value="Ingreso">Ingresos</option>
           <option value="Gasto">Gastos</option>
         </select>}
-        {!isAnnualView && <label className="sr-only" htmlFor="category">Categoría</label>}
+        {!isAnnualView && <label className="sr-only hidden md:block" htmlFor="category">Categoría</label>}
         {!isAnnualView && <select
           id="category"
           name="category"
           value={filters.category}
           onChange={handleFilterChange}
-          className="h-8 min-w-0 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 sm:h-9 sm:px-3"
+          className="hidden h-8 min-w-0 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 sm:h-9 sm:px-3 md:block"
         >
           <option value="Todas">Todas las categorías</option>
           {categoriesForType.map((category) => <option key={category} value={category}>{category}</option>)}

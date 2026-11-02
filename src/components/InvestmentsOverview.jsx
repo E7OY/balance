@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, RefreshCw, TrendingUp, Trash2, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { ArrowDownLeft, ArrowUpRight, Check, Pencil, Plus, RefreshCw, TrendingUp, Trash2, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatDate, formatUnitPrice, getLocalDateString } from '../utils/helpers';
 import { getInvestmentHistory, getInvestmentQuote, getInvestmentQuotes } from '../utils/investmentMarketData';
@@ -37,6 +38,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     deleteInvestmentRecord,
   } = useFinance();
   const [editingId, setEditingId] = useState(null);
+  const [successContribution, setSuccessContribution] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [date, setDate] = useState(getLocalDateString());
   const [investedAmount, setInvestedAmount] = useState('');
@@ -489,12 +491,14 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       };
       if (editingId) updateInvestmentRecord(editingId, investment);
       else addInvestmentRecord(investment);
+      if (!editingId) {
+        setSuccessContribution({ amount: invested, assetName: selectedAsset.name, date });
+      }
       setSelectedAsset(null);
       setDate(getLocalDateString());
       setInvestedAmount('');
       setEditingId(null);
       setPreviewQuote(null);
-      onFormOpenChange(false);
       onFormOpenChange(false);
     } catch (error) {
       setErrorMessage(`No se pudo consultar el precio o guardar la inversión. ${error.message}`);
@@ -516,7 +520,6 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
 
   const startEditing = (record) => {
     setEditingId(record.id);
-    onFormOpenChange(true);
     onFormOpenChange(true);
     setSelectedAsset(record.asset || null);
     setDate(record.date);
@@ -715,9 +718,10 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
         </div>
       </Card>
 
-      {isFormOpen && (
+      {isFormOpen && createPortal((
       <div
-        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+        data-investment-backdrop
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) onFormOpenChange(false);
         }}
@@ -727,6 +731,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="investment-form-title"
+        data-investment-dialog
         className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-[#FFFDF8] p-5 text-zinc-900 shadow-xl dark:bg-[#28282C] dark:text-white sm:p-6"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -808,9 +813,62 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
         {marketNotice && <p role="status" className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{marketNotice}</p>}
       </section>
       </div>
-      )}
+      ), document.body)}
 
-      <Card as="section" data-phantom-surface className="min-w-0 overflow-hidden border border-white/10 dark:bg-zinc-900">
+      {successContribution && createPortal((
+        <div
+          data-investment-backdrop
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSuccessContribution(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contribution-success-title"
+            data-investment-dialog
+            className="w-full max-w-sm rounded-2xl bg-[#FFFDF8] p-6 text-center text-zinc-900 shadow-2xl dark:bg-[#28282C] dark:text-white"
+          >
+            <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+              <Check size={23} strokeWidth={2.5} aria-hidden="true" />
+            </span>
+            <h2 id="contribution-success-title" className="text-base font-semibold">Aportación realizada</h2>
+            <p className="privacy-sensitive mt-2 text-3xl font-semibold tabular-nums">
+              {formatCurrency(successContribution.amount)}
+            </p>
+            <dl className="mt-5 space-y-2 text-left text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-zinc-500 dark:text-zinc-400">Activo</dt>
+                <dd className="truncate font-medium">{successContribution.assetName}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-zinc-500 dark:text-zinc-400">Fecha</dt>
+                <dd className="font-medium">{formatDate(successContribution.date)}</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              onClick={() => setSuccessContribution(null)}
+              className="mt-6 h-10 w-full rounded-full bg-[#AB9FF2] text-sm font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
+            >
+              Listo
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessContribution(null);
+                document.getElementById('investment-portfolio')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="mt-3 text-xs font-medium text-violet-700 hover:underline dark:text-violet-300"
+            >
+              Ver cartera
+            </button>
+          </section>
+        </div>
+      ), document.body)}
+
+      <Card id="investment-portfolio" as="section" data-phantom-surface className="min-w-0 scroll-mt-6 overflow-hidden border border-white/10 dark:bg-zinc-900">
         <div className="flex min-w-0 items-center justify-between gap-3 border-zinc-100 px-4 py-4 dark:border-white/10 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0">

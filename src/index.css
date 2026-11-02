@@ -374,6 +374,38 @@ html.dark .app-shell [data-color-icon="chart"] {
   background-color: #d4d4d4;
 }
 
+[data-investment-backdrop] {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+[data-investment-dialog] {
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
+  margin: auto;
+  animation: sheet-enter 180ms ease-out both;
+}
+
+@media (max-width: 1023px) {
+  [data-investment-backdrop] {
+    align-items: flex-end;
+    padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  [data-investment-dialog] {
+    width: 100%;
+    max-width: 42rem;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 1.5rem);
+    margin: auto auto 0;
+    border-radius: 1.75rem 1.75rem 1rem 1rem;
+    animation: bottom-sheet-enter 180ms ease-out both;
+  }
+}
+
 html.dark [data-sync-account-dialog] {
   border-color: #404040;
   background-color: rgba(23, 23, 23, 0.98);
