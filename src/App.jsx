@@ -36,6 +36,7 @@ const App = () => {
   const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isAnnualView, setIsAnnualView] = useState(false);
+  const [isInvestmentFormOpen, setIsInvestmentFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [dismissedSpendingAlertKeys, setDismissedSpendingAlertKeys] = useState([]);
   const [openOverlays, setOpenOverlays] = useState({});
@@ -346,12 +347,26 @@ const App = () => {
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              {activeTab === 'home' ? 'Patrimonio' : {
-                transactions: 'Movimientos',
-                investments: 'Inversiones',
-              }[activeTab]}
-            </h1>
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+                {activeTab === 'home' ? 'Patrimonio' : {
+                  transactions: 'Movimientos',
+                  investments: 'Inversiones',
+                }[activeTab]}
+              </h1>
+              {activeTab === 'investments' && (
+                <button
+                  type="button"
+                  onClick={() => setIsInvestmentFormOpen((isOpen) => !isOpen)}
+                  aria-expanded={isInvestmentFormOpen}
+                  aria-controls="investment-form"
+                  className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#AB9FF2] px-3 text-xs font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#AB9FF2] dark:text-zinc-950 dark:hover:bg-[#9A8BE8]"
+                >
+                  {isInvestmentFormOpen ? <X size={14} aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
+                  {isInvestmentFormOpen ? 'Cerrar' : 'Aportar'}
+                </button>
+              )}
+            </div>
             {activeTab === 'home' && isAnnualView && (
               <button
                 type="button"
@@ -403,7 +418,12 @@ const App = () => {
             onMobileFiltersOpenChange={setIsMobileFiltersOpen}
           />
         )}
-        {activeTab === 'investments' && <InvestmentsOverview />}
+        {activeTab === 'investments' && (
+          <InvestmentsOverview
+            isFormOpen={isInvestmentFormOpen}
+            onFormOpenChange={setIsInvestmentFormOpen}
+          />
+        )}
         {activeTab === 'home' && <div className="mt-4 flex justify-end">
           <ExportImportButtons />
         </div>}
@@ -441,7 +461,7 @@ const App = () => {
               onClick={() => setIsModalOpen(true)}
               aria-label="Añadir movimiento"
               title="Añadir movimiento"
-              className="inline-flex !size-[3.25rem] shrink-0 !items-center !justify-center !rounded-full !bg-emerald-700 p-0 text-white shadow-md transition-colors hover:!bg-emerald-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 dark:!bg-emerald-600 dark:hover:!bg-emerald-500"
+              className="inline-flex !size-[3.25rem] shrink-0 !items-center !justify-center !rounded-full !bg-[#AB9FF2] p-0 text-zinc-950 shadow-md transition-colors hover:!bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#AB9FF2]/40 dark:!bg-[#AB9FF2] dark:hover:!bg-[#9A8BE8]"
             >
               <Plus size={24} strokeWidth={2.5} aria-hidden="true" />
             </button>

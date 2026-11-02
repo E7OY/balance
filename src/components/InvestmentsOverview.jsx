@@ -28,7 +28,7 @@ const getAllocationCategory = (assetType) => {
   return 'Otros';
 };
 
-const InvestmentsOverview = () => {
+const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const {
     investmentRecords,
     addInvestmentRecord,
@@ -52,6 +52,22 @@ const InvestmentsOverview = () => {
   const [marketHistory, setMarketHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState('');
+
+  useEffect(() => {
+    if (!isFormOpen) return undefined;
+    const frameId = window.requestAnimationFrame(() => {
+      document.querySelector('#investment-form input[type="search"]')?.focus();
+    });
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onFormOpenChange(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFormOpen]);
+
   const [portfolioChartPeriod, setPortfolioChartPeriod] = useState('1M');
   const [portfolioHistoryByAsset, setPortfolioHistoryByAsset] = useState({});
   const [isLoadingPortfolioHistory, setIsLoadingPortfolioHistory] = useState(false);
@@ -478,6 +494,8 @@ const InvestmentsOverview = () => {
       setInvestedAmount('');
       setEditingId(null);
       setPreviewQuote(null);
+      onFormOpenChange(false);
+      onFormOpenChange(false);
     } catch (error) {
       setErrorMessage(`No se pudo consultar el precio o guardar la inversión. ${error.message}`);
     } finally {
@@ -498,6 +516,8 @@ const InvestmentsOverview = () => {
 
   const startEditing = (record) => {
     setEditingId(record.id);
+    onFormOpenChange(true);
+    onFormOpenChange(true);
     setSelectedAsset(record.asset || null);
     setDate(record.date);
     setInvestedAmount(String(record.investedAmount));
@@ -505,6 +525,7 @@ const InvestmentsOverview = () => {
   };
   const cancelEditing = () => {
     setEditingId(null);
+    onFormOpenChange(false);
     setSelectedAsset(null);
     setDate(getLocalDateString());
     setInvestedAmount('');
@@ -694,15 +715,36 @@ const InvestmentsOverview = () => {
         </div>
       </Card>
 
-      <Card as="section" className="!border-0 p-5 dark:bg-zinc-900 sm:p-6">
-        <div className="mb-4">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+      {isFormOpen && (
+      <div
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) onFormOpenChange(false);
+        }}
+      >
+      <section
+        id="investment-form"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="investment-form-title"
+        className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-[#FFFDF8] p-5 text-zinc-900 shadow-xl dark:bg-[#28282C] dark:text-white sm:p-6"
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 id="investment-form-title" className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
             {editingId ? 'Editar inversión' : 'Registrar inversión'}
           </h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Busca el activo: el valor de mercado y las ganancias se calcularán con su cotización y las unidades estimadas.
-          </p>
+          <button
+            type="button"
+            onClick={() => onFormOpenChange(false)}
+            aria-label="Cerrar formulario de inversión"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-white/10"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
+        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+          Busca el activo: el valor de mercado y las ganancias se calcularán con su cotización y las unidades estimadas.
+        </p>
         <form onSubmit={handleSubmit} className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="min-w-0 max-w-full sm:col-span-2 lg:col-span-4">
             <InvestmentAssetPicker
@@ -746,7 +788,7 @@ const InvestmentsOverview = () => {
             <button
               type="submit"
               disabled={isLoadingQuote || isSaving}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:cursor-wait disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#AB9FF2] px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] disabled:cursor-wait disabled:opacity-60 dark:bg-[#AB9FF2] dark:text-zinc-950 dark:hover:bg-[#9A8BE8]"
             >
               {isSaving ? 'Consultando precio…' : editingId ? 'Guardar cambios' : <><Plus size={17} aria-hidden="true" />Guardar inversión</>}
             </button>
@@ -764,7 +806,9 @@ const InvestmentsOverview = () => {
         </form>
         {errorMessage && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{errorMessage}</p>}
         {marketNotice && <p role="status" className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{marketNotice}</p>}
-      </Card>
+      </section>
+      </div>
+      )}
 
       <Card as="section" data-phantom-surface className="min-w-0 overflow-hidden border border-white/10 dark:bg-zinc-900">
         <div className="flex min-w-0 items-center justify-between gap-3 border-zinc-100 px-4 py-4 dark:border-white/10 sm:px-5">

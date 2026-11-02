@@ -317,7 +317,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
               <button type="button" onClick={() => setIsSplitDialogOpen(false)} className="h-9 rounded-md border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                 Cancelar
               </button>
-              <button type="button" onClick={handleSplit} className="h-9 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500">
+              <button type="button" onClick={handleSplit} className="h-9 rounded-md bg-[#AB9FF2] px-3 text-sm font-medium text-zinc-950 hover:bg-[#9A8BE8] dark:bg-[#AB9FF2] dark:hover:bg-[#9A8BE8]">
                 Dividir gasto
               </button>
             </div>
