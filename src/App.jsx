@@ -417,7 +417,7 @@ const App = () => {
           aria-label="Menú principal"
           className="fixed inset-x-10 bottom-2 z-30 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:inset-x-6"
         >
-          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-0.5 rounded-[1.75rem] bg-[#F4F2F4] p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-[#28282C] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
+          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-0.5 rounded-full bg-[#F4F2F4] p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-[#28282C] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
             {[
               { id: 'home', label: 'Inicio', Icon: House },
               { id: 'transactions', label: 'Movimientos', Icon: ReceiptText },
@@ -431,7 +431,7 @@ const App = () => {
                   setIsMobileFiltersOpen(false);
                 }}
                 aria-current={activeTab === id ? 'page' : undefined}
-              className={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
+              className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
             >
               <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
               </button>
@@ -457,7 +457,7 @@ const App = () => {
                   setIsMobileFiltersOpen(false);
                 }}
                 aria-current={activeTab === id ? 'page' : undefined}
-              className={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
+              className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
             >
               <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
               </button>
