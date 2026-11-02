@@ -262,7 +262,7 @@ const CategoryBreakdown = ({ onOverlayOpenChange }) => {
               className="size-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700"
             />
           </label>
-          <div className="mt-5 space-y-3 overflow-y-auto">
+          <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto">
             {allCategories.Gasto.map((category, index) => (
               <div key={`${category}-${index}`} className="flex items-center justify-between gap-4">
                 <label htmlFor={`category-cap-${index}`} className="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-200">

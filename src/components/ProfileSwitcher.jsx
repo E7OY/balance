@@ -285,6 +285,8 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
     });
   };
 
+  const portalTarget = settingsRef.current?.closest('.app-shell') || document.body;
+
   return (
     <>
       <div
@@ -310,7 +312,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
             role="dialog"
             aria-label="Perfil y ajustes"
             className={`absolute right-0 z-[70] max-h-[calc(100dvh-7rem)] w-[min(19rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-3xl border border-slate-200/80 bg-white/95 p-4 text-slate-900 shadow-[0_12px_40px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/95 dark:text-white ${
-              placement === 'navigation' ? 'bottom-full mb-2' : 'top-full mt-2'
+              placement === 'navigation' ? 'bottom-full mb-2 max-sm:-right-8' : 'top-full mt-2'
             }`}
           >
             <h2 className="mb-3 text-base font-semibold">Ajustes</h2>
@@ -414,7 +416,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
         )}
       </div>
 
-      {isAdding && (
+      {isAdding && createPortal(
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
           onMouseDown={(event) => {
@@ -425,7 +427,7 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-profile-title"
-            className="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
             {...addingDialogSwipeHandlers}
           >
             <h2 id="new-profile-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">Crear perfil</h2>
@@ -464,10 +466,11 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
               </div>
             </form>
           </section>
-        </div>
+        </div>,
+        portalTarget,
       )}
 
-      {isEditingGoals && (
+      {isEditingGoals && createPortal(
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
           onMouseDown={(event) => {
@@ -631,7 +634,8 @@ const ProfileSwitcher = ({ onOverlayOpenChange, theme, setTheme, placement = 'to
               )}
             </div>
           </section>
-        </div>
+        </div>,
+        portalTarget,
       )}
 
       {isSyncPanelOpen && createPortal(

@@ -58,7 +58,7 @@ const MovementsView = ({ isMobileFiltersOpen, onMobileFiltersOpenChange }) => {
               type="button"
               onClick={() => setMode('list')}
               aria-pressed={mode === 'list'}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium ${mode === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-black dark:text-white' : 'text-slate-500 dark:text-white'}`}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium ${mode === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-[#1C1C1C] dark:text-white' : 'text-slate-500 dark:text-white'}`}
             >
               <List size={16} aria-hidden="true" />
               Lista
@@ -67,7 +67,7 @@ const MovementsView = ({ isMobileFiltersOpen, onMobileFiltersOpenChange }) => {
               type="button"
               onClick={() => setMode('calendar')}
               aria-pressed={mode === 'calendar'}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium ${mode === 'calendar' ? 'bg-white text-slate-900 shadow-sm dark:bg-black dark:text-white' : 'text-slate-500 dark:text-white'}`}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium ${mode === 'calendar' ? 'bg-white text-slate-900 shadow-sm dark:bg-[#1C1C1C] dark:text-white' : 'text-slate-500 dark:text-white'}`}
             >
               <CalendarDays size={16} aria-hidden="true" />
               Calendario
@@ -78,7 +78,7 @@ const MovementsView = ({ isMobileFiltersOpen, onMobileFiltersOpenChange }) => {
             onClick={() => onMobileFiltersOpenChange((isOpen) => !isOpen)}
             aria-label="Abrir filtros de movimientos"
             aria-expanded={isMobileFiltersOpen}
-            className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
+            className="inline-flex size-10 items-center justify-center rounded-xl  text-slate-700 hover:bg-[#1C1C1C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
           >
             <Filter size={17} aria-hidden="true" />
           </button>

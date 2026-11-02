@@ -358,7 +358,7 @@ const InvestmentsOverview = () => {
         </p>
       </section>
 
-      <Card as="section" className="border border-white/10 p-5 dark:bg-zinc-900 sm:p-6">
+      <Card as="section" className="!border-0 p-5 dark:bg-zinc-900 sm:p-6">
         <div className="mb-4">
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
             {editingId ? 'Editar inversión' : 'Registrar inversión'}
@@ -503,7 +503,7 @@ const InvestmentsOverview = () => {
                       type="button"
                       onClick={() => handleDelete(record.id)}
                       aria-label={`Eliminar inversión ${record.name}`}
-                      className="inline-flex size-8 items-center justify-center rounded-xl text-zinc-500 hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 sm:size-9"
+                      className="inline-flex size-8 items-center justify-center rounded-xl text-zinc-500 hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 dark:!bg-[#28282C] text-white focus-visible:ring-rose-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 sm:size-9"
                     >
                       <Trash2 size={17} aria-hidden="true" />
                     </button>
