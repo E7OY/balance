@@ -350,7 +350,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/40 pb-[env(safe-area-inset-bottom)] backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="transaction-form-scroll fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/40 pb-[env(safe-area-inset-bottom)] backdrop-blur-[2px] sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) closeForm();
       }}
@@ -359,7 +359,7 @@ const TransactionForm = ({ transaction = null, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="transaction-title"
-        className="relative my-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] bg-slate-50 p-5 shadow-xl dark:bg-slate-900 sm:max-h-[calc(100vh-2rem)] sm:rounded-2xl sm:p-8"
+        className="transaction-form-scroll relative my-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] bg-slate-50 p-5 shadow-xl dark:bg-slate-900 sm:max-h-[calc(100vh-2rem)] sm:rounded-2xl sm:p-8"
         {...swipeHandlers}
       >
         <div className="relative mb-5 flex min-h-10 items-center justify-center">

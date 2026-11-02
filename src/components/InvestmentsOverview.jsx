@@ -4,6 +4,7 @@ import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatDate, formatUnitPrice, getLocalDateString } from '../utils/helpers';
 import { getInvestmentHistory, getInvestmentQuote, getInvestmentQuotes } from '../utils/investmentMarketData';
 import { Card } from './ui/card';
+import AnimatedCurrency from './AnimatedCurrency';
 import InvestmentAssetPicker from './InvestmentAssetPicker';
 import InvestmentAssetIcon from './InvestmentAssetIcon';
 
@@ -336,8 +337,8 @@ const InvestmentsOverview = () => {
     <div className="mx-auto mt-4 w-full max-w-5xl min-w-0 space-y-4">
       <section aria-label="Resumen de inversiones" className="border-0 bg-transparent px-1 py-3 text-white shadow-none sm:px-2">
         <p className="text-sm font-medium text-zinc-400">Valor de cartera</p>
-        <p className="privacy-sensitive mt-1 break-words text-5xl font-semibold tracking-tight text-zinc-900 dark:text-white sm:text-6xl">
-          {formatCurrency(totals.currentValue)}
+        <p className="privacy-sensitive mt-1 break-words text-5xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-white sm:text-6xl">
+          <AnimatedCurrency value={totals.currentValue} />
         </p>
         <div className="mt-2 flex max-w-full flex-wrap items-center gap-2">
           <span data-preserve-colors className={`privacy-sensitive text-base font-semibold sm:text-lg ${performance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>

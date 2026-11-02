@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
+import AnimatedCurrency from './AnimatedCurrency';
 import TransactionItem from './TransactionItem';
 import CategoryBreakdown from './CategoryBreakdown';
 import { Card } from './ui/card';
@@ -101,8 +102,8 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
             Vista anual
           </button>
         </div>
-        <p className="privacy-sensitive mt-1 break-words text-5xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-6xl">
-          {formatCurrency(available)}
+        <p className="privacy-sensitive mt-1 break-words text-5xl font-semibold tabular-nums tracking-tight text-zinc-950 dark:text-white sm:text-6xl">
+          <AnimatedCurrency value={available} />
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-white p-3 dark:!bg-zinc-900 sm:p-4">

@@ -24,9 +24,12 @@ const MovementsView = ({ isMobileFiltersOpen, onMobileFiltersOpenChange }) => {
     return byDate;
   }, {}), [filteredTransactions]);
   const selectedTransactions = transactionsByDate[selectedDate] || [];
-  const selectedTotal = selectedTransactions.reduce((sum, transaction) => (
-    sum + (Number(transaction.amount) || 0)
-  ), 0);
+  const selectedTotal = selectedTransactions.reduce((sum, transaction) => {
+    const amount = Number(transaction.amount) || 0;
+    if (transaction.type === 'Ingreso') return sum + amount;
+    if (transaction.type === 'Gasto') return sum - amount;
+    return sum;
+  }, 0);
 
   useEffect(() => {
     const today = new Date();
@@ -45,10 +48,9 @@ const MovementsView = ({ isMobileFiltersOpen, onMobileFiltersOpenChange }) => {
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1 py-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Movimientos</h2>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Consulta y organiza tus registros.</p>
+          <p className="mt-0.5 text-sm text-zinc-400">Consulta y organiza tus registros.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900" role="group" aria-label="Modo de movimientos">

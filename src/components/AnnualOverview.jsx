@@ -164,7 +164,7 @@ const AnnualOverview = () => {
         {metrics.map(({ label, amount, detail, icon: Icon, tone }) => (
           <Card key={label} as="article" className="min-w-0 p-4 sm:p-5">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
               <span
                 data-color-icon={tone === 'expense' ? 'expense' : tone === 'income' ? 'income' : 'chart'}
                 className="flex size-8 shrink-0 items-center justify-center rounded-lg"
@@ -172,10 +172,10 @@ const AnnualOverview = () => {
                 <Icon size={17} aria-hidden="true" />
               </span>
             </div>
-            <p className="privacy-sensitive mt-3 truncate text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
+            <p className="privacy-sensitive mt-3 truncate text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
               {formatCurrency(amount)}
             </p>
-            <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{detail}</p>
+            <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">{detail}</p>
           </Card>
         ))}
       </section>
@@ -184,10 +184,10 @@ const AnnualOverview = () => {
         <Card as="section" aria-labelledby="annual-monthly-title" className="p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 id="annual-monthly-title" className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              <h2 id="annual-monthly-title" className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                 Evolución mensual
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                 Comparativa de ingresos y gastos en {filters.year}
               </p>
             </div>
@@ -197,31 +197,31 @@ const AnnualOverview = () => {
           </div>
 
           {report.expenses === 0 && report.income === 0 ? (
-            <p className="flex min-h-52 items-center justify-center text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="flex min-h-52 items-center justify-center text-center text-sm text-zinc-500 dark:text-zinc-400">
               Aún no hay movimientos registrados en {filters.year}.
             </p>
           ) : (
             <div className="mt-5 space-y-3">
               {report.monthlyTotals.map(({ income, expenses }, index) => (
                 <div key={monthNames[index]} className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-3">
-                  <span className="truncate text-xs capitalize text-slate-500 dark:text-slate-400">
+                  <span className="truncate text-xs capitalize text-zinc-500 dark:text-zinc-400">
                     {monthNames[index].slice(0, 3)}
                   </span>
                   <div className="space-y-1.5" aria-label={`${monthNames[index]}: barras de gastos e ingresos`}>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
                       <div
                         className="h-full rounded-full bg-rose-500"
                         style={{ width: `${(expenses / report.maxMonthlyTotal) * 100}%` }}
                       />
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
                       <div
                         className="h-full rounded-full bg-emerald-500"
                         style={{ width: `${(income / report.maxMonthlyTotal) * 100}%` }}
                       />
                     </div>
                   </div>
-                  <span className="privacy-sensitive min-w-[4.5rem] text-right text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <span className="privacy-sensitive min-w-[4.5rem] text-right text-xs font-medium text-zinc-700 dark:text-zinc-300">
                     {formatCurrency(expenses)}
                   </span>
                 </div>
@@ -229,13 +229,13 @@ const AnnualOverview = () => {
             </div>
           )}
 
-          <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 border-t border-zinc-100 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" />Gastos</span>
             <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" />Ingresos</span>
             <span className="ml-auto">El importe de la derecha muestra los gastos</span>
           </div>
           {report.biggestMonth.amount > 0 && (
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               Mes con más gastos: <span className="capitalize">{monthNames[report.biggestMonth.index]}</span>
               {' '}· <span className="privacy-sensitive font-medium">{formatCurrency(report.biggestMonth.amount)}</span>
             </p>
@@ -244,16 +244,16 @@ const AnnualOverview = () => {
 
         <Card as="section" aria-labelledby="annual-category-title" className="p-5 sm:p-6">
           <div>
-            <h2 id="annual-category-title" className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            <h2 id="annual-category-title" className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
               Gastos por categoría
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               Distribución de los gastos de {filters.year}
             </p>
           </div>
 
           {topCategories.length === 0 ? (
-            <p className="flex min-h-52 items-center justify-center text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="flex min-h-52 items-center justify-center text-center text-sm text-zinc-500 dark:text-zinc-400">
               Aún no hay gastos para mostrar.
             </p>
           ) : (
@@ -263,15 +263,15 @@ const AnnualOverview = () => {
                 return (
                   <div key={category}>
                     <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
-                      <span className="flex min-w-0 items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
+                      <span className="flex min-w-0 items-center gap-2 font-medium text-zinc-700 dark:text-zinc-300">
                         <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: chartColors[index % chartColors.length] }} />
                         <span className="truncate">{category}</span>
                       </span>
-                      <span className="privacy-sensitive shrink-0 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="privacy-sensitive shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
                         {formatCurrency(amount)} · {percentage.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
                       <div
                         className="h-full rounded-full"
                         style={{ width: `${percentage}%`, backgroundColor: chartColors[index % chartColors.length] }}
@@ -284,9 +284,9 @@ const AnnualOverview = () => {
           )}
 
           {topCategory && (
-            <p className="mt-6 border-t border-slate-100 pt-4 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
-              Tu mayor gasto está en <strong className="text-slate-800 dark:text-slate-200">{topCategory.category}</strong>
-              {' '}con <span className="privacy-sensitive font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(topCategory.amount)}</span>.
+            <p className="mt-6 border-t border-zinc-100 pt-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              Tu mayor gasto está en <strong className="text-zinc-800 dark:text-zinc-200">{topCategory.category}</strong>
+              {' '}con <span className="privacy-sensitive font-semibold text-zinc-800 dark:text-zinc-200">{formatCurrency(topCategory.amount)}</span>.
             </p>
           )}
         </Card>

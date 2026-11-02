@@ -15,6 +15,15 @@ html.dark {
   color-scheme: dark;
 }
 
+.transaction-form-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.transaction-form-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 html,
 body,
 #root {

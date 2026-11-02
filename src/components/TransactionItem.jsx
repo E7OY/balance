@@ -260,7 +260,7 @@ const TransactionItem = ({ transaction, layout = 'table' }) => {
                 </p>
               </div>
             </div>
-            <div className={`mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-slate-500 dark:text-slate-400 ${
+            <div className={`mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-zinc-500 dark:text-zinc-400 ${
               isList ? 'text-xs sm:text-sm' : 'mt-1.5 text-[11px] sm:mt-2 sm:gap-x-2 sm:text-xs'
             }`}>
               <span>{transaction.category}</span>
