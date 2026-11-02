@@ -343,7 +343,7 @@ const App = () => {
 
   return (
     <div
-      className="app-shell min-h-screen bg-white text-zinc-950 transition-colors dark:bg-black dark:text-white pb-10 mx-6"
+      className="app-shell min-h-screen bg-white text-zinc-950 transition-colors dark:bg-black dark:text-white mx-6"
       data-amounts-hidden={isAmountsHidden}
     >
       <main
