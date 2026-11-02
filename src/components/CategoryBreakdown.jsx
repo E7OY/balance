@@ -122,19 +122,11 @@ const CategoryBreakdown = ({ onOverlayOpenChange }) => {
                   : `Gráfico circular de gastos por categoría. Total: ${formatCurrency(totalExpenses)}.`}
                 className="size-full -rotate-90"
               >
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="72"
-                  fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="20"
-                />
+                <circle cx="100" cy="100" r="72" fill="none" stroke="#e2e8f0" strokeWidth="20" />
                 {expenseBreakdown.map((item, index) => {
                   const segmentLength = (item.percentage / 100) * circumference;
                   const segmentOffset = offset;
                   offset += segmentLength;
-
                   return (
                     <circle
                       key={item.category}

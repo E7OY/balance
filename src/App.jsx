@@ -347,13 +347,46 @@ const App = () => {
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-3">
+            {activeTab === 'home' ? (
+              <div className="flex items-center justify-start gap-2">
+                <ProfileSwitcher
+                  onOverlayOpenChange={handleOverlayOpenChange}
+                  theme={theme}
+                  setTheme={setTheme}
+                  placement="top"
+                />
+                <label className="w-[7.5rem] min-w-0 shrink-0">
+                  <span className="sr-only">Seleccionar mes</span>
+                  <select
+                    aria-label="Seleccionar mes"
+                    value={`${filters.year}-${String(filters.month + 1).padStart(2, '0')}`}
+                    onChange={(event) => {
+                      const [year, month] = event.target.value.split('-').map(Number);
+                      setFilters((previous) => ({ ...previous, year, month: month - 1 }));
+                    }}
+                    className="h-9 w-full min-w-0 rounded-full border-0 bg-[#F4F2F4] px-3 text-[10px] font-semibold capitalize text-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#28282C] dark:text-zinc-100"
+                  >
+                    {Array.from({ length: 36 }, (_, index) => {
+                      const date = new Date(filters.year, filters.month - index, 1);
+                      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                      const month = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(date);
+                      return <option key={value} value={value}>{`${month} ${date.getFullYear()}`}</option>;
+                    })}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsAnnualView((isAnnual) => !isAnnual)}
+                  className="ml-auto h-9 shrink-0 rounded-full bg-[#AB9FF2] px-3 text-[11px] font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
+                >
+                  {isAnnualView ? 'Vista mensual' : 'Vista anual'}
+                </button>
+              </div>
+            ) : (
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                {activeTab === 'home' ? 'Patrimonio' : {
-                  transactions: 'Movimientos',
-                  investments: 'Inversiones',
-                }[activeTab]}
+                {activeTab === 'transactions' ? 'Movimientos' : 'Inversiones'}
               </h1>
+            )}
               {activeTab === 'investments' && (
                 <button
                   type="button"
@@ -366,18 +399,6 @@ const App = () => {
                   {isInvestmentFormOpen ? 'Cerrar' : 'Aportar'}
                 </button>
               )}
-            </div>
-            {activeTab === 'home' && isAnnualView && (
-              <button
-                type="button"
-                onClick={() => setIsAnnualView(false)}
-                aria-label="Cambiar a vista mensual"
-                title="Cambiar a vista mensual"
-                className="mt-1 block rounded-md text-left text-2xl font-semibold capitalize text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:hover:text-neutral-200 sm:text-5xl"
-              >
-                {filters.year}
-              </button>
-            )}
             {activeTab === 'home' && !isAnnualView && spendingAlerts
               .filter((alert) => !dismissedSpendingAlertKeys.includes(alert.key))
               .map((alert) => (
@@ -408,7 +429,6 @@ const App = () => {
         ) : (
           <HomeOverview
             onOverlayOpenChange={handleOverlayOpenChange}
-            onAnnualViewToggle={() => setIsAnnualView(true)}
             onShowMovements={() => setActiveTab('transactions')}
           />
         ))}
@@ -451,9 +471,10 @@ const App = () => {
                   setIsMobileFiltersOpen(false);
                 }}
                 aria-current={activeTab === id ? 'page' : undefined}
-              className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
-            >
-              <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
+                className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
+              >
+                <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
+                <span className="sr-only">{label}</span>
               </button>
             ))}
             <button
@@ -477,9 +498,9 @@ const App = () => {
                   setIsMobileFiltersOpen(false);
                 }}
                 aria-current={activeTab === id ? 'page' : undefined}
-              className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
-            >
-              <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
+                className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
+              >
+                <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
               </button>
             ))}
             <ProfileSwitcher

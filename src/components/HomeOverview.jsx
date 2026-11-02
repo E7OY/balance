@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowDownLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowDownRight, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
 import AnimatedCurrency from './AnimatedCurrency';
@@ -7,7 +7,7 @@ import TransactionItem from './TransactionItem';
 import CategoryBreakdown from './CategoryBreakdown';
 import { Card } from './ui/card';
 
-const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements }) => {
+const HomeOverview = ({ onOverlayOpenChange, onShowMovements }) => {
   const { transactions, filters, monthlyGoals } = useFinance();
   const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
   const previousMonthDate = new Date(filters.year, filters.month - 1, 1);
@@ -48,6 +48,11 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
     [monthlyTransactions],
   );
   const available = totals.income - totals.expenses;
+  const previousAvailable = previousTotals.income - previousTotals.expenses;
+  const monthlyChange = available - previousAvailable;
+  const monthlyChangePercent = previousAvailable !== 0
+    ? (monthlyChange / Math.abs(previousAvailable)) * 100
+    : null;
   const savingsGoal = Number(monthlyGoals.savings) || 0;
   const investmentGoal = Number(monthlyGoals.investment) || 0;
   const availableForGoals = Math.max(0, available);
@@ -75,13 +80,7 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
   };
   const renderMonthChange = (current, previous, isExpense = false) => {
     const change = getMonthChange(current, previous);
-    if (!change) {
-      return (
-        <p className="mt-2 border-t border-zinc-200/70 pt-2 text-[11px] text-zinc-500 dark:border-white/10 dark:text-zinc-400">
-          Sin cambios vs. mes anterior
-        </p>
-      );
-    }
+    if (!change) return 'Sin cambios vs. mes anterior';
     const sign = change.difference > 0 ? '+' : '-';
     const formattedDifference = new Intl.NumberFormat('es-ES', {
       minimumFractionDigits: 2,
@@ -104,7 +103,7 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
             className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
               trendIsPositive
                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
-                : 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300'
+                : 'bg-[#FF6579] text-zinc-950 dark:bg-[#FF6579] dark:text-zinc-950'
             }`}
           >
             {formattedPercent || 'Nuevo'}
@@ -117,67 +116,65 @@ const HomeOverview = ({ onOverlayOpenChange, onAnnualViewToggle, onShowMovements
   return (
     <div className="mt-4 space-y-4">
       <section aria-labelledby="available-balance-title" className="px-1 py-3 sm:px-2">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="available-balance-title" className="text-sm font-medium text-zinc-500 dark:text-zinc-400 first-letter:capitalize">
-            {new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' })
-              .format(new Date(filters.year, filters.month, 1))}
-          </h2>
-          <button
-            type="button"
-            onClick={onAnnualViewToggle}
-            className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          >
-            Vista anual
-          </button>
-        </div>
+        <p className="mt-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400">Disponible neto</p>
         <p
           data-preserve-colors
-          className={`privacy-sensitive mt-1 break-words text-5xl font-semibold tabular-nums tracking-tight sm:text-6xl ${
-            available < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-zinc-950 dark:text-white'
+          className={`privacy-sensitive mt-1 break-words text-center text-6xl font-bold tabular-nums tracking-tight text-zinc-950 dark:text-white sm:text-5xl ${
+            available < 0 ? 'text-rose-700 dark:text-rose-400' : ''
           }`}
         >
           <AnimatedCurrency value={available} />
         </p>
+        <div className="mx-auto mt-2 flex w-fit items-center gap-2">
+          <p data-preserve-colors className={`text-xs font-semibold tabular-nums ${monthlyChange >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-[#FF6579]'}`}>
+            {monthlyChange > 0 ? '+' : ''}{formatCurrency(monthlyChange)}
+          </p>
+          <span
+            data-preserve-colors
+            aria-label={monthlyChangePercent === null
+              ? 'Cambio del patrimonio: nuevo este mes'
+              : `Cambio del patrimonio: ${monthlyChangePercent.toFixed(2)} por ciento`}
+            className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+              monthlyChange > 0
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
+                : monthlyChange < 0
+                  ? 'bg-[#FF6579] text-zinc-950 dark:bg-[#FF6579] dark:text-zinc-950'
+                  : 'bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-zinc-300'
+            }`}
+          >
+            {monthlyChange > 0
+              ? <ArrowUpRight size={12} aria-hidden="true" />
+              : monthlyChange < 0
+                ? <ArrowDownRight size={12} aria-hidden="true" />
+                : null}
+            {monthlyChangePercent === null
+              ? 'Nuevo'
+              : `${monthlyChangePercent > 0 ? '+' : ''}${new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monthlyChangePercent)}%`}
+          </span>
+        </div>
         {goalProgress.length > 0 && (
-          <section aria-labelledby="goal-progress-title" className="mt-4 rounded-2xl bg-[#F4F2F4] p-4 dark:bg-[#28282C] sm:p-5">
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h3 id="goal-progress-title" className="text-sm font-semibold text-zinc-900 dark:text-white">Progreso de metas</h3>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Progreso de metas</h3>
               <span className="text-right text-xs text-zinc-500 dark:text-zinc-400">Saldo del mes</span>
             </div>
-            <div className="divide-y divide-zinc-300/60 dark:divide-white/10">
-              {goalProgress.map(({ label, amount, goal, color }) => {
-                const percentage = Math.min(100, (amount / goal) * 100);
-                return (
-                  <div key={label} className="py-3 first:pt-0 last:pb-0">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">{label}</p>
-                        <p className="privacy-sensitive mt-0.5 truncate text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                          {formatCurrency(amount)} de {formatCurrency(goal)}
-                        </p>
-                      </div>
-                      <span className="privacy-sensitive shrink-0 text-lg font-semibold tabular-nums text-zinc-900 dark:text-white">
-                        {Math.round(percentage)}%
-                      </span>
-                    </div>
-                    <div
-                      role="progressbar"
-                      aria-label={`Progreso de la meta de ${label.toLowerCase()}`}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={Math.round(percentage)}
-                      className="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-[#1C1C1C]"
-                    >
-                      <span
-                        className="chart-color block h-full rounded-full transition-[width]"
-                        style={{ width: `${percentage}%`, '--chart-color': color }}
-                      />
-                    </div>
+            {goalProgress.map(({ label, amount, goal, color }) => {
+              const percentage = Math.min(100, (amount / goal) * 100);
+              return (
+                <div key={label}>
+                  <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
+                    <span className="privacy-sensitive tabular-nums text-right text-zinc-500 dark:text-zinc-400">
+                      {formatCurrency(amount)} / {formatCurrency(goal)} · {Math.round(percentage)}%
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          </section>
+                  <div role="progressbar" aria-label={`Progreso de la meta de ${label.toLowerCase()}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(percentage)} className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <span className="chart-color block h-full rounded-full transition-[width]" style={{ width: `${percentage}%`, '--chart-color': color }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="min-w-0 rounded-2xl bg-[#F4F2F4] p-3.5 dark:bg-[#28282C] sm:p-4">
