@@ -1,453 +1,210 @@
-import React, { useRef, useState } from 'react';
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  BriefcaseBusiness,
-  Bus,
-  CircleHelp,
-  CreditCard,
-  Film,
-  Gift,
-  Ham,
-  HeartPulse,
-  House,
-  PawPrint,
-  Plane,
-  ReceiptText,
-  Shirt,
-  TrendingUp,
-  Wallet,
-  Paperclip,
-  Pencil,
-  Scissors,
-  Trash2,
-  X,
-} from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Trash2, Pencil, Paperclip } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency, formatDate } from '../utils/helpers';
+import { formatCurrency } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
 
-const categoryIcons = {
-  comida: Ham,
-  alquilerhipoteca: House,
-  transporte: Bus,
-  ocio: Film,
-  suscripciones: ReceiptText,
-  mascotas: PawPrint,
-  salud: HeartPulse,
-  ropa: Shirt,
-  hogar: House,
-  viajes: Plane,
-  regalos: Gift,
-  inversiones: TrendingUp,
-  deudas: CreditCard,
-  salario: BriefcaseBusiness,
-  regalo: Gift,
-  reembolso: Wallet,
-  ventas: Wallet,
-  freelance: BriefcaseBusiness,
-  otros: CircleHelp,
-};
+function Icon({ name, size = 16 }) {
+  const paths = {
+    receipt: (
+      <>
+        <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+        <path d="M9 8h6M9 12h6" />
+      </>
+    ),
+    chevron: <path d="m9 7 5 5-5 5" />,
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+    arrow: <path d="M5 12h14M14 7l5 5-5 5" />
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
 
-const getCategoryIcon = (category) => {
-  const normalizedCategory = String(category || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase()
-    .replace(/[^a-z]/g, '');
-  return Object.hasOwn(categoryIcons, normalizedCategory)
-    ? categoryIcons[normalizedCategory]
-    : CircleHelp;
-};
-
-const TransactionItem = ({ transaction, layout = 'table' }) => {
-  const {
-    deleteTransaction,
-    splitTransaction,
-    previewInvoice,
-    downloadInvoice,
-    setEditingTransaction,
-    isAmountsHidden,
-  } = useFinance();
-  const [errorMessage, setErrorMessage] = useState('');
-  const [previewUrl, setPreviewUrl] = useState('');
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+const TransactionItem = ({ transaction, layout = 'list' }) => {
+  const { deleteTransaction, setEditingTransaction, downloadInvoice } = useFinance();
+  
+  // Estados para deslizar y para el detalle
   const [swipeActions, setSwipeActions] = useState(null);
-  const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
-  const [installmentCount, setInstallmentCount] = useState(3);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [phoneNode, setPhoneNode] = useState(null);
+  
   const touchStartRef = useRef(null);
-  const suppressCardClickRef = useRef(false);
   const isExpense = transaction.type === 'Gasto';
-  const description = transaction.description?.trim();
+  
+  // Buscamos el contenedor '.phone' para renderizar el modal encima de él
+  useEffect(() => {
+    setPhoneNode(document.querySelector('.phone') || document.body);
+  }, []);
 
-  const handleDelete = async () => {
-    triggerHaptic('heavy');
-    try {
-      await deleteTransaction(transaction.id);
-    } catch (error) {
-      setErrorMessage(`No se pudo eliminar el movimiento: ${error.message}`);
-    }
+  // Lógica de deslizar (Swipe)
+  const handleTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
 
-  const handlePreview = async () => {
-    try {
-      const url = await previewInvoice(transaction.id);
-      setPreviewUrl(url);
-      setIsPreviewOpen(true);
-      setErrorMessage('');
-    } catch (error) {
-      setErrorMessage(`No se pudo abrir la factura: ${error.message}`);
-    }
-  };
-
-  const handleDownload = async () => {
-    try {
-      await downloadInvoice(transaction.id, transaction.invoice.name);
-      setErrorMessage('');
-    } catch (error) {
-      setErrorMessage(`No se pudo abrir la factura: ${error.message}`);
-    }
-  };
-
-  const closePreview = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl('');
-    setIsPreviewOpen(false);
-  };
-
-  const openEditor = () => setEditingTransaction(transaction);
-  const handleCardTouchStart = (event) => {
-    if (event.touches.length !== 1 || event.target.closest('button, input, select, a')) {
-      touchStartRef.current = null;
-      return;
-    }
-    touchStartRef.current = {
-      x: event.touches[0].clientX,
-      y: event.touches[0].clientY,
-    };
-  };
-  const handleCardTouchEnd = (event) => {
+  const handleTouchEnd = (e) => {
     const start = touchStartRef.current;
-    touchStartRef.current = null;
-    if (!start || event.changedTouches.length !== 1) return;
-    const deltaX = event.changedTouches[0].clientX - start.x;
-    const deltaY = event.changedTouches[0].clientY - start.y;
-    if (Math.abs(deltaX) < 55 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
-
-    suppressCardClickRef.current = true;
-    window.setTimeout(() => { suppressCardClickRef.current = false; }, 400);
+    if (!start || e.changedTouches.length !== 1) return;
+    const deltaX = e.changedTouches[0].clientX - start.x;
+    const deltaY = e.changedTouches[0].clientY - start.y;
+    
+    // Si el movimiento es muy vertical, no hacemos swipe
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
+    
     setSwipeActions(deltaX < 0 ? 'delete' : 'edit');
   };
-  const handleCardClick = () => {
-    if (suppressCardClickRef.current) {
-      suppressCardClickRef.current = false;
-      return;
-    }
+
+  const handleItemClick = () => {
     if (swipeActions) {
-      setSwipeActions(null);
-      return;
-    }
-    openEditor();
-  };
-  const handleSplit = () => {
-    try {
-      splitTransaction(transaction.id, installmentCount);
-      triggerHaptic('heavy');
-      setIsSplitDialogOpen(false);
-      setSwipeActions(null);
-      setErrorMessage('');
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  };
-  const handleRowKeyDown = (event) => {
-    if (event.target !== event.currentTarget) return;
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openEditor();
+      setSwipeActions(null); // Si estaba deslizado, el clic lo cierra
+    } else {
+      setIsDetailOpen(true); // Si no estaba deslizado, abre el detalle
     }
   };
 
-  if (layout === 'card' || layout === 'list') {
-    const isList = layout === 'list';
-    const CategoryIcon = isList ? getCategoryIcon(transaction.category) : null;
-    const swipeOffset = swipeActions === 'delete'
-      ? '-80px'
-      : swipeActions === 'edit' ? (isExpense ? '160px' : '80px') : '0px';
-
-    return (
-      <>
-      <div className={`relative overflow-hidden ${isList ? 'rounded-none' : 'rounded-lg'}`} data-month-swipe-ignore>
-        {swipeActions === 'edit' && (
-          <div className={`absolute inset-y-0 left-0 flex items-center gap-1 bg-emerald-50 px-2 dark:bg-emerald-500/10 ${isExpense ? 'w-40' : 'w-20'}`}>
-            <button
-              type="button"
-              onClick={() => {
-                setSwipeActions(null);
-                openEditor();
-              }}
-              className="inline-flex h-10 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[11px] font-medium text-emerald-800 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
-            >
-              <Pencil size={16} aria-hidden="true" />
-              Editar
-            </button>
-            {isExpense && (
-              <button
-                type="button"
-                onClick={() => setIsSplitDialogOpen(true)}
-                className="inline-flex h-10 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[11px] font-medium text-emerald-800 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
-              >
-                <Scissors size={16} aria-hidden="true" />
-                Dividir
-              </button>
-            )}
-          </div>
-        )}
-        {swipeActions === 'delete' && (
-          <div className="absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-rose-50 dark:bg-rose-500/10">
-            <button
-              type="button"
-              onClick={handleDelete}
-              aria-label={`Eliminar ${description || transaction.category}`}
-              className="inline-flex h-10 w-16 flex-col items-center justify-center gap-0.5 rounded-md text-[11px] font-medium text-rose-700 hover:bg-rose-100 dark:text-rose-300 dark:hover:bg-rose-500/20"
-            >
-              <Trash2 size={16} aria-hidden="true" />
-              Eliminar
-            </button>
-          </div>
-        )}
-        <article
-          role="group"
-          tabIndex={0}
-          aria-label={`Movimiento: ${description || transaction.category}. Desliza a la izquierda para eliminar o a la derecha para editar${isExpense ? ' o dividir' : ''}.`}
-          onClick={handleCardClick}
-          onKeyDown={handleRowKeyDown}
-          onTouchStart={handleCardTouchStart}
-          onTouchEnd={handleCardTouchEnd}
-          onTouchCancel={() => { touchStartRef.current = null; }}
-          style={{ transform: `translateX(${swipeOffset})` }}
-          className={`relative z-10 cursor-pointer border-b transition-transform duration-200 ease-out touch-pan-y ${
-            isList
-              ? 'border-transparent bg-transparent px-1 py-3 hover:bg-transparent sm:px-2'
-              : 'border-slate-50 bg-white p-2.5 shadow-sm hover:border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-neutral-700 dark:hover:bg-black sm:p-3'
-          }`}
-        >
-        <div className={`flex items-center ${isList ? 'gap-3 sm:gap-4' : 'items-start gap-2.5 sm:gap-3'}`}>
-          <span
-            data-color-icon={isExpense ? 'expense' : 'income'}
-            className={`flex shrink-0 items-center justify-center rounded-full ${
-              isList
-                ? `size-10 sm:size-11 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`
-                : `mt-0.5 size-7 sm:size-8 ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`
-            }`}
-          >
-            {isList
-              ? <CategoryIcon size={19} strokeWidth={1.8} aria-hidden="true" />
-              : isExpense ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className={`flex gap-2 ${isList ? 'items-center justify-between' : 'items-start justify-between'}`}>
-              <p className={`min-w-0 break-words font-medium leading-5 text-zinc-900 dark:text-zinc-100 ${
-                isList ? 'truncate text-sm sm:text-base' : 'text-[13px] sm:text-sm'
-              }`}>
-                {description || transaction.category}
-              </p>
-              <div className="flex shrink-0 items-center gap-1">
-                <p className={`privacy-sensitive whitespace-nowrap tabular-nums ${
-                  isList ? 'text-sm font-semibold sm:text-base' : 'text-[13px] font-semibold sm:text-sm'
-                } ${isExpense ? '!text-rose-600 dark:!text-rose-400' : '!text-emerald-600 dark:!text-emerald-400'}`}>
-                  {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
-                </p>
-              </div>
-            </div>
-            <div className={`mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-zinc-500 dark:text-zinc-400 ${
-              isList ? 'text-xs sm:text-sm' : 'mt-1.5 text-[11px] sm:mt-2 sm:gap-x-2 sm:text-xs'
-            }`}>
-              <span>{transaction.category}</span>
-              <span aria-hidden="true">·</span>
-              <span>{transaction.paymentMethod || 'Sin método'}</span>
-              <span aria-hidden="true">·</span>
-              <span>{formatDate(transaction.date)}</span>
-            </div>
-            {transaction.invoice && (
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handlePreview();
-                }}
-                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-800 hover:underline dark:text-emerald-400 sm:mt-2"
-                aria-label={`Ver factura ${transaction.invoice.name}`}
-              >
-                <Paperclip size={12} />
-                Factura
-              </button>
-            )}
-          </div>
-        </div>
-        {errorMessage && <p role="alert" className="mt-2 text-xs text-rose-700 dark:text-rose-300">{errorMessage}</p>}
-        </article>
-      </div>
-      {isSplitDialogOpen && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[2px]"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setIsSplitDialogOpen(false);
-          }}
-        >
-          <section role="dialog" aria-modal="true" aria-labelledby="split-expense-title" className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-            <h2 id="split-expense-title" className="text-base font-semibold text-slate-950 dark:text-slate-50">Dividir gasto en cuotas</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {description || transaction.category} · {formatCurrency(Number(transaction.amount))}
-            </p>
-            <label htmlFor="split-installment-count" className="mb-1.5 mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Número de cuotas
-            </label>
-            <select
-              id="split-installment-count"
-              value={installmentCount}
-              onChange={(event) => setInstallmentCount(Number(event.target.value))}
-              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            >
-              {Array.from({ length: 23 }, (_, index) => index + 2).map((count) => (
-                <option key={count} value={count}>{count}</option>
-              ))}
-            </select>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setIsSplitDialogOpen(false)} className="h-9 rounded-md border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-                Cancelar
-              </button>
-              <button type="button" onClick={handleSplit} className="h-9 rounded-md bg-[#AB9FF2] px-3 text-sm font-medium text-zinc-950 hover:bg-[#9A8BE8] dark:bg-[#AB9FF2] dark:hover:bg-[#9A8BE8]">
-                Dividir gasto
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-      </>
-    );
-  }
+  const swipeOffset = swipeActions === 'delete' ? '-70px' : swipeActions === 'edit' ? '70px' : '0px';
+  const displayMoney = (val) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(val);
 
   return (
     <>
-      <tr
-        className="group hidden cursor-pointer transition-colors hover:bg-slate-50/70 dark:hover:bg-black xl:table-row"
-        tabIndex={0}
-        aria-label={`Editar movimiento: ${description || transaction.category}`}
-        onClick={openEditor}
-        onKeyDown={handleRowKeyDown}
-      >
-        <td className="px-5 py-3.5 sm:px-6">
-          <div className="flex items-center gap-3">
-            <span data-color-icon={isExpense ? 'expense' : 'income'} className={`flex size-9 shrink-0 items-center justify-center rounded-full ${isExpense ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
-              {isExpense ? <ArrowDownLeft size={17} /> : <ArrowUpRight size={17} />}
-            </span>
-            <div className="min-w-0">
-              <p className="break-words font-medium text-slate-900 dark:text-slate-100">{description || transaction.category}</p>
-              <div className="mt-0.5 flex items-center gap-2">
-                <p className="text-xs text-slate-500 dark:text-slate-400">{isExpense ? 'Gasto' : 'Ingreso'}</p>
-                {transaction.invoice && (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handlePreview();
-                    }}
-                    className="inline-flex max-w-36 items-center gap-1 truncate text-xs font-medium text-emerald-800 hover:text-emerald-950 hover:underline dark:text-emerald-400 dark:hover:text-emerald-300"
-                    aria-label={`Ver factura ${transaction.invoice.name}`}
-                    title={transaction.invoice.name}
-                  >
-                    <Paperclip size={12} className="shrink-0" />
-                    Factura
-                  </button>
-                )}
-              </div>
-            </div>
+      <div className="relative overflow-hidden" data-month-swipe-ignore>
+        
+        {/* FONDO: Acciones al deslizar */}
+        {swipeActions === 'edit' && (
+          <div className="absolute inset-y-0 left-0 flex w-[70px] items-center justify-center bg-[#f1f1ef] dark:bg-[#242422]">
+            <button onClick={() => setEditingTransaction(transaction)} className="flex h-full w-full flex-col items-center justify-center gap-1 text-[9px] font-bold text-[#090909] dark:text-[#f5f5f2]">
+              <Pencil size={15} /> Editar
+            </button>
           </div>
-        </td>
-        <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300">{transaction.category}</td>
-        <td className="whitespace-nowrap px-4 py-3.5 text-slate-600 dark:text-slate-300">{transaction.paymentMethod || '—'}</td>
-        <td className="whitespace-nowrap px-4 py-3.5 text-slate-500 dark:text-slate-400">{formatDate(transaction.date)}</td>
-        <td
-          aria-label={isAmountsHidden ? 'Importe oculto' : undefined}
-          className={`privacy-sensitive whitespace-nowrap px-5 py-3.5 text-right tabular-nums sm:px-6 ${isExpense ? 'font-semibold !text-rose-600 dark:!text-rose-400' : 'font-semibold !text-emerald-600 dark:!text-emerald-400'}`}
+        )}
+        
+        {swipeActions === 'delete' && (
+          <div className="absolute inset-y-0 right-0 flex w-[70px] items-center justify-center bg-[#df242b]">
+            <button 
+              onClick={() => { triggerHaptic(); deleteTransaction(transaction.id); }} 
+              className="flex h-full w-full flex-col items-center justify-center gap-1 text-[9px] font-bold text-white"
+            >
+              <Trash2 size={15} /> Borrar
+            </button>
+          </div>
+        )}
+
+        {/* FRENTE: Elemento de la lista original */}
+        <button
+          className="movement bg-white dark:bg-transparent"
+          onClick={handleItemClick}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={{ transform: `translateX(${swipeOffset})`, transition: 'transform 0.2s ease-out' }}
         >
-          {isExpense ? '−' : '+'}{formatCurrency(Number(transaction.amount))}
-        </td>
-        <td className="sticky right-0 z-10 w-12 bg-white px-2 py-3.5 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.5)] group-hover:bg-slate-50 dark:bg-slate-800 dark:group-hover:bg-black">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleDelete();
-            }}
-            aria-label={`Eliminar ${description || transaction.category}`}
-            className="inline-flex size-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
-          >
-            <Trash2 size={15} />
-          </button>
-        </td>
-      </tr>
-      {errorMessage && (
-        <tr className="hidden xl:table-row">
-          <td colSpan="6" role="alert" className="px-5 pb-3 text-sm text-rose-700 dark:text-rose-300 sm:px-6">
-            {errorMessage}
-          </td>
-        </tr>
-      )}
-      {isPreviewOpen && previewUrl && (
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closePreview();
-          }}
-        >
-          <div
+          <span className="movement-icon">
+            <Icon name="receipt" size={16} />
+          </span>
+          <span className="movement-info">
+            <strong>{transaction.description || transaction.category}</strong>
+            <small className="flex items-center gap-1">
+              {transaction.category} · {transaction.date}
+            </small>
+          </span>
+          <strong className={`movement-amount ${!isExpense ? 'income' : ''}`}>
+            {!isExpense ? '+' : '−'}
+            {displayMoney(Number(transaction.amount))}
+          </strong>
+          <Icon name="chevron" size={14} />
+        </button>
+      </div>
+
+      {/* MODAL DE DETALLE (Renderizado con portal en el .phone) */}
+      {isDetailOpen && phoneNode && createPortal(
+        <div className="sheet-layer" onMouseDown={() => setIsDetailOpen(false)}>
+          <section
+            className="bottom-sheet detail-sheet"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="invoice-preview-title"
-            className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            aria-labelledby="detail-title"
+            onMouseDown={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-              <div className="min-w-0">
-                <h3 id="invoice-preview-title" className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{transaction.invoice?.name}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Vista previa de la factura</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                >
-                  Descargar
-                </button>
-                <button
-                  type="button"
-                  onClick={closePreview}
-                  aria-label="Cerrar vista previa"
-                  className="inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  <X size={16} />
-                </button>
-              </div>
+            <div className="sheet-handle" />
+            <div className="detail-merchant-icon">
+              <Icon name="receipt" size={19} />
             </div>
-            <div className="min-h-[40vh] overflow-auto bg-slate-50 p-3 dark:bg-slate-950/60">
-              {transaction.invoice?.type === 'application/pdf' ? (
-                <iframe
-                  title={transaction.invoice.name}
-                  src={previewUrl}
-                  className="h-[70vh] w-full rounded-lg border border-slate-200 bg-white dark:border-slate-700"
-                />
-              ) : (
-                <img
-                  src={previewUrl}
-                  alt={transaction.invoice?.name || 'Factura'}
-                  className="mx-auto max-h-[70vh] w-auto rounded-lg object-contain"
-                />
+            <button
+              className="sheet-close"
+              onClick={() => setIsDetailOpen(false)}
+              aria-label="Cerrar"
+            >
+              <Icon name="close" size={18} />
+            </button>
+            
+            <p className="detail-kicker">
+              {!isExpense ? "INGRESO RECIBIDO" : "PAGO COMPLETADO"}
+            </p>
+            <h2 id="detail-title">{transaction.description || transaction.category}</h2>
+            
+            <strong className="detail-amount">
+              {!isExpense ? "+" : "−"}
+              {displayMoney(Number(transaction.amount))}
+            </strong>
+            
+            <div className="detail-list">
+              <div>
+                <span>Fecha</span>
+                <strong>{transaction.date}</strong>
+              </div>
+              <div>
+                <span>Categoría</span>
+                <strong>{transaction.category}</strong>
+              </div>
+              <div>
+                <span>Método</span>
+                <strong>{transaction.paymentMethod || "Tarjeta"}</strong>
+              </div>
+              {transaction.invoice && (
+                <div>
+                  <span>Factura adjunta</span>
+                  <button 
+                    onClick={() => downloadInvoice(transaction.id, transaction.invoice.name)}
+                    className="flex items-center gap-1 text-[#15924c] font-semibold"
+                  >
+                    <Paperclip size={12} /> Descargar
+                  </button>
+                </div>
               )}
+              <div>
+                <span>Estado</span>
+                <strong className="detail-status">Completado</strong>
+              </div>
             </div>
-          </div>
-        </div>
+            
+            {/* Añadimos el botón de editar aquí también por comodidad */}
+            <div className="flex gap-2 mt-5">
+               <button
+                 className="detail-action"
+                 onClick={() => {
+                   setIsDetailOpen(false);
+                   setEditingTransaction(transaction);
+                 }}
+                 style={{ background: '#f1f1ef', color: '#090909' }}
+               >
+                 Editar 
+                 <Pencil size={14} />
+               </button>
+               
+               <button
+                 className="detail-action"
+                 onClick={() => setIsDetailOpen(false)}
+               >
+                 Cerrar detalle
+                 <Icon name="arrow" size={16} />
+               </button>
+            </div>
+          </section>
+        </div>,
+        phoneNode
       )}
     </>
   );

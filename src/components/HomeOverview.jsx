@@ -1,244 +1,235 @@
-import React, { useMemo } from 'react';
-import { ArrowDownLeft, ArrowDownRight, ArrowUpRight, ChevronRight } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency } from '../utils/helpers';
-import AnimatedCurrency from './AnimatedCurrency';
 import TransactionItem from './TransactionItem';
-import CategoryBreakdown from './CategoryBreakdown';
-import { Card } from './ui/card';
 
-const HomeOverview = ({ onOverlayOpenChange, onShowMovements }) => {
-  const { transactions, filters, monthlyGoals } = useFinance();
-  const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
-  const previousMonthDate = new Date(filters.year, filters.month - 1, 1);
-  const previousMonthPrefix = `${previousMonthDate.getFullYear()}-${String(previousMonthDate.getMonth() + 1).padStart(2, '0')}`;
-  const monthlyTransactions = useMemo(
-    () => transactions.filter((transaction) => (
-      typeof transaction.date === 'string' && transaction.date.startsWith(monthPrefix)
-    )),
-    [transactions, monthPrefix],
-  );
-  const previousMonthTransactions = useMemo(
-    () => transactions.filter((transaction) => (
-      typeof transaction.date === 'string' && transaction.date.startsWith(previousMonthPrefix)
-    )),
-    [transactions, previousMonthPrefix],
-  );
-  const totals = useMemo(() => monthlyTransactions.reduce((result, transaction) => {
-    const amount = Number(transaction.amount);
-    if (!Number.isFinite(amount) || amount <= 0) return result;
-    if (transaction.type === 'Ingreso') result.income += amount;
-    if (transaction.type === 'Gasto') result.expenses += amount;
-    return result;
-  }, { income: 0, expenses: 0 }), [monthlyTransactions]);
-  const previousTotals = useMemo(() => previousMonthTransactions.reduce((result, transaction) => {
-    const amount = Number(transaction.amount);
-    if (!Number.isFinite(amount) || amount <= 0) return result;
-    if (transaction.type === 'Ingreso') result.income += amount;
-    if (transaction.type === 'Gasto') result.expenses += amount;
-    return result;
-  }, { income: 0, expenses: 0 }), [previousMonthTransactions]);
-  const latestTransactions = useMemo(
-    () => [...monthlyTransactions]
-      .sort((left, right) => (
-        right.date.localeCompare(left.date)
-        || String(right.id).localeCompare(String(left.id))
-      ))
+const HomeOverview = ({ query = '', onOpenLimits }) => {
+  const { transactions, filters } = useFinance();
+  
+  const [period, setPeriod] = useState('1M'); 
+  
+  const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(filters.year, filters.month));
+  const yearName = filters.year;
+
+  const activeTransactions = useMemo(() => {
+    const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
+    if (period === 'Máx') return transactions;
+    if (period === '1A') return transactions.filter(tx => tx.date.startsWith(`${filters.year}-`));
+    if (period === '1S') {
+       return transactions.filter(tx => {
+         if (!tx.date.startsWith(monthPrefix)) return false;
+         const day = parseInt(tx.date.split('-')[2], 10);
+         return day <= 7;
+       });
+    }
+    if (period === '1D') {
+       const today = new Date();
+       const isCurrent = filters.year === today.getFullYear() && filters.month === today.getMonth();
+       const targetDay = isCurrent ? String(today.getDate()).padStart(2, '0') : '01';
+       return transactions.filter(tx => tx.date === `${monthPrefix}-${targetDay}`);
+    }
+    return transactions.filter(tx => tx.date.startsWith(monthPrefix));
+  }, [transactions, filters, period]);
+
+  const totals = useMemo(() => activeTransactions.reduce((acc, tx) => {
+    const amt = Number(tx.amount);
+    if (!Number.isFinite(amt) || amt <= 0) return acc;
+    if (tx.type === 'Ingreso') acc.income += amt;
+    if (tx.type === 'Gasto') acc.expenses += amt;
+    return acc;
+  }, { income: 0, expenses: 0 }), [activeTransactions]);
+
+  const previousTotals = useMemo(() => {
+    let prevTxs = [];
+    if (period === '1A') {
+       prevTxs = transactions.filter(tx => tx.date.startsWith(`${filters.year - 1}-`));
+    } else if (period === '1M') {
+       const d = new Date(filters.year, filters.month - 1, 1);
+       const prevPrefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+       prevTxs = transactions.filter(tx => tx.date.startsWith(prevPrefix));
+    } else if (period === '1S') {
+       const d = new Date(filters.year, filters.month - 1, 1);
+       const prevPrefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+       prevTxs = transactions.filter(tx => tx.date.startsWith(prevPrefix) && parseInt(tx.date.split('-')[2], 10) <= 7);
+    } else if (period === '1D') {
+       const today = new Date();
+       if (filters.year === today.getFullYear() && filters.month === today.getMonth()) {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const prevPrefix = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+          prevTxs = transactions.filter(tx => tx.date === prevPrefix);
+       }
+    }
+    return prevTxs.reduce((acc, tx) => {
+      const amt = Number(tx.amount);
+      if (tx.type === 'Ingreso') acc.income += amt;
+      if (tx.type === 'Gasto') acc.expenses += amt;
+      return acc;
+    }, { income: 0, expenses: 0 });
+  }, [transactions, filters, period]);
+
+  const graphPath = useMemo(() => {
+    const expenses = activeTransactions.filter(tx => tx.type === 'Gasto');
+    if (expenses.length === 0) return 'M0 145 L390 145';
+
+    let dataPoints = [];
+    
+    if (period === '1D') {
+       dataPoints = [0, expenses.reduce((sum, tx) => sum + Number(tx.amount), 0)];
+    } else if (period === '1S') {
+       const daily = Array(7).fill(0);
+       expenses.forEach(tx => {
+          const d = parseInt(tx.date.split('-')[2], 10);
+          if (d >= 1 && d <= 7) daily[d-1] += Number(tx.amount);
+       });
+       dataPoints = daily;
+    } else if (period === '1M') {
+       const totalSteps = new Date(filters.year, filters.month + 1, 0).getDate();
+       const daily = Array(totalSteps).fill(0);
+       expenses.forEach(tx => {
+          const d = parseInt(tx.date.split('-')[2], 10);
+          if (d >= 1 && d <= totalSteps) daily[d-1] += Number(tx.amount);
+       });
+       dataPoints = daily;
+    } else if (period === '1A') {
+       const monthly = Array(12).fill(0);
+       expenses.forEach(tx => {
+          const m = parseInt(tx.date.split('-')[1], 10);
+          if (m >= 1 && m <= 12) monthly[m-1] += Number(tx.amount);
+       });
+       dataPoints = monthly;
+    } else if (period === 'Máx') {
+       const years = {};
+       expenses.forEach(tx => {
+          const y = tx.date.split('-')[0];
+          years[y] = (years[y] || 0) + Number(tx.amount);
+       });
+       const sortedYears = Object.keys(years).sort();
+       if (sortedYears.length === 1) dataPoints = [0, years[sortedYears[0]]];
+       else dataPoints = sortedYears.map(y => years[y]);
+    }
+
+    let running = 0;
+    const cumulative = dataPoints.map(val => {
+       running += val;
+       return running;
+    });
+
+    const maxVal = cumulative[cumulative.length - 1] || 1;
+    const points = [];
+    
+    for (let i = 0; i < cumulative.length; i++) {
+      const x = (i / Math.max(1, cumulative.length - 1)) * 390;
+      const y = 145 - (cumulative[i] / maxVal) * 130;
+      points.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`);
+    }
+    return points.join(' ');
+  }, [activeTransactions, period, filters]);
+
+  const diffExpenses = totals.expenses - previousTotals.expenses;
+  const diffExpensesPercent = previousTotals.expenses !== 0 ? (diffExpenses / previousTotals.expenses) * 100 : 0;
+  const displayMoney = (val) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(val);
+  const activeCategoriesCount = new Set(activeTransactions.filter(tx => tx.type === 'Gasto').map(tx => tx.category)).size;
+
+  const latestExpenses = useMemo(() => 
+    [...activeTransactions]
+      .filter(tx => tx.type === 'Gasto')
+      .filter(tx => `${tx.description || ''} ${tx.category}`.toLowerCase().includes(query.toLowerCase()))
+      .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)))
       .slice(0, 5),
-    [monthlyTransactions],
-  );
-  const available = totals.income - totals.expenses;
-  const previousAvailable = previousTotals.income - previousTotals.expenses;
-  const monthlyChange = available - previousAvailable;
-  const monthlyChangePercent = previousAvailable !== 0
-    ? (monthlyChange / Math.abs(previousAvailable)) * 100
-    : null;
-  const savingsGoal = Number(monthlyGoals.savings) || 0;
-  const investmentGoal = Number(monthlyGoals.investment) || 0;
-  const availableForGoals = Math.max(0, available);
-  const goalProgress = [
-    {
-      label: 'Ahorro',
-      amount: Math.min(savingsGoal, Math.max(0, availableForGoals - investmentGoal)),
-      goal: savingsGoal,
-      color: '#10b981',
-    },
-    {
-      label: 'Inversión',
-      amount: Math.min(investmentGoal, availableForGoals),
-      goal: investmentGoal,
-      color: '#0ea5e9',
-    },
-  ].filter(({ goal }) => goal > 0);
-  const getMonthChange = (current, previous) => {
-    const difference = current - previous;
-    if (difference === 0) return null;
-    return {
-      difference,
-      percent: previous === 0 ? null : (difference / previous) * 100,
-    };
-  };
-  const renderMonthChange = (current, previous, isExpense = false) => {
-    const change = getMonthChange(current, previous);
-    if (!change) return 'Sin cambios vs. mes anterior';
-    const sign = change.difference > 0 ? '+' : '-';
-    const formattedDifference = new Intl.NumberFormat('es-ES', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Math.abs(change.difference));
-    const formattedPercent = change.percent === null
-      ? null
-      : `${change.percent > 0 ? '+' : '-'}${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(Math.abs(change.percent))}%`;
-    const trendIsPositive = isExpense ? change.difference < 0 : change.difference > 0;
+  [activeTransactions, query]);
 
-    return (
-      <div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-white/10">
-        <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Vs. mes anterior</p>
-        <div className="mt-1 flex items-center justify-between gap-1.5">
-          <span className="min-w-0 truncate text-[11px] font-medium tabular-nums text-zinc-700 dark:text-zinc-300">
-            {sign}{formattedDifference} €
-          </span>
-          <span
-            data-preserve-colors
-            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
-              trendIsPositive
-                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
-                : 'bg-[#FF6579] text-zinc-950 dark:bg-[#FF6579] dark:text-zinc-950'
-            }`}
-          >
-            {formattedPercent || 'Nuevo'}
-          </span>
-        </div>
-      </div>
-    );
-  };
+  const titleLabel = 
+    period === '1D' ? 'Gastos del día' :
+    period === '1S' ? 'Gastos de la 1ª semana' :
+    period === '1M' ? `Gastos del mes de ${monthName}` :
+    period === '1A' ? `Gastos del año ${yearName}` :
+    'Gastos históricos totales';
+
+  const vsLabel = 
+    period === '1D' ? 'frente a ayer' :
+    period === '1A' ? 'frente al año pasado' :
+    period === 'Máx' ? 'en toda la cuenta' :
+    'frente al mes pasado';
+
+  // Texto entre paréntesis para la sección inferior:
+  const sectionPeriodTag = 
+    period === '1M' ? monthName : 
+    period === '1A' ? yearName : 
+    period === 'Máx' ? 'Total' : 
+    period;
 
   return (
-    <div className="mt-4 space-y-4">
-      <section aria-labelledby="available-balance-title" className="px-1 py-3 sm:px-2">
-        <p className="mt-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400">Disponible neto</p>
-        <p
-          data-preserve-colors
-          className={`privacy-sensitive mt-1 break-words text-left text-6xl font-bold tabular-nums tracking-tight text-zinc-950 dark:text-white sm:text-5xl ${
-            available < 0 ? 'text-rose-700 dark:text-rose-400' : ''
-          }`}
-        >
-          <AnimatedCurrency value={available} />
-        </p>
-        <div className="mt-2 flex w-fit items-center gap-2">
-          <p data-preserve-colors className={`text-xs font-semibold tabular-nums ${monthlyChange >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-[#FF6579]'}`}>
-            {monthlyChange > 0 ? '+' : ''}{formatCurrency(monthlyChange)}
-          </p>
-          <span
-            data-preserve-colors
-            aria-label={monthlyChangePercent === null
-              ? 'Cambio del patrimonio: nuevo este mes'
-              : `Cambio del patrimonio: ${monthlyChangePercent.toFixed(2)} por ciento`}
-            className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
-              monthlyChange > 0
-                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
-                : monthlyChange < 0
-                  ? 'bg-[#FF6579] text-zinc-950 dark:bg-[#FF6579] dark:text-zinc-950'
-                  : 'bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-zinc-300'
-            }`}
-          >
-            {monthlyChange > 0
-              ? <ArrowUpRight size={12} aria-hidden="true" />
-              : monthlyChange < 0
-                ? <ArrowDownRight size={12} aria-hidden="true" />
-                : null}
-            {monthlyChangePercent === null
-              ? 'Nuevo'
-              : `${monthlyChangePercent > 0 ? '+' : ''}${new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monthlyChangePercent)}%`}
-          </span>
+    <>
+      <section className="overview expenses">
+        <div className="overview-label">
+          <span>{titleLabel}</span>
+          <button aria-label="Cambiar mes">⌄</button>
         </div>
-        {goalProgress.length > 0 && (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Progreso de metas</h3>
-              <span className="text-right text-xs text-zinc-500 dark:text-zinc-400">Saldo del mes</span>
-            </div>
-            {goalProgress.map(({ label, amount, goal, color }) => {
-              const percentage = Math.min(100, (amount / goal) * 100);
-              return (
-                <div key={label}>
-                  <div className="mb-1 flex items-center justify-between gap-3 text-xs">
-                    <span className="font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
-                    <span className="privacy-sensitive tabular-nums text-right text-zinc-500 dark:text-zinc-400">
-                      {formatCurrency(amount)} / {formatCurrency(goal)} · {Math.round(percentage)}%
-                    </span>
-                  </div>
-                  <div role="progressbar" aria-label={`Progreso de la meta de ${label.toLowerCase()}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(percentage)} className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <span className="chart-color block h-full rounded-full transition-[width]" style={{ width: `${percentage}%`, '--chart-color': color }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="min-w-0 rounded-2xl bg-[#F4F2F4] p-3.5 dark:bg-[#28282C] sm:p-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">Ingresos del mes</p>
-              <span data-color-icon="income" className="flex size-7 shrink-0 items-center justify-center rounded-lg">
-                <ArrowUpRight size={15} aria-hidden="true" />
-              </span>
-            </div>
-            <p data-preserve-colors className="privacy-sensitive mt-2 text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 sm:text-xl">
-              {formatCurrency(totals.income)}
-            </p>
-            {renderMonthChange(totals.income, previousTotals.income)}
-          </div>
-          <div className="min-w-0 rounded-2xl bg-[#F4F2F4] p-3.5 dark:bg-[#28282C] sm:p-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">Gastos del mes</p>
-              <span data-color-icon="expense" className="flex size-7 shrink-0 items-center justify-center rounded-lg">
-                <ArrowDownLeft size={15} aria-hidden="true" />
-              </span>
-            </div>
-            <p data-preserve-colors className="privacy-sensitive mt-2 text-lg font-semibold tabular-nums text-rose-700 dark:text-rose-400 sm:text-xl">
-              {formatCurrency(totals.expenses)}
-            </p>
-            {renderMonthChange(totals.expenses, previousTotals.expenses, true)}
-          </div>
-        </div>
-      </section>
-
-        <div className="flex items-center justify-between px-5 py-4">
-          <div>
-            <button
-              type="button"
-              onClick={onShowMovements}
-              className="inline-flex items-center gap-1 text-left text-base font-semibold text-zinc-900 hover:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-100 dark:hover:text-zinc-300"
-            >
-              <span id="latest-transactions-title">Transacciones</span>
-              <ChevronRight size={18} aria-hidden="true" />
-            </button>
-            <p className="mt-0.5 text-sm capitalize text-zinc-500 dark:text-zinc-400">
-              {new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' })
-                .format(new Date(filters.year, filters.month, 1))}
-            </p>
-          </div>
-          {latestTransactions.length > 0 && (
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              {latestTransactions.length} de {monthlyTransactions.length}
+        <div className="amount-line">
+          <h1 className="privacy-sensitive">{displayMoney(totals.expenses)}</h1>
+          {totals.expenses > 0 && period !== 'Máx' && diffExpenses !== 0 && (
+            <span className={`change ${diffExpenses > 0 ? 'negative' : ''}`}>
+              {diffExpenses > 0 ? '+' : ''}{diffExpensesPercent.toFixed(1)} %
             </span>
           )}
         </div>
-        {latestTransactions.length > 0 ? (
-          <div className="space-y-1.5 p-2 sm:p-3">
-            {latestTransactions.map((transaction) => (
-              <TransactionItem key={transaction.id} transaction={transaction} layout="list" />
-            ))}
-          </div>
-        ) : (
-          <p className="px-5 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            No hay movimientos en este mes. Desliza para cambiar de mes o añade un movimiento.
-          </p>
-        )}
+        <p>{vsLabel}</p>
+      </section>
 
-      <CategoryBreakdown onOverlayOpenChange={onOverlayOpenChange} />
-    </div>
+      <div className="periods" role="tablist" aria-label="Periodo de la gráfica">
+        {['1D', '1S', '1M', '1A', 'Máx'].map((item) => (
+          <button
+            key={item}
+            className={period === item ? 'active' : ''}
+            onClick={() => setPeriod(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <section className="graph" aria-label="Gráfica de gastos">
+        <svg viewBox="0 0 390 190" preserveAspectRatio="none">
+          <path className="baseline" d="M0 145H390" />
+          <path
+            className="spend-line"
+            d={graphPath}
+            style={{ transition: 'd 0.3s ease' }}
+          />
+        </svg>
+      </section>
+
+      <section className="summary-grid">
+        <button>
+          <span>Gastos</span>
+          <strong className="privacy-sensitive">{displayMoney(totals.expenses)}</strong>
+        </button>
+        <button>
+          <span>Disponible</span>
+          <strong className="privacy-sensitive">{displayMoney(totals.income - totals.expenses)}</strong>
+        </button>
+        <button onClick={onOpenLimits}>
+          <span>Categorías activas</span>
+          <strong>{activeCategoriesCount}</strong>
+        </button>
+      </section>
+
+      <section className="movements">
+        <div className="section-title">
+          {/* AHORA MUESTRA EL NOMBRE DEL MES (EJ: ÚLTIMOS GASTOS (NOVIEMBRE)) */}
+          <h2>Últimos gastos ({sectionPeriodTag})</h2>
+          <button>Ordenar por ⌄</button>
+        </div>
+        <div className="movement-list">
+          {latestExpenses.map((expense) => (
+            <TransactionItem key={expense.id} transaction={expense} layout="list" />
+          ))}
+          {latestExpenses.length === 0 && (
+             <p style={{fontSize: '9px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados.</p>
+          )}
+        </div>
+      </section>
+    </>
   );
 };
 

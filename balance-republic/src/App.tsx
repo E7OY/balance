@@ -22,8 +22,8 @@ type Holding = {
 const initialExpenses: Expense[] = [
   {
     id: 0,
-    merchant: "Nómina",
-    category: "Nómina",
+    merchant: "Salario",
+    category: "Salario",
     amount: 2850,
     date: "1 mar",
     type: "income",
@@ -31,7 +31,7 @@ const initialExpenses: Expense[] = [
   {
     id: 1,
     merchant: "Mercadona",
-    category: "Alimentación",
+    category: "Comida",
     amount: 64.2,
     date: "Hoy",
     type: "expense",
@@ -39,7 +39,7 @@ const initialExpenses: Expense[] = [
   {
     id: 2,
     merchant: "Café Federal",
-    category: "Restaurantes",
+    category: "Comida",
     amount: 4.8,
     date: "Hoy",
     type: "expense",
@@ -162,8 +162,8 @@ export default function App() {
   const [query, setQuery] = useState("")
   const [expenses, setExpenses] = useState(initialExpenses)
   const [categoryLimits, setCategoryLimits] = useState({
-    Alimentación: 450,
-    Restaurantes: 200,
+    Comida: 450,
+    Ocio: 200,
     Hogar: 500,
     Transporte: 180,
     Otros: 150,

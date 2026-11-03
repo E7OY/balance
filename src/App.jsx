@@ -1,22 +1,30 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChartNoAxesCombined, ChevronDown, ChevronLeft, House, Plus, ReceiptText, TrendingUp, X } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useFinance } from './context/FinanceContext';
-import AnnualOverview from './components/AnnualOverview';
 import HomeOverview from './components/HomeOverview';
-import InvestmentsOverview from './components/InvestmentsOverview';
 import MovementsView from './components/MovementsView';
+import InvestmentsOverview from './components/InvestmentsOverview';
 import TransactionForm from './components/TransactionForm';
-import ExportImportButtons from './components/ExportImportButtons';
-import { Button } from './components/ui/button';
 import ProfileSwitcher from './components/ProfileSwitcher';
-import { getFromLocalStorage } from './utils/localStorage';
-import {
-  claimDailyCheck,
-  getPushNotificationsEnabled,
-  releaseDailyCheck,
-  showAppNotification,
-} from './utils/pushNotifications';
+import CategoryLimitsForm from './components/CategoryLimitsForm';
 import { triggerHaptic } from './utils/haptics';
+
+function Icon({ name, size = 17 }) {
+  const paths = {
+    search: (
+      <>
+        <circle cx="10.8" cy="10.8" r="6.6" />
+        <path d="m16 16 4 4" />
+      </>
+    ),
+    arrow: <path d="M5 12h14M14 7l5 5-5 5" />,
+    close: <path d="m6 6 12 12M18 6 6 18" />
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
 
 const App = () => {
   const {
@@ -24,32 +32,21 @@ const App = () => {
     setIsModalOpen,
     editingTransaction,
     setEditingTransaction,
-    filters,
-    setFilters,
-    isAmountsHidden,
-    setIsAmountsHidden,
-    transactions,
-    profiles,
-    activeProfileId,
+    activeProfile,
+    setFilters
   } = useFinance();
+
+  const [activeTab, setActiveTab] = useState('expenses');
+  const [transactionType, setTransactionType] = useState('expense');
+  const [theme, setTheme] = useState(() => localStorage.getItem('balance-theme') || 'dark');
+  
+  // ESTADOS GLOBALES
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLimitsOpen, setIsLimitsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  
   const monthSwipeStart = useRef(null);
-  const motionState = useRef({ direction: 0, reversals: 0, startedAt: 0, lastToggleAt: 0 });
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [isAnnualView, setIsAnnualView] = useState(false);
-  const [isInvestmentFormOpen, setIsInvestmentFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
-  const [dismissedSpendingAlertKeys, setDismissedSpendingAlertKeys] = useState([]);
-  const [openOverlays, setOpenOverlays] = useState({});
-  const handleOverlayOpenChange = useCallback((overlay, isOpen) => {
-    setOpenOverlays((previous) => (
-      previous[overlay] === isOpen ? previous : { ...previous, [overlay]: isOpen }
-    ));
-  }, []);
-  const [theme, setTheme] = useState(() => {
-    const storedTheme = localStorage.getItem('balance-theme');
-    if (storedTheme) return storedTheme;
-    return 'dark';
-  });
 
   useEffect(() => {
     const root = document.documentElement;
@@ -58,256 +55,29 @@ const App = () => {
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab]);
+  const initials = (activeProfile?.name || 'US').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-  useEffect(() => {
-    const openAddTransaction = () => {
-      setIsModalOpen(true);
-      window.history.replaceState({}, '', window.location.pathname + window.location.hash);
-    };
-    const handleServiceWorkerMessage = (event) => {
-      if (event.data?.type === 'OPEN_ADD_TRANSACTION') openAddTransaction();
-    };
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('action') === 'add') openAddTransaction();
-    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
-    return () => navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
-  }, [setIsModalOpen]);
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setQuery('');
+    setSearchOpen(false);
+  };
 
-  // EFECTO ORIGINAL: Aviso de día sin gastos
-  useEffect(() => {
-    let isChecking = false;
-    let isDisposed = false;
-    let timer;
+  const openForm = (type) => {
+    setTransactionType(type);
+    setIsModalOpen(true);
+  };
 
-    const getPreviousDate = () => {
-      const previousDate = new Date();
-      previousDate.setDate(previousDate.getDate() - 1);
-      return `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, '0')}-${String(previousDate.getDate()).padStart(2, '0')}`;
-    };
-
-    const checkPreviousDay = async () => {
-      if (isChecking || !('Notification' in window) || Notification.permission !== 'granted') return;
-      if (!getPushNotificationsEnabled(activeProfileId)) return;
-      const date = getPreviousDate();
-      const hadExpenses = transactions.some((transaction) => (
-        transaction.type === 'Gasto' && transaction.date === date
-      ));
-      if (hadExpenses || !claimDailyCheck(activeProfileId, date)) return;
-
-      isChecking = true;
-      try {
-        await showAppNotification({
-          title: 'Día sin gastos',
-          body: `Ayer (${new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' }).format(new Date(`\${date}T12:00:00`))}) no registraste ningún gasto. ¡Buen trabajo!`,
-          tag: `balance-no-spend-${activeProfileId}-${date}`,
-          action: 'dashboard',
-        });
-      } catch (error) {
-        releaseDailyCheck(activeProfileId, date);
-        console.error('No se pudo mostrar el recordatorio de día sin gastos.', error);
-      } finally {
-        isChecking = false;
-      }
-    };
-
-    const scheduleNextDayCheck = () => {
-      const now = new Date();
-      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
-      timer = window.setTimeout(async () => {
-        await checkPreviousDay();
-        if (!isDisposed) scheduleNextDayCheck();
-      }, nextMidnight.getTime() - now.getTime());
-    };
-    scheduleNextDayCheck();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') checkPreviousDay();
-    };
-    const handleNotificationPreferenceChange = () => checkPreviousDay();
-    checkPreviousDay();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('balance:push-notifications-changed', handleNotificationPreferenceChange);
-    return () => {
-      isDisposed = true;
-      window.clearTimeout(timer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('balance:push-notifications-changed', handleNotificationPreferenceChange);
-    };
-  }, [activeProfileId, transactions]);
-
-  useEffect(() => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    if (!getPushNotificationsEnabled(activeProfileId)) return;
-
-    const fechaActual = new Date();
-    const mesActual = String(fechaActual.getMonth() + 1).padStart(2, '0');
-    const añoActual = fechaActual.getFullYear();
-    const prefijoMes = `${añoActual}-${mesActual}`;
-
-    // 1. Calcular el total de gastos e ingresos del mes natural en curso (independiente de los filtros)
-    let gastosDelMes = 0;
-    let ingresosDelMes = 0;
-
-    transactions.forEach((tx) => {
-      if (tx.date.startsWith(prefijoMes)) {
-        if (tx.type === 'Gasto') gastosDelMes += Number(tx.amount);
-        if (tx.type === 'Ingreso') ingresosDelMes += Number(tx.amount);
-      }
-    });
-
-    // Si no hay ingresos, no hay forma de calcular el 80% del "dinero libre"
-    if (ingresosDelMes === 0) return;
-
-    // 2. Calcular los umbrales (80% del ingreso total del mes actual)
-    const limite80 = ingresosDelMes * 0.8;
-    const claveNotificacion = `balance-80-aviso-${activeProfileId}-${prefijoMes}`;
-    const yaAvisado = localStorage.getItem(claveNotificacion);
-
-    // 3. Disparar notificación si supera el 80% pero no llega al 100%
-    if (gastosDelMes >= limite80 && gastosDelMes < ingresosDelMes && !yaAvisado) {
-      ////--ALTERNATIVA-- 3. Disparar notificación si está al 80% o más (y aún no se ha avisado este mes)
-      ///if (gastosDelMes >= limite80 && !yaAvisado) {
-      showAppNotification({
-        title: 'Aviso de límite cercano',
-        body: `Tus gastos han alcanzado el 80% de tus ingresos de este mes.`,
-        tag: claveNotificacion,
-        action: 'dashboard',
-      }).then(() => {
-        localStorage.setItem(claveNotificacion, 'true');
-      }).catch(error => {
-        console.error('No se pudo mostrar el aviso del 80%.', error);
-      });
-    }
-  }, [transactions, activeProfileId]);
-
-  useEffect(() => {
-    if (!window.matchMedia('(max-width: 767px)').matches) return undefined;
-
-    const handleDeviceMotion = (event) => {
-      const acceleration = event.acceleration?.x;
-      const accelerationWithGravity = event.accelerationIncludingGravity?.x;
-      const lateralAcceleration = Number.isFinite(acceleration) ? acceleration : accelerationWithGravity;
-      if (!Number.isFinite(lateralAcceleration) || Math.abs(lateralAcceleration) < 4) return;
-
-      const now = Date.now();
-      const motion = motionState.current;
-      const direction = Math.sign(lateralAcceleration);
-      if (motion.direction && direction !== motion.direction) {
-        if (now - motion.startedAt > 1000) {
-          motion.reversals = 0;
-          motion.startedAt = now;
-        }
-        motion.reversals += 1;
-        if (motion.reversals >= 2 && now - motion.lastToggleAt > 1200) {
-          setIsAmountsHidden((hidden) => !hidden);
-          motion.lastToggleAt = now;
-          motion.reversals = 0;
-          motion.startedAt = now;
-          triggerHaptic();
-        }
-      } else if (!motion.direction) {
-        motion.startedAt = now;
-      }
-      motion.direction = direction;
-    };
-
-    window.addEventListener('devicemotion', handleDeviceMotion);
-    return () => window.removeEventListener('devicemotion', handleDeviceMotion);
-  }, [setIsAmountsHidden]);
-
-  const monthStorageKey = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
-  const spendingAlerts = profiles
-    .filter((profile) => profile.id !== activeProfileId)
-    .flatMap((profile) => {
-      const profileTransactions = getFromLocalStorage(`finance:${profile.id}:transactions`);
-      const profileCapsByMonth = getFromLocalStorage(`finance:${profile.id}:monthlyCategoryCaps`);
-      const profileTransactionsForMonth = (Array.isArray(profileTransactions) ? profileTransactions : [])
-        .filter((transaction) => transaction.date?.startsWith(monthStorageKey));
-      const profileIncome = profileTransactionsForMonth.reduce(
-        (sum, transaction) => sum + (transaction.type === 'Ingreso' ? Number(transaction.amount) || 0 : 0),
-        0,
-      );
-      const profileExpenses = profileTransactionsForMonth.reduce(
-        (sum, transaction) => sum + (transaction.type === 'Gasto' ? Number(transaction.amount) || 0 : 0),
-        0,
-      );
-      const expensesByCategory = profileTransactionsForMonth.reduce((totals, transaction) => {
-        if (transaction.type === 'Gasto') {
-          totals[transaction.category] = (totals[transaction.category] || 0) + (Number(transaction.amount) || 0);
-        }
-        return totals;
-      }, {});
-      const caps = profileCapsByMonth && typeof profileCapsByMonth === 'object'
-        ? profileCapsByMonth[monthStorageKey] || {}
-        : {};
-      const alerts = [];
-
-      if (profileIncome > 0 && profileExpenses >= profileIncome) {
-        alerts.push({
-          type: 'overspent',
-          message: profileExpenses > profileIncome
-            ? `🔥 ${profile.name} está gastando más de lo que ingresa. ¡Cartera en llamas!`
-            : `🔥 ${profile.name} ya ha gastado todo lo que ingresó este mes.`,
-          className: 'border-rose-300 bg-gradient-to-r from-rose-500 to-orange-500 text-white dark:border-rose-300/40 dark:from-rose-700 dark:to-orange-700',
-        });
-      }
-
-      Object.entries(caps).forEach(([category, cap]) => {
-        if ((expensesByCategory[category] || 0) <= Number(cap)) return;
-        alerts.push({
-          type: `cap-${category}`,
-          message: `🚨 ${profile.name} se ha pasado del tope de ${category}.`,
-          className: 'border-orange-300 bg-gradient-to-r from-orange-400 to-amber-400 text-orange-950 dark:border-orange-300/40 dark:from-orange-700 dark:to-amber-700 dark:text-white',
-        });
-      });
-
-      if (
-        profileIncome > 0
-        && profileExpenses < profileIncome
-        && profileExpenses >= profileIncome * 0.8
-      ) {
-        alerts.push({
-          type: 'warning',
-          message: `🔥 ${profile.name} está quemando la cartera: ya gastó el 80 % de sus ingresos.`,
-          className: 'border-amber-300 bg-gradient-to-r from-amber-300 to-yellow-300 text-amber-950 dark:border-amber-300/40 dark:from-amber-700 dark:to-yellow-700 dark:text-white',
-        });
-      }
-
-      if (profileIncome >= 1000 || (profileExpenses > 0 && profileIncome >= profileExpenses * 2)) {
-        alerts.push({
-          type: 'large-income',
-          message: `🎉 ¡${profile.name} va genial! Lleva ${new Intl.NumberFormat('es-ES', {
-            style: 'currency',
-            currency: 'EUR',
-            maximumFractionDigits: 0,
-          }).format(profileIncome)} de ingresos este mes.`,
-          className: 'border-emerald-300 bg-gradient-to-r from-emerald-400 to-teal-400 text-emerald-950 dark:border-emerald-300/40 dark:from-emerald-700 dark:to-teal-700 dark:text-white',
-        });
-      }
-
-      return alerts.map((alert) => ({
-        ...alert,
-        key: `${profile.id}-${filters.year}-${filters.month}-${alert.type}`,
-      }));
-    });
+  // --- LÓGICA DE DESLIZAR PARA CAMBIAR MES ---
   const handleTouchStart = (event) => {
-    if (
-      (activeTab !== 'home' && activeTab !== 'transactions')
-      || (activeTab === 'home' && isAnnualView)
-      || !window.matchMedia('(max-width: 767px)').matches
-      || event.touches.length !== 1
-    ) {
+    if ((activeTab !== 'expenses' && activeTab !== 'movements') || event.touches.length !== 1) {
       monthSwipeStart.current = null;
       return;
     }
-
     if (event.target.closest?.('button, input, select, textarea, a, [role="dialog"], [data-month-swipe-ignore]')) {
       monthSwipeStart.current = null;
       return;
     }
-
     const touch = event.touches[0];
     monthSwipeStart.current = { x: touch.clientX, y: touch.clientY };
   };
@@ -317,241 +87,114 @@ const App = () => {
     monthSwipeStart.current = null;
     if (!start || event.changedTouches.length !== 1) return;
 
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - start.x;
-    const deltaY = touch.clientY - start.y;
+    const deltaX = event.changedTouches[0].clientX - start.x;
+    const deltaY = event.changedTouches[0].clientY - start.y;
+    
     if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.3) return;
 
     const monthOffset = deltaX < 0 ? 1 : -1;
     setFilters((previous) => {
       const nextMonth = new Date(previous.year, previous.month + monthOffset, 1);
-      return {
-        ...previous,
-        month: nextMonth.getMonth(),
-        year: nextMonth.getFullYear(),
-      };
+      return { ...previous, month: nextMonth.getMonth(), year: nextMonth.getFullYear() };
     });
-    triggerHaptic();
+    triggerHaptic(); 
   };
 
-  const annualYears = [...new Set([
-    new Date().getFullYear(),
-    ...transactions
-      .map((transaction) => Number(transaction.date?.slice(0, 4)))
-      .filter((year) => Number.isInteger(year)),
-  ])].sort((left, right) => right - left);
-
   return (
-    <div
-      className="app-shell min-h-screen bg-white text-zinc-950 transition-colors dark:bg-black dark:text-white mx-6"
-      data-amounts-hidden={isAmountsHidden}
-    >
-      <main
-        className={`relative z-10 mx-auto max-w-7xl px-4 pb-32 sm:px-6 lg:px-8 ${activeTab === 'home' && isAnnualView ? 'pt-3 sm:pt-4' : 'pt-9'}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={() => { monthSwipeStart.current = null; }}
-      >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {activeTab === 'home' ? (isAnnualView ? (
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAnnualView(false)}
-                  aria-label="Volver a la vista mensual"
-                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-[#F4F2F4] text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#1f1f1f] dark:text-white"
-                >
-                  <ChevronLeft size={22} strokeWidth={1.7} aria-hidden="true" />
-                </button>
-                <h1 className="min-w-0 flex-1 text-center text-[17px] font-semibold text-zinc-900 dark:text-white">Vista anual</h1>
-                <label className="relative shrink-0">
-                  <span className="sr-only">Seleccionar año</span>
-                  <select
-                    aria-label="Seleccionar año"
-                    value={filters.year}
-                    onChange={(event) => setFilters((previous) => ({ ...previous, year: Number(event.target.value) }))}
-                    className="h-10 cursor-pointer appearance-none rounded-full border-0 bg-[#EFEBFF] py-0 pl-4 pr-9 text-sm font-semibold text-[#6B58D6] outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#2a2640] dark:text-[#AB9FF2]"
-                  >
-                    {annualYears.map((year) => <option key={year} value={year}>{year}</option>)}
-                  </select>
-                  <ChevronDown size={16} aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6B58D6] dark:text-[#AB9FF2]" />
-                </label>
-              </div>
-            ) : (
-              <div className="flex items-center justify-start gap-2">
-                <ProfileSwitcher
-                  onOverlayOpenChange={handleOverlayOpenChange}
-                  theme={theme}
-                  setTheme={setTheme}
-                  placement="top"
-                />
-                <label className="w-[7.5rem] min-w-0 shrink-0">
-                  <span className="sr-only">Seleccionar mes</span>
-                  <select
-                    aria-label="Seleccionar mes"
-                    value={`${filters.year}-${String(filters.month + 1).padStart(2, '0')}`}
-                    onChange={(event) => {
-                      const [year, month] = event.target.value.split('-').map(Number);
-                      setFilters((previous) => ({ ...previous, year, month: month - 1 }));
-                    }}
-                    className="h-9 w-full min-w-0 rounded-full border-0 bg-[#F4F2F4] px-3 text-[10px] font-semibold capitalize text-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#28282C] dark:text-zinc-100"
-                  >
-                    {Array.from({ length: 36 }, (_, index) => {
-                      const date = new Date(filters.year, filters.month - index, 1);
-                      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                      const month = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(date);
-                      return <option key={value} value={value}>{`${month} ${date.getFullYear()}`}</option>;
-                    })}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsAnnualView((isAnnual) => !isAnnual)}
-                  className="ml-auto h-9 shrink-0 rounded-full bg-[#AB9FF2] px-3 text-[11px] font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
-                >
-                  Vista anual
-                </button>
-              </div>
-            )) : (
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                {activeTab === 'transactions' ? 'Transacciones' : 'Inversiones'}
-              </h1>
-            )}
-            {activeTab === 'home' && !isAnnualView && spendingAlerts
-              .filter((alert) => !dismissedSpendingAlertKeys.includes(alert.key))
-              .map((alert) => (
-                <div
-                  key={alert.key}
-                  role="status"
-                  className={`mt-3 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm ${alert.className}`}
-                >
-                  <span>{alert.message}</span>
-                  <button
-                    type="button"
-                    onClick={() => setDismissedSpendingAlertKeys((previousKeys) => (
-                      previousKeys.includes(alert.key) ? previousKeys : [...previousKeys, alert.key]
-                    ))}
-                    aria-label={`Cerrar aviso de gastos de ${alert.message.split(' ')[1]}`}
-                    title="Cerrar aviso"
-                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-black/10 transition-colors hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
-                  >
-                    <X size={17} />
-                  </button>
-                </div>
-              ))}
-          </div>
-          {activeTab === 'investments' && (
-            <button
-              type="button"
-              onClick={() => setIsInvestmentFormOpen((isOpen) => !isOpen)}
-              aria-expanded={isInvestmentFormOpen}
-              aria-controls="investment-form"
-              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#AB9FF2] px-3 text-xs font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#AB9FF2] dark:text-zinc-950 dark:hover:bg-[#9A8BE8]"
-            >
-              {isInvestmentFormOpen ? <X size={14} aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
-              {isInvestmentFormOpen ? 'Cerrar' : 'Aportar'}
+    <div className={`stage ${theme === 'dark' ? 'dark' : ''}`}>
+      <div className="phone">
+        <main 
+          className="screen-content"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={() => { monthSwipeStart.current = null; }}
+        >
+          <header className="app-header">
+            <div className="tabs">
+              <button className={activeTab === 'expenses' ? 'active' : ''} onClick={() => handleTabChange('expenses')}>
+                Gastos
+              </button>
+              <button className={activeTab === 'movements' ? 'active' : ''} onClick={() => handleTabChange('movements')}>
+                Movimientos
+              </button>
+              <button className={activeTab === 'investments' ? 'active' : ''} onClick={() => handleTabChange('investments')}>
+                Inversiones
+              </button>
+            </div>
+            <button className="avatar-button" onClick={() => setIsProfileOpen(true)}>
+              {initials}
             </button>
+          </header>
+
+          {/* BARRA DE BÚSQUEDA GLOBAL */}
+          {searchOpen && (
+            <div className="search-bar">
+              <Icon name="search" size={15} />
+              <input
+                autoFocus
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar..."
+              />
+              <button onClick={() => setSearchOpen(false)}>
+                <Icon name="close" size={15} />
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'expenses' && <HomeOverview query={query} onOpenLimits={() => setIsLimitsOpen(true)} />}
+          {activeTab === 'movements' && <MovementsView query={query} />}
+          {activeTab === 'investments' && <InvestmentsOverview query={query} />}
+        </main>
+
+        <div className="bottom-actions">
+          {activeTab === 'movements' ? (
+            <>
+              <button onClick={() => openForm('expense')}>
+                Gasto <span className="action-symbol">−</span>
+              </button>
+              <button onClick={() => openForm('income')}>
+                Ingreso <span className="action-symbol">+</span>
+              </button>
+            </>
+          ) : activeTab === 'investments' ? (
+            <>
+              <button onClick={() => setSearchOpen(true)}>
+                Buscar <Icon name="search" size={16} />
+              </button>
+              <button onClick={() => openForm('investment')}>
+                Invertir <Icon name="arrow" size={16} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setSearchOpen(true)}>
+                Analizar <Icon name="search" size={16} />
+              </button>
+              <button onClick={() => openForm('expense')}>
+                Añadir <Icon name="arrow" size={16} />
+              </button>
+            </>
           )}
         </div>
-
-        {activeTab === 'home' && (isAnnualView ? (
-          <AnnualOverview />
-        ) : (
-          <HomeOverview
-            onOverlayOpenChange={handleOverlayOpenChange}
-            onShowMovements={() => setActiveTab('transactions')}
-          />
-        ))}
-        {activeTab === 'transactions' && (
-          <MovementsView
-            isMobileFiltersOpen={isMobileFiltersOpen}
-            onMobileFiltersOpenChange={setIsMobileFiltersOpen}
-          />
+        
+        {/* MODALES INDEPENDIENTES DE PANTALLA COMPLETA */}
+        {isProfileOpen && (
+          <ProfileSwitcher theme={theme} setTheme={setTheme} onClose={() => setIsProfileOpen(false)} />
         )}
-        {activeTab === 'investments' && (
-          <InvestmentsOverview
-            isFormOpen={isInvestmentFormOpen}
-            onFormOpenChange={setIsInvestmentFormOpen}
-          />
+        
+        {isLimitsOpen && (
+          <CategoryLimitsForm onClose={() => setIsLimitsOpen(false)} />
         )}
-        {activeTab === 'home' && <div className="mt-4 flex justify-end">
-          <ExportImportButtons />
-        </div>}
-      </main>
+      </div>
 
-      {!isModalOpen
-        && !editingTransaction
-        && !isMobileFiltersOpen
-        && !Object.entries(openOverlays).some(([overlay, isOpen]) => overlay !== 'profile' && isOpen) && (
-        <nav
-          aria-label="Menú principal"
-          className="fixed inset-x-10 bottom-2 z-30 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 sm:inset-x-6"
-        >
-          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-0.5 rounded-full bg-[#F4F2F4] p-1 shadow-[0_8px_32px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:bg-[#28282C] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
-            {[
-              { id: 'home', label: 'Inicio', Icon: House },
-              { id: 'transactions', label: 'Movimientos', Icon: ReceiptText },
-            ].map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                type="button"
-                aria-label={label}
-                onClick={() => {
-                  setActiveTab(id);
-                  setIsMobileFiltersOpen(false);
-                }}
-                aria-current={activeTab === id ? 'page' : undefined}
-                className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
-              >
-                <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
-                <span className="sr-only">{label}</span>
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              aria-label="Añadir movimiento"
-              title="Añadir movimiento"
-              className="inline-flex !size-[3.25rem] shrink-0 !items-center !justify-center !rounded-full !bg-[#AB9FF2] p-0 text-zinc-950 shadow-md transition-colors hover:!bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#AB9FF2]/40 dark:!bg-[#AB9FF2] dark:hover:!bg-[#9A8BE8]"
-            >
-              <Plus size={24} strokeWidth={2.5} aria-hidden="true" />
-            </button>
-            {[
-              { id: 'investments', label: 'Inversiones', Icon: TrendingUp },
-            ].map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                type="button"
-                aria-label={label}
-                onClick={() => {
-                  setActiveTab(id);
-                  setIsMobileFiltersOpen(false);
-                }}
-                aria-current={activeTab === id ? 'page' : undefined}
-                className={`flex min-w-0 flex-1 items-center justify-center rounded-full px-1 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${activeTab === id ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:bg-slate-200/70 dark:text-slate-400 dark:hover:bg-white/10'}`}
-              >
-                <Icon size={24} strokeWidth={activeTab === id ? 2.4 : 1.8} aria-hidden="true" />
-              </button>
-            ))}
-            <ProfileSwitcher
-              onOverlayOpenChange={handleOverlayOpenChange}
-              theme={theme}
-              setTheme={setTheme}
-              placement="navigation"
-            />
-          </div>
-        </nav>
-      )}
-
+      {/* FORMULARIO DE AÑADIR/EDITAR */}
       {(isModalOpen || editingTransaction) && (
         <TransactionForm
           key={editingTransaction?.id || 'new'}
           transaction={editingTransaction}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingTransaction(null);
-          }}
+          defaultType={transactionType}
+          onClose={() => { setIsModalOpen(false); setEditingTransaction(null); }}
         />
       )}
     </div>

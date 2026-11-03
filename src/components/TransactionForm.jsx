@@ -1,709 +1,311 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Camera, ChartNoAxesCombined, FileText, Paperclip, Plus, Trash2, X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Camera, Paperclip, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { expenseCategories, incomeCategories } from '../utils/categories';
-import { formatCurrency, formatUnitPrice, getLocalDateString } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
-import { getPushNotificationsEnabled, showAppNotification } from '../utils/pushNotifications';
-import { getInvestmentQuote } from '../utils/investmentMarketData';
-import useSwipeToClose from '../hooks/useSwipeToClose';
-import { Button } from './ui/button';
-import InvestmentAssetPicker from './InvestmentAssetPicker';
 
-const MAX_INVOICE_SIZE = 10 * 1024 * 1024;
-const paymentMethods = ['Efectivo', 'Tarjeta', 'Bizum', 'Transferencia', 'Domiciliación', 'Otro'];
+function Icon({ name, size = 17 }) {
+  const paths = {
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+    arrow: <path d="M5 12h14M14 7l5 5-5 5" />
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
 
-const TransactionForm = ({ transaction = null, onClose }) => {
-  const {
-    addTransaction,
-    updateTransaction,
-    addInvestmentRecord,
-    addCategory,
-    deleteCategory,
-    setIsModalOpen,
-    downloadInvoice,
-    filters,
-    allCategories,
-    monthlyGoalsByMonth,
-    transactions,
-    activeProfileId,
+const DEFAULT_EXPENSE_CATEGORIES = [
+  'Comida', 'Alquiler/Hipoteca', 'Transporte', 'Ocio', 'Suscripciones', 'Mascotas', 'Salud', 'Ropa', 'Hogar', 'Viajes', 'Regalos', 'Inversiones', 'Deudas', 'Otros'
+];
+
+const DEFAULT_INCOME_CATEGORIES = [
+  'Salario', 'Regalo', 'Inversiones', 'Ventas', 'Reembolso', 'Freelance', 'Otros'
+];
+
+const DEFAULT_PAYMENT_METHODS = ['Tarjeta', 'Efectivo', 'Bizum', 'Transferencia', 'Domicialización', 'Otros'];
+
+const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose }) => {
+  const { 
+    addTransaction, 
+    updateTransaction, 
+    allCategories, 
+    transactions, 
+    categoryLimits,
+    scanReceipt 
   } = useFinance();
-  const today = new Date();
-  const selectedMonthDate = new Date(filters.year, filters.month, 1);
-  const defaultDate = today.getFullYear() === filters.year && today.getMonth() === filters.month
-    ? today
-    : selectedMonthDate;
-  const monthLabel = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(selectedMonthDate);
-  const [type, setType] = useState(transaction?.type || 'Gasto');
-  const [paymentMethod, setPaymentMethod] = useState(transaction?.paymentMethod || '');
-  const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
-  const [selectedAsset, setSelectedAsset] = useState(null);
-  const [investmentQuote, setInvestmentQuote] = useState(null);
-  const [isLoadingInvestmentQuote, setIsLoadingInvestmentQuote] = useState(false);
-  const [isSavingInvestment, setIsSavingInvestment] = useState(false);
-  const [category, setCategory] = useState(transaction?.category || expenseCategories[0]);
-  const [date, setDate] = useState(() => transaction?.date || getLocalDateString(defaultDate));
+
+  const isEditing = Boolean(transaction);
+
+  // Tipos: 'expense' | 'income' | 'investment' -> 'Gasto' | 'Ingreso'
+  const initialType = transaction?.type || (defaultType === 'income' ? 'Ingreso' : 'Gasto');
+  const [type, setType] = useState(initialType);
+  const [amount, setAmount] = useState(transaction?.amount ? String(transaction.amount) : '');
   const [description, setDescription] = useState(transaction?.description || '');
-  const [isInstallment, setIsInstallment] = useState(Boolean(transaction?.installment?.total) && transaction?.installment?.total > 1);
-  const [installmentTotal, setInstallmentTotal] = useState(transaction?.installment?.total || 3);
-  const [invoiceFile, setInvoiceFile] = useState(null);
-  const [removeExistingInvoice, setRemoveExistingInvoice] = useState(false);
-  const [showNewCategory, setShowNewCategory] = useState(false);
-  const [newCategory, setNewCategory] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isReadingReceipt, setIsReadingReceipt] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState(0);
-  const [receiptNotice, setReceiptNotice] = useState('');
-  const [receiptToScan, setReceiptToScan] = useState(null);
-  const receiptPhotoInputRef = useRef(null);
-  const isInvestment = type === 'Inversiones';
-  const categories = isInvestment ? [] : allCategories[type];
-  const defaultCategories = type === 'Ingreso' ? incomeCategories : expenseCategories;
-  const isCustomCategory = !isInvestment && Boolean(category) && !defaultCategories.includes(category);
-  const swipeHandlers = useSwipeToClose(() => {
-    if (onClose) onClose();
-    else setIsModalOpen(false);
-  });
+  const [date, setDate] = useState(transaction?.date || new Date().toISOString().slice(0, 10));
+  const [paymentMethod, setPaymentMethod] = useState(transaction?.paymentMethod || 'Tarjeta');
+  const [invoice, setInvoice] = useState(transaction?.invoice || null);
+  const [isScanning, setIsScanning] = useState(false);
 
-  useEffect(() => {
-    if (!isInvestment || !selectedAsset) {
-      setInvestmentQuote(null);
-      setIsLoadingInvestmentQuote(false);
-      return undefined;
+  // Fusión sincronizada de categorías idéntica a CategoryLimitsForm
+  const availableCategories = useMemo(() => {
+    if (type === 'Ingreso') {
+      const fromContext = allCategories?.Ingreso || [];
+      const fromTx = transactions.filter(t => t.type === 'Ingreso').map(t => t.category);
+      return Array.from(new Set([...DEFAULT_INCOME_CATEGORIES, ...fromContext, ...fromTx]));
     }
+    const fromContext = allCategories?.Gasto || [];
+    const fromTx = transactions.filter(t => t.type === 'Gasto').map(t => t.category);
+    const fromLimits = Object.keys(categoryLimits || {});
+    return Array.from(new Set([...DEFAULT_EXPENSE_CATEGORIES, ...fromContext, ...fromTx, ...fromLimits]));
+  }, [type, allCategories, transactions, categoryLimits]);
 
-    let isCancelled = false;
-    setInvestmentQuote(null);
-    setIsLoadingInvestmentQuote(true);
-    getInvestmentQuote(selectedAsset)
-      .then((quote) => {
-        if (!isCancelled) setInvestmentQuote(quote);
-      })
-      .catch((error) => {
-        if (!isCancelled) setErrorMessage(`No se pudo consultar el precio. ${error.message}`);
-      })
-      .finally(() => {
-        if (!isCancelled) setIsLoadingInvestmentQuote(false);
-      });
+  const [category, setCategory] = useState(transaction?.category || availableCategories[0] || 'Comida');
 
-    return () => { isCancelled = true; };
-  }, [isInvestment, selectedAsset]);
+  // Si cambia el tipo (Gasto / Ingreso) y la categoría actual no está en la nueva lista, reasignar
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    const newAvailable = newType === 'Ingreso'
+      ? Array.from(new Set([...DEFAULT_INCOME_CATEGORIES, ...(allCategories?.Ingreso || [])]))
+      : Array.from(new Set([...DEFAULT_EXPENSE_CATEGORIES, ...(allCategories?.Gasto || []), ...Object.keys(categoryLimits || {})]));
+    if (!newAvailable.includes(category)) {
+      setCategory(newAvailable[0] || 'Otros');
+    }
+  };
 
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        if (onClose) onClose();
-        else setIsModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose, setIsModalOpen]);
+  const handleReceiptScan = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !scanReceipt) return;
 
-  useEffect(() => {
-    if (!receiptToScan) return undefined;
-    let isCancelled = false;
-
-    const readReceipt = async () => {
-      if (receiptToScan.size > MAX_INVOICE_SIZE) {
-        setErrorMessage('La foto supera los 10 MB. Elige una imagen más ligera.');
-        return;
-      }
-      if (!receiptToScan.type.startsWith('image/')) {
-        setErrorMessage('El recibo debe ser una imagen compatible.');
-        return;
-      }
-
-      setType('Gasto');
-      setInvoiceFile(receiptToScan);
-      setIsReadingReceipt(true);
-      setOcrProgress(0);
-      setErrorMessage('');
-      setReceiptNotice('');
-
-      try {
-        const { scanReceipt } = await import('../utils/receiptOcr');
-        const result = await scanReceipt(receiptToScan, allCategories.Gasto, (progress) => {
-          if (!isCancelled) setOcrProgress(progress);
-        });
-        if (isCancelled) return;
-
-        const extractedFields = [];
-        if (result.amount !== null) {
-          setAmount(result.amount.toFixed(2));
-          extractedFields.push('importe');
-        }
-        if (result.date) {
-          setDate(result.date);
-          extractedFields.push('fecha');
-        }
-        if (result.category) {
+    try {
+      setIsScanning(true);
+      const result = await scanReceipt(file);
+      if (result) {
+        if (result.amount) setAmount(String(result.amount));
+        if (result.description) setDescription(result.description);
+        if (result.date) setDate(result.date);
+        if (result.category && availableCategories.includes(result.category)) {
           setCategory(result.category);
-          extractedFields.push(`categoría: ${result.category}`);
         }
-        if (result.description) {
-          setDescription((current) => (current.trim() ? current : result.description));
-          extractedFields.push(`concepto: ${result.description}`);
-        }
-        if (result.paymentMethod && paymentMethods.includes(result.paymentMethod)) {
-          setPaymentMethod(result.paymentMethod);
-          extractedFields.push(`método de pago: ${result.paymentMethod}`);
-        }
-        setReceiptNotice(extractedFields.length > 0
-          ? `Detectado: ${extractedFields.join(' · ')}. Revisa los campos antes de guardar.`
-          : 'No se detectaron datos claros. Completa los campos manualmente; la foto quedará adjunta.');
-      } catch (error) {
-        if (!isCancelled) {
-          console.error('No se pudo leer el recibo.', error);
-          setErrorMessage('No se pudo leer el recibo. Completa los campos manualmente; la foto sigue adjunta.');
-        }
-      } finally {
-        if (!isCancelled) setIsReadingReceipt(false);
       }
+    } catch (err) {
+      console.error('Error al escanear recibo:', err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setInvoice({
+      name: file.name,
+      file,
+      url: URL.createObjectURL(file)
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const parsedAmount = parseFloat(amount.replace(',', '.'));
+    if (!parsedAmount || isNaN(parsedAmount)) return;
+
+    const txData = {
+      amount: parsedAmount,
+      type,
+      category,
+      description: description.trim(),
+      date,
+      paymentMethod,
+      ...(invoice ? { invoice } : {})
     };
 
-    readReceipt();
-    return () => { isCancelled = true; };
-  }, [allCategories.Gasto, receiptToScan]);
-
-  const closeForm = () => {
-    if (onClose) onClose();
-    else setIsModalOpen(false);
-  };
-
-  const handleTypeChange = (nextType) => {
-    setType(nextType);
-    if (nextType !== 'Inversiones') setSelectedAsset(null);
-    else setDate(getLocalDateString());
-    if (nextType !== 'Inversiones') setCategory(allCategories[nextType][0]);
-    if (nextType !== 'Gasto') {
-      setIsInstallment(false);
-    }
-    setErrorMessage('');
-  };
-
-  const handleAddCategory = (event) => {
-    event.preventDefault();
-    try {
-      const createdCategory = addCategory(type, newCategory);
-      setCategory(createdCategory);
-      setNewCategory('');
-      setShowNewCategory(false);
-      setErrorMessage('');
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  };
-
-  const handleDeleteCategory = async () => {
-    if (!isCustomCategory) return;
-    const confirmed = window.confirm(
-      `¿Eliminar la categoría "${category}"? Los movimientos que ya la usan conservarán su nombre.`,
-    );
-    if (!confirmed) return;
-    try {
-      const fallbackCategory = categories.find((option) => option !== category) || defaultCategories[0];
-      await deleteCategory(type, category);
-      setCategory(fallbackCategory);
-      setErrorMessage('');
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  };
-
-  const handleInvoiceChange = (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    if (file.size > MAX_INVOICE_SIZE) {
-      setErrorMessage('La factura no puede superar los 10 MB.');
-      return;
-    }
-    const allowedFile = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type);
-    if (!allowedFile) {
-      setErrorMessage('Elige una factura en PDF, JPG, PNG o WebP.');
-      return;
-    }
-    setInvoiceFile(file);
-    setErrorMessage('');
-  };
-
-  const handleReceiptCapture = (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    if (file.size > MAX_INVOICE_SIZE) {
-      setErrorMessage('La foto supera los 10 MB. Elige una imagen más ligera.');
-      return;
-    }
-    if (!file.type.startsWith('image/')) {
-      setErrorMessage('El recibo debe ser una imagen compatible.');
-      return;
-    }
-    setErrorMessage('');
-    setReceiptToScan(file);
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0 || !date) {
-      setErrorMessage('Completa un importe válido y una fecha.');
-      return;
+    if (isEditing) {
+      updateTransaction(transaction.id, txData);
+    } else {
+      addTransaction(txData);
     }
 
-    if (isInvestment) {
-      if (!selectedAsset) {
-        setErrorMessage('Busca y selecciona el activo en el que has invertido.');
-        return;
-      }
-      setIsSavingInvestment(true);
-      try {
-        const quote = await getInvestmentQuote(selectedAsset);
-        const units = value / quote.priceEur;
-        addInvestmentRecord({
-          name: selectedAsset.name,
-          date,
-          investedAmount: value,
-          asset: selectedAsset,
-          units,
-          currentPrice: quote.priceEur,
-          currentValue: units * quote.priceEur,
-          lastPriceUpdated: quote.updatedAt,
-        });
-        triggerHaptic('income');
-        closeForm();
-      } catch (error) {
-        setErrorMessage(`No se pudo consultar el precio o guardar la inversión. ${error.message}`);
-      } finally {
-        setIsSavingInvestment(false);
-      }
-      return;
-    }
-
-    if (!category || !paymentMethod) {
-      setErrorMessage('Completa el importe, la categoría, la fecha y el método de pago.');
-      return;
-    }
-
-    if (type === 'Gasto' && isInstallment) {
-      const installmentCount = Number(installmentTotal);
-      if (!Number.isFinite(installmentCount) || installmentCount < 2) {
-        setErrorMessage('Las cuotas deben ser un número mayor o igual a 2.');
-        return;
-      }
-    }
-
-    if (!transaction) triggerHaptic(type === 'Ingreso' ? 'income' : 'heavy');
-
-    try {
-      const movement = {
-        type,
-        paymentMethod,
-        amount: value,
-        category,
-        date,
-        description: description.trim(),
-        isInstallment: type === 'Gasto' && isInstallment,
-        installmentTotal: type === 'Gasto' && isInstallment ? Number(installmentTotal) : undefined,
-        invoiceFile,
-        ...(removeExistingInvoice && { removeInvoice: true }),
-      };
-      if (transaction) await updateTransaction(transaction.id, movement);
-      else {
-        await addTransaction(movement);
-        const targetMonth = date.slice(0, 7);
-        const targetMonthGoals = monthlyGoalsByMonth[targetMonth] || { savings: 0, investment: 0 };
-        const targetMonthBalance = transactions
-          .filter((item) => item.date?.slice(0, 7) === targetMonth)
-          .reduce((balance, item) => (
-            balance + (item.type === 'Ingreso' ? 1 : -1) * (Number(item.amount) || 0)
-          ), 0);
-        const freeBalance = Math.max(
-          0,
-          targetMonthBalance - targetMonthGoals.savings - targetMonthGoals.investment,
-        );
-        if (type === 'Gasto' && value > freeBalance) {
-          try {
-            if (getPushNotificationsEnabled(activeProfileId)) {
-              await showAppNotification({
-                title: 'Gasto por encima de tu dinero libre',
-                body: `El gasto de ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' }).format(value)} supera tu saldo libre de ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' }).format(freeBalance)}.`,
-                tag: `balance-overspending-${activeProfileId}-${Date.now()}`,
-                action: 'dashboard',
-              });
-            }
-          } catch (notificationError) {
-            console.error('No se pudo mostrar la alerta de gasto excesivo.', notificationError);
-          }
-        }
-      }
-      if (transaction) triggerHaptic();
-      setAmount('');
-      setDescription('');
-      setInvoiceFile(null);
-      closeForm();
-    } catch (error) {
-      setErrorMessage(`No se pudo guardar el movimiento. ${error.message}`);
-    }
+    triggerHaptic();
+    onClose();
   };
 
   return (
-    <div
-      className="transaction-form-scroll fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/40 pb-[env(safe-area-inset-bottom)] backdrop-blur-[2px] sm:items-center sm:p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) closeForm();
-      }}
-    >
-      <section
+    <div className="sheet-layer" style={{ zIndex: 90 }} onMouseDown={onClose}>
+      <section 
+        className="bottom-sheet transaction-sheet" 
         role="dialog"
         aria-modal="true"
-        aria-labelledby="transaction-title"
-        className="transaction-form-scroll relative my-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] bg-slate-50 p-5 shadow-xl dark:bg-slate-900 sm:max-h-[calc(100vh-2rem)] sm:rounded-2xl sm:p-8"
-        {...swipeHandlers}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="relative mb-5 flex min-h-10 items-center justify-center">
+        <div className="sheet-handle" />
+        <button className="sheet-close" onClick={onClose} type="button" aria-label="Cerrar">
+          <Icon name="close" size={18} />
+        </button>
+
+        <div className="record-tabs">
           <button
             type="button"
-            onClick={closeForm}
-            aria-label="Cerrar"
-            className="absolute left-0 inline-flex size-10 items-center justify-center rounded-full text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:text-slate-200 dark:hover:bg-slate-800"
+            className={type === 'Gasto' ? 'active' : ''}
+            onClick={() => handleTypeChange('Gasto')}
           >
-            <X size={21} aria-hidden="true" />
+            Gasto
           </button>
-          <h2 id="transaction-title" className="text-xl font-semibold text-slate-950 dark:text-slate-50">
-            {transaction ? 'Editar movimiento' : isInvestment ? 'Nueva inversión' : `Nuevo ${type.toLowerCase()}`}
-          </h2>
+          <button
+            type="button"
+            className={type === 'Ingreso' ? 'active' : ''}
+            onClick={() => handleTypeChange('Ingreso')}
+          >
+            Ingreso
+          </button>
         </div>
 
-        {!transaction && type === 'Gasto' && (
-          <div className="mb-5">
+        <h2 id="transaction-title">
+          {isEditing ? 'Editar movimiento' : type === 'Gasto' ? 'Nuevo gasto' : 'Nuevo ingreso'}
+        </h2>
+        <p>Introduce los datos para registrar la transacción en tu balance.</p>
+
+        <form onSubmit={handleSubmit}>
+          <label>
+            Importe (€)
             <input
-              ref={receiptPhotoInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleReceiptCapture}
-              className="hidden"
-              aria-label="Fotografiar recibo"
-            />
-            <button
-              type="button"
-              onClick={() => receiptPhotoInputRef.current?.click()}
-              disabled={isReadingReceipt}
-              className="flex min-h-[4.5rem] w-full items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30"
-            >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
-                <Camera size={20} aria-hidden="true" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {isReadingReceipt ? 'Leyendo recibo…' : 'Fotografiar recibo'}
-                </span>
-                <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-                  Detecta el importe y completa los datos
-                </span>
-              </span>
-            </button>
-          </div>
-        )}
-
-        {receiptToScan && (
-          <div className="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
-            {isReadingReceipt ? (
-              <div role="status">
-                <div className="flex items-center justify-between gap-3">
-                  <span>Leyendo recibo…</span>
-                  <span className="text-xs tabular-nums">{ocrProgress}%</span>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-emerald-200 dark:bg-emerald-950/50">
-                  <span className="block h-full rounded-full bg-emerald-600 transition-[width] dark:bg-emerald-400" style={{ width: `${ocrProgress}%` }} />
-                </div>
-              </div>
-            ) : receiptNotice ? (
-              <p role="status" className="privacy-sensitive">{receiptNotice}</p>
-            ) : null}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className={`grid rounded-full bg-white p-1 dark:bg-slate-800 ${transaction ? 'grid-cols-2' : 'grid-cols-3'}`}>
-            {[
-              { value: 'Gasto', label: 'Gasto', Icon: ArrowDownLeft },
-              { value: 'Ingreso', label: 'Ingreso', Icon: ArrowUpRight },
-              ...(!transaction ? [{ value: 'Inversiones', label: 'Inversiones', Icon: ChartNoAxesCombined }] : []),
-            ].map(({ value, label, Icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => handleTypeChange(value)}
-                aria-pressed={type === value}
-                className={`inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-1 text-xs font-medium transition-all sm:gap-2 sm:px-2 sm:text-sm ${
-                  type === value
-                    ? 'bg-emerald-50 text-emerald-800 shadow-sm dark:bg-emerald-950 dark:text-emerald-200'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'
-                }`}
-              >
-                <Icon size={16} className="shrink-0" />
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="py-2">
-            <label htmlFor="amount" className="sr-only">{isInvestment ? 'Capital aportado' : 'Importe'}</label>
-            <div className="relative mx-auto max-w-xs">
-              <input
-                type="number"
-                id="amount"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                placeholder="0"
-                min="0.01"
-                step="0.01"
-                inputMode="decimal"
-                autoFocus
-                required
-                aria-label={isInvestment ? 'Capital aportado' : 'Importe'}
-                className="h-24 w-full border-0 bg-transparent px-3 pr-12 text-center text-6xl font-semibold tabular-nums text-black outline-none placeholder:text-black focus:ring-0 dark:text-white dark:placeholder:text-white"
-              />
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-3xl font-medium text-black dark:text-white">€</span>
-            </div>
-            <p className="mt-1 text-center text-sm text-black dark:text-white">
-              {isInvestment ? 'Capital aportado' : type === 'Ingreso' ? 'Importe del ingreso' : 'Importe del gasto'}
-            </p>
-          </div>
-
-          {!isInvestment && <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="category" className="text-sm font-medium text-slate-700 dark:text-slate-200">Categoría</label>
-              <div className="flex items-center gap-3">
-                {isCustomCategory && (
-                  <button
-                    type="button"
-                    onClick={handleDeleteCategory}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-rose-700 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300"
-                  >
-                    <Trash2 size={14} />
-                    Eliminar categoría
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowNewCategory((visible) => !visible);
-                    setErrorMessage('');
-                  }}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 hover:text-emerald-950 dark:text-emerald-400 dark:hover:text-emerald-300"
-                >
-                  <Plus size={14} />
-                  Nueva categoría
-                </button>
-              </div>
-            </div>
-            <select
-              id="category"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              type="number"
+              step="0.01"
+              min="0.01"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0,00"
               required
-              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            >
-              {categories.map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
-            {showNewCategory && (
-              <div className="mt-2 flex gap-2">
-                <label className="sr-only" htmlFor="new-category">Nombre de la nueva categoría</label>
-                <input
-                  id="new-category"
-                  type="text"
-                  value={newCategory}
-                  onChange={(event) => setNewCategory(event.target.value)}
-                  placeholder={type === 'Ingreso' ? 'Ej. Alquiler recibido' : 'Ej. Mascotas'}
-                  maxLength={40}
-                  autoFocus
-                  className="h-9 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-                />
-                <Button type="button" size="sm" onClick={handleAddCategory}>Añadir</Button>
-              </div>
-            )}
-          </div>}
+              autoFocus={!isEditing}
+            />
+          </label>
 
-          {isInvestment && (
-            <div>
-              <InvestmentAssetPicker
-                value={selectedAsset}
-                onChange={(asset) => {
-                  setSelectedAsset(asset);
-                  setErrorMessage('');
-                }}
-              />
-              <p role="status" className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                {isLoadingInvestmentQuote
-                  ? 'Consultando precio de mercado…'
-                  : investmentQuote
-                    ? `Precio actual: ${formatUnitPrice(investmentQuote.priceEur)} por unidad · ${amount && Number(amount) > 0 ? `${(Number(amount) / investmentQuote.priceEur).toFixed(6)} unidades estimadas` : 'Elige el capital para estimar las unidades'}`
-                    : 'El valor de la cartera se calculará automáticamente con la cotización del activo.'}
-              </p>
-            </div>
-          )}
+          <label style={{ marginTop: '10px' }}>
+            Concepto
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ej: Compra semanal, Cena..."
+            />
+          </label>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{isInvestment ? 'Fecha de registro' : 'Fecha'}</label>
-              <input
-                type="date"
-                id="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+            <label>
+              Categoría
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
                 required
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-            {!isInvestment && <div>
-              <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{isInvestment ? 'Inversión' : 'Concepto'}</label>
-              <input
-                type="text"
-                id="description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder={isInvestment ? 'Ej. Fondo indexado' : type === 'Ingreso' ? 'Sueldo de octubre' : 'Compra del súper'}
-                maxLength={isInvestment ? 60 : 100}
-                required={isInvestment}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-              />
-            </div>}
-          </div>
-
-          {transaction?.invoice && !removeExistingInvoice && (
-            <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2.5 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await downloadInvoice(transaction.id, transaction.invoice.name);
-                    setErrorMessage('');
-                  } catch (error) {
-                    setErrorMessage(`No se pudo abrir la factura: ${error.message}`);
-                  }
-                }}
-                className="flex min-w-0 items-center gap-2 text-sm text-emerald-800 hover:underline dark:text-emerald-400"
               >
-                <FileText size={16} className="shrink-0" />
-                <span className="truncate">{transaction.invoice.name}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRemoveExistingInvoice(true)}
-                aria-label="Quitar factura actual"
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          )}
+                {availableCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          {!isInvestment && type === 'Gasto' && (
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <label className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium text-slate-700 dark:text-slate-200">
-                <span>¿Es un pago a plazos?</span>
-                <input
-                  type="checkbox"
-                  checked={isInstallment}
-                  onChange={(event) => setIsInstallment(event.target.checked)}
-                  className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700"
-                />
-              </label>
-              {isInstallment && (
-                <div className="mt-3">
-                  <label htmlFor="installment-total" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Número total de cuotas
-                  </label>
-                  <input
-                    id="installment-total"
-                    type="number"
-                    min="2"
-                    max="24"
-                    value={installmentTotal}
-                    onChange={(event) => setInstallmentTotal(event.target.value)}
-                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {!isInvestment && <div>
-            <label htmlFor="payment-method" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+            <label>
               Método de pago
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                {DEFAULT_PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
             </label>
-            <select
-              id="payment-method"
-              value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value)}
-              required
-              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            >
-              <option value="" disabled>Selecciona cómo se pagó</option>
-              {paymentMethods.map((method) => (
-                <option key={method} value={method}>{method}</option>
-              ))}
-            </select>
-          </div>}
+          </div>
 
-          {!isInvestment && <div>
-            <label htmlFor="invoice" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Factura <span className="font-normal text-slate-400 dark:text-slate-500">(opcional)</span>
-            </label>
+          <label style={{ marginTop: '10px' }}>
+            Fecha
             <input
-              id="invoice"
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
-              onChange={handleInvoiceChange}
-              className="sr-only"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
             />
-            <div className="flex min-h-10 items-center gap-2 rounded-md border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-600 transition-colors hover:border-slate-400 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800">
-              {invoiceFile ? <FileText size={16} className="shrink-0 text-emerald-700 dark:text-emerald-400" /> : <Paperclip size={16} className="shrink-0 text-slate-400 dark:text-slate-500" />}
-              <label htmlFor="invoice" className="min-w-0 flex-1 cursor-pointer truncate">
-                {invoiceFile ? invoiceFile.name : transaction?.invoice && !removeExistingInvoice ? 'Reemplazar factura (PDF o imagen, máx. 10 MB)' : 'Adjuntar PDF o imagen (máx. 10 MB)'}
-              </label>
-              {invoiceFile && (
-                <button
-                  type="button"
-                  aria-label="Quitar factura"
-                  onClick={() => setInvoiceFile(null)}
-                  className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>}
+          </label>
 
-          {errorMessage && (
-            <p role="alert" className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-              {errorMessage}
-            </p>
+          {/* Adjuntos y OCR */}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+            <label 
+              className="sheet-submit" 
+              style={{ 
+                flex: 1, 
+                background: '#f1f1ef', 
+                color: '#090909', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '6px', 
+                fontSize: '11px', 
+                cursor: 'pointer',
+                margin: 0
+              }}
+            >
+              <Camera size={14} />
+              {isScanning ? 'Escaneando...' : 'Escanear ticket'}
+              <input 
+                type="file" 
+                accept="image/*" 
+                capture="environment" 
+                onChange={handleReceiptScan} 
+                style={{ display: 'none' }} 
+                disabled={isScanning}
+              />
+            </label>
+
+            <label 
+              className="sheet-submit" 
+              style={{ 
+                flex: 1, 
+                background: '#f1f1ef', 
+                color: '#090909', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '6px', 
+                fontSize: '11px', 
+                cursor: 'pointer',
+                margin: 0
+              }}
+            >
+              <Paperclip size={14} />
+              {invoice ? 'Factura lista' : 'Adjuntar factura'}
+              <input 
+                type="file" 
+                accept="image/*,application/pdf" 
+                onChange={handleFileUpload} 
+                style={{ display: 'none' }} 
+              />
+            </label>
+          </div>
+
+          {invoice && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: '#f5f5f2', borderRadius: '8px', marginTop: '8px', fontSize: '11px' }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
+                📎 {invoice.name}
+              </span>
+              <button 
+                type="button" 
+                onClick={() => setInvoice(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                <X size={13} />
+              </button>
+            </div>
           )}
 
-          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              onClick={closeForm}
-              variant="outline"
-              className="h-10"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isInvestment && isSavingInvestment}
-              className="h-10"
-            >
-              {isInvestment && isSavingInvestment
-                ? 'Consultando precio…'
-                : transaction ? 'Guardar cambios' : isInvestment ? 'Guardar inversión' : `Guardar ${type.toLowerCase()} en ${monthLabel}`}
-            </Button>
-          </div>
+          <button className="sheet-submit limits-submit" style={{ marginTop: '18px', background: '#090909' }} type="submit">
+            {isEditing ? 'Guardar cambios' : 'Registrar movimiento'}
+            <Icon name="arrow" size={16} />
+          </button>
         </form>
       </section>
     </div>
