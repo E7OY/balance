@@ -159,7 +159,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
           style={{ transform: `translateX(${swipeOffset})`, transition: 'transform 0.2s ease-out' }}
         >
           <span className="movement-icon">
-            {getCategoryIcon(transaction.category, transaction.type, 14)}
+            {getCategoryIcon(transaction.category, transaction.type,20)}
           </span>
           <span className="movement-info">
             <strong>{transaction.description || transaction.category}</strong>

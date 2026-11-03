@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { getPushNotificationsEnabled, setPushNotificationsEnabled } from '../utils/pushNotifications';
 
@@ -6,7 +6,11 @@ function Icon({ name, size = 17 }) {
   const paths = {
     arrow: <path d="M5 12h14M14 7l5 5-5 5" />,
     chevron: <path d="m9 7 5 5-5 5" />,
-    close: <path d="m6 6 12 12M18 6 6 18" />
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+    user: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
+    cloud: <path d="M7 18h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 7 9a4.5 4.5 0 0 0 0 9Z" />,
+    download: <><path d="M12 3v12m-5-5 5 5 5-5" /><path d="M5 17v3h14v-3" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.8Z" /></>
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -22,7 +26,6 @@ const ProfileSwitcher = ({
   onDefaultHomeTabChange,
   investmentsEnabled,
   onInvestmentsVisibilityChange,
-  onClose,
 }) => {
   const {
     activeProfile,
@@ -47,6 +50,8 @@ const ProfileSwitcher = ({
   const [syncEmail, setSyncEmail] = useState('');
   const [syncPassword, setSyncPassword] = useState('');
   const [syncFormError, setSyncFormError] = useState('');
+  const settingsRef = useRef(null);
+  const syncRef = useRef(null);
 
   const initials = customName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -63,6 +68,18 @@ const ProfileSwitcher = ({
     const newState = !notifications;
     setNotifications(newState);
     setPushNotificationsEnabled(activeProfile.id, newState);
+  };
+
+  const scrollTo = (ref) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleSyncShortcut = () => {
+    if (syncUser) {
+      scrollTo(syncRef);
+      return;
+    }
+    setIsSyncPanelOpen(true);
   };
 
   const handleUpdateProfile = (e) => {
@@ -92,21 +109,29 @@ const ProfileSwitcher = ({
 
   return (
     <section className="profile-page" aria-label="Perfil">
-      <header className="profile-header">
-        <button className="profile-back" onClick={onClose} aria-label="Volver">
-          <Icon name="arrow" size={18} />
-        </button>
-        <strong>Perfil</strong>
-        <button className="profile-edit" onClick={() => setProfileEditOpen(true)}>
-          Editar
-        </button>
-      </header>
-
       <div className="profile-identity">
-        <span className="profile-avatar">{initials}</span>
         <h1>{customName}</h1>
+        <p className="profile-type">Personal</p>
         <p>{syncUser ? syncUser.email : 'Cuenta local'}</p>
         {syncUser && <span className="verified">Nube activada</span>}
+      </div>
+
+      <div className="profile-shortcuts" aria-label="Accesos rápidos">
+        <button className="profile-shortcut" onClick={() => setProfileEditOpen(true)}>
+          <Icon name="user" size={20} />
+          <strong>Cuenta</strong>
+          <small>Datos personales</small>
+        </button>
+        <button className="profile-shortcut" onClick={handleSyncShortcut}>
+          <Icon name="cloud" size={20} />
+          <strong>Nube</strong>
+          <small>{syncUser ? 'Sincronizada' : 'Copia de seguridad'}</small>
+        </button>
+        <button className="profile-shortcut" onClick={exportData}>
+          <Icon name="download" size={20} />
+          <strong>Exportar</strong>
+          <small>Descargar datos</small>
+        </button>
       </div>
 
       <div className="profile-balance">
@@ -115,7 +140,35 @@ const ProfileSwitcher = ({
         <small>Total ahorrado de todos los meses</small>
       </div>
 
-      <div className="settings-group">
+      <div className="profile-services">
+        <p>SERVICIOS</p>
+        <button onClick={() => scrollTo(settingsRef)}>
+          <span className="profile-service-icon"><Icon name="settings" size={18} /></span>
+          <span className="profile-service-copy">
+            <strong>Ajustes personales</strong>
+            <small>Preferencias y pantalla principal</small>
+          </span>
+          <Icon name="chevron" size={16} />
+        </button>
+        <button onClick={handleSyncShortcut}>
+          <span className="profile-service-icon"><Icon name="cloud" size={18} /></span>
+          <span className="profile-service-copy">
+            <strong>Sincronización</strong>
+            <small>{syncUser ? 'Gestionar tu cuenta en la nube' : 'Guarda tus datos en la nube'}</small>
+          </span>
+          <Icon name="chevron" size={16} />
+        </button>
+        <button onClick={exportData}>
+          <span className="profile-service-icon"><Icon name="download" size={18} /></span>
+          <span className="profile-service-copy">
+            <strong>Exportar datos</strong>
+            <small>Descarga una copia de tu información</small>
+          </span>
+          <Icon name="chevron" size={16} />
+        </button>
+      </div>
+
+      <div className="settings-group" ref={settingsRef}>
         <p>PREFERENCIAS</p>
         <div className="setting-toggle">
           <span>
@@ -194,7 +247,7 @@ const ProfileSwitcher = ({
         </div>
       </div>
 
-      <div className="settings-group">
+      <div className="settings-group" ref={syncRef}>
         <p>DATOS Y SINCRONIZACIÓN</p>
         {syncUser ? (
           <button onClick={logoutFromSyncAccount}>
@@ -222,10 +275,6 @@ const ProfileSwitcher = ({
         </button>
       </div>
 
-      <button className="export-button" onClick={exportData}>
-        Exportar mis datos
-        <Icon name="arrow" size={16} />
-      </button>
       <p className="app-version">Versión 2.0.0</p>
 
       {/* MODAL DE EDICIÓN DE PERFIL */}

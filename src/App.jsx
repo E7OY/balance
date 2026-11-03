@@ -111,6 +111,7 @@ const App = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    setIsProfileOpen(false);
     setQuery('');
     setSearchOpen(false);
   };
@@ -175,33 +176,51 @@ const App = () => {
                 </button>
               )}
             </div>
-            <button className="avatar-button" onClick={() => setIsProfileOpen(true)}>
+            <button
+              className={`avatar-button ${isProfileOpen ? 'active' : ''}`}
+              onClick={() => setIsProfileOpen((isOpen) => !isOpen)}
+              aria-label={isProfileOpen ? 'Cerrar perfil' : 'Abrir perfil'}
+              aria-pressed={isProfileOpen}
+            >
               {initials}
             </button>
           </header>
 
-          {/* BARRA DE BÚSQUEDA GLOBAL */}
-          {searchOpen && (
-            <div className="search-bar">
-              <Icon name="search" size={15} />
-              <input
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar..."
-              />
-              <button onClick={() => setSearchOpen(false)}>
-                <Icon name="close" size={15} />
-              </button>
-            </div>
-          )}
+          {isProfileOpen ? (
+            <ProfileSwitcher
+              theme={theme}
+              setTheme={setTheme}
+              defaultHomeTab={defaultHomeTab}
+              onDefaultHomeTabChange={handleDefaultHomeTabChange}
+              investmentsEnabled={investmentsEnabled}
+              onInvestmentsVisibilityChange={handleInvestmentsVisibilityChange}
+            />
+          ) : (
+            <>
+              {/* BARRA DE BÚSQUEDA GLOBAL */}
+              {searchOpen && (
+                <div className="search-bar">
+                  <Icon name="search" size={15} />
+                  <input
+                    autoFocus
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Buscar..."
+                  />
+                  <button onClick={() => setSearchOpen(false)}>
+                    <Icon name="close" size={15} />
+                  </button>
+                </div>
+              )}
 
-          {activeTab === 'expenses' && <HomeOverview query={query} onOpenLimits={() => setIsLimitsOpen(true)} />}
-          {activeTab === 'movements' && <MovementsView query={query} />}
-          {activeTab === 'investments' && <InvestmentsOverview query={query} />}
+              {activeTab === 'expenses' && <HomeOverview query={query} onOpenLimits={() => setIsLimitsOpen(true)} />}
+              {activeTab === 'movements' && <MovementsView query={query} />}
+              {activeTab === 'investments' && <InvestmentsOverview query={query} />}
+            </>
+          )}
         </main>
 
-        <div className="bottom-actions">
+        {!isProfileOpen && <div className="bottom-actions">
           {activeTab === 'movements' ? (
             <>
               <button onClick={() => openForm('expense')}>
@@ -230,21 +249,9 @@ const App = () => {
               </button>
             </>
           )}
-        </div>
+        </div>}
         
         {/* MODALES INDEPENDIENTES DE PANTALLA COMPLETA */}
-        {isProfileOpen && (
-          <ProfileSwitcher
-            theme={theme}
-            setTheme={setTheme}
-            defaultHomeTab={defaultHomeTab}
-            onDefaultHomeTabChange={handleDefaultHomeTabChange}
-            investmentsEnabled={investmentsEnabled}
-            onInvestmentsVisibilityChange={handleInvestmentsVisibilityChange}
-            onClose={() => setIsProfileOpen(false)}
-          />
-        )}
-        
         {isLimitsOpen && (
           <CategoryLimitsForm onClose={() => setIsLimitsOpen(false)} />
         )}
