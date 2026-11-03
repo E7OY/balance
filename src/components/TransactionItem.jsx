@@ -1,8 +1,24 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Trash2, Pencil, Paperclip } from 'lucide-react';
+import { 
+  Trash2, 
+  Pencil, 
+  Paperclip, 
+  ShoppingBag, 
+  Utensils, 
+  Home, 
+  Car, 
+  Film, 
+  HeartPulse, 
+  Tv, 
+  Briefcase, 
+  ArrowLeftRight, 
+  TrendingUp, 
+  Tag, 
+  HelpCircle,
+  Receipt
+} from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency } from '../utils/helpers';
 import { triggerHaptic } from '../utils/haptics';
 
 function Icon({ name, size = 16 }) {
@@ -24,10 +40,54 @@ function Icon({ name, size = 16 }) {
   );
 }
 
+// Mapeo dinámico de iconos por categoría
+const getCategoryIcon = (category = '', type = 'Gasto', size = 16) => {
+  const normalized = category.toLowerCase().trim();
+
+  // Gastos
+  if (normalized.includes('alimentación') || normalized.includes('supermercado') || normalized.includes('comida')) {
+    return <ShoppingBag size={size} />;
+  }
+  if (normalized.includes('restaurante') || normalized.includes('bar') || normalized.includes('cena')) {
+    return <Utensils size={size} />;
+  }
+  if (normalized.includes('hogar') || normalized.includes('casa') || normalized.includes('alquiler')) {
+    return <Home size={size} />;
+  }
+  if (normalized.includes('transporte') || normalized.includes('gasolina') || normalized.includes('coche') || normalized.includes('metro')) {
+    return <Car size={size} />;
+  }
+  if (normalized.includes('ocio') || normalized.includes('entretenimiento') || normalized.includes('cine')) {
+    return <Film size={size} />;
+  }
+  if (normalized.includes('salud') || normalized.includes('farmacia') || normalized.includes('médico')) {
+    return <HeartPulse size={size} />;
+  }
+  if (normalized.includes('suscripcion') || normalized.includes('streaming') || normalized.includes('netflix') || normalized.includes('spotify')) {
+    return <Tv size={size} />;
+  }
+
+  // Ingresos
+  if (normalized.includes('nómina') || normalized.includes('nomina') || normalized.includes('sueldo') || normalized.includes('salario')) {
+    return <Briefcase size={size} />;
+  }
+  if (normalized.includes('transferencia') || normalized.includes('bizum')) {
+    return <ArrowLeftRight size={size} />;
+  }
+  if (normalized.includes('inversion') || normalized.includes('dividendo')) {
+    return <TrendingUp size={size} />;
+  }
+  if (normalized.includes('venta')) {
+    return <Tag size={size} />;
+  }
+
+  // Por defecto según tipo
+  return type === 'Ingreso' ? <TrendingUp size={size} /> : <Receipt size={size} />;
+};
+
 const TransactionItem = ({ transaction, layout = 'list' }) => {
   const { deleteTransaction, setEditingTransaction, downloadInvoice } = useFinance();
   
-  // Estados para deslizar y para el detalle
   const [swipeActions, setSwipeActions] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [phoneNode, setPhoneNode] = useState(null);
@@ -35,12 +95,10 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
   const touchStartRef = useRef(null);
   const isExpense = transaction.type === 'Gasto';
   
-  // Buscamos el contenedor '.phone' para renderizar el modal encima de él
   useEffect(() => {
     setPhoneNode(document.querySelector('.phone') || document.body);
   }, []);
 
-  // Lógica de deslizar (Swipe)
   const handleTouchStart = (e) => {
     if (e.touches.length !== 1) return;
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -52,7 +110,6 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
     const deltaX = e.changedTouches[0].clientX - start.x;
     const deltaY = e.changedTouches[0].clientY - start.y;
     
-    // Si el movimiento es muy vertical, no hacemos swipe
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
     
     setSwipeActions(deltaX < 0 ? 'delete' : 'edit');
@@ -60,9 +117,9 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
 
   const handleItemClick = () => {
     if (swipeActions) {
-      setSwipeActions(null); // Si estaba deslizado, el clic lo cierra
+      setSwipeActions(null);
     } else {
-      setIsDetailOpen(true); // Si no estaba deslizado, abre el detalle
+      setIsDetailOpen(true);
     }
   };
 
@@ -73,7 +130,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
     <>
       <div className="relative overflow-hidden" data-month-swipe-ignore>
         
-        {/* FONDO: Acciones al deslizar */}
+        {/* Acciones al deslizar */}
         {swipeActions === 'edit' && (
           <div className="absolute inset-y-0 left-0 flex w-[70px] items-center justify-center bg-[#f1f1ef] dark:bg-[#242422]">
             <button onClick={() => setEditingTransaction(transaction)} className="flex h-full w-full flex-col items-center justify-center gap-1 text-[9px] font-bold text-[#090909] dark:text-[#f5f5f2]">
@@ -93,7 +150,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
           </div>
         )}
 
-        {/* FRENTE: Elemento de la lista original */}
+        {/* Fila del movimiento con icono según categoría */}
         <button
           className="movement bg-white dark:bg-transparent"
           onClick={handleItemClick}
@@ -102,7 +159,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
           style={{ transform: `translateX(${swipeOffset})`, transition: 'transform 0.2s ease-out' }}
         >
           <span className="movement-icon">
-            <Icon name="receipt" size={16} />
+            {getCategoryIcon(transaction.category, transaction.type, 14)}
           </span>
           <span className="movement-info">
             <strong>{transaction.description || transaction.category}</strong>
@@ -118,7 +175,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
         </button>
       </div>
 
-      {/* MODAL DE DETALLE (Renderizado con portal en el .phone) */}
+      {/* Modal de Detalle */}
       {isDetailOpen && phoneNode && createPortal(
         <div className="sheet-layer" onMouseDown={() => setIsDetailOpen(false)}>
           <section
@@ -130,7 +187,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
           >
             <div className="sheet-handle" />
             <div className="detail-merchant-icon">
-              <Icon name="receipt" size={19} />
+              {getCategoryIcon(transaction.category, transaction.type, 22)}
             </div>
             <button
               className="sheet-close"
@@ -180,7 +237,6 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
               </div>
             </div>
             
-            {/* Añadimos el botón de editar aquí también por comodidad */}
             <div className="flex gap-2 mt-5">
                <button
                  className="detail-action"
