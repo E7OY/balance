@@ -711,6 +711,10 @@ select:focus-visible {
   color: #df242b;
 }
 
+.movement-expense-total {
+  color: #df242b;
+}
+
 .movements {
   margin-top: 38px;
 }
@@ -1361,6 +1365,206 @@ select:focus-visible {
   background: #15924c;
 }
 
+.transaction-sheet {
+  --transaction-accent: #df242b;
+  max-height: min(94dvh, 820px);
+  overflow-y: auto;
+  padding: 18px 24px max(26px, env(safe-area-inset-bottom));
+  border-radius: 26px 26px 0 0;
+  scrollbar-width: none;
+}
+
+.transaction-sheet.income {
+  --transaction-accent: #15924c;
+}
+
+.transaction-sheet::-webkit-scrollbar {
+  display: none;
+}
+
+.transaction-sheet .sheet-handle {
+  margin-bottom: 18px;
+}
+
+.transaction-sheet .sheet-close {
+  top: 21px;
+  right: 22px;
+}
+
+.transaction-tabs {
+  margin-bottom: 17px;
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.transaction-tabs button {
+  min-width: 88px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.transaction-sheet.expense .transaction-tabs button.active {
+  background: #fff0f0;
+  color: #c91e25;
+  box-shadow: none;
+}
+
+.transaction-sheet.income .transaction-tabs button.active {
+  background: #e8f7ed;
+  color: #137a40;
+  box-shadow: none;
+}
+
+.transaction-sheet h2 {
+  font-size: 26px;
+  letter-spacing: -0.8px;
+}
+
+.transaction-sheet > p {
+  margin-top: 7px;
+  font-size: 13px;
+}
+
+.transaction-sheet form {
+  gap: 12px;
+  margin-top: 19px;
+}
+
+.transaction-sheet form > label,
+.transaction-fields-grid label {
+  gap: 7px;
+  color: #777773;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.transaction-sheet input:not([type="file"]),
+.transaction-sheet select {
+  height: 50px;
+  padding-inline: 13px;
+  border: 1px solid #e8e8e5;
+  border-radius: 13px;
+  background: #f7f7f5;
+  color: #111;
+  font-size: 14px;
+}
+
+.transaction-sheet .amount-field {
+  padding: 13px 15px 14px;
+  border: 1px solid #e9e9e6;
+  border-radius: 16px;
+  background: #f8f8f6;
+}
+
+.transaction-sheet .amount-field input:not([type="file"]) {
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #111;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  outline: none;
+}
+
+.transaction-sheet .amount-field input::placeholder {
+  color: #c5c5c1;
+}
+
+.transaction-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.transaction-attachments {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 2px;
+}
+
+.transaction-attachment {
+  position: relative;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid #e8e8e5;
+  border-radius: 12px;
+  background: #fff;
+  color: #343432 !important;
+  font-size: 11px !important;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.visually-hidden-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.invoice-attachment {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: #f5f5f2;
+  font-size: 12px;
+}
+
+.invoice-attachment > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoice-attachment button {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+
+.transaction-submit {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--transaction-accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.transaction-submit:active {
+  transform: scale(0.98);
+}
+
 .limits-sheet {
   max-height: 88%;
   overflow-y: auto;
@@ -1713,6 +1917,36 @@ select:focus-visible {
   background: #1b1b1a;
   color: #f5f5f2;
   color-scheme: dark;
+}
+
+.dark .transaction-sheet .amount-field {
+  border-color: #30302e;
+  background: #151515;
+}
+
+.dark .transaction-sheet .amount-field input {
+  border-color: transparent;
+  background: transparent;
+}
+
+.dark .transaction-attachment {
+  border-color: #30302e;
+  background: #1b1b1a;
+  color: #e7e7e4 !important;
+}
+
+.dark .invoice-attachment {
+  background: #1b1b1a;
+}
+
+.dark .transaction-sheet.expense .transaction-tabs button.active {
+  background: #3a191a;
+  color: #ff7b7f;
+}
+
+.dark .transaction-sheet.income .transaction-tabs button.active {
+  background: #183123;
+  color: #65d394;
 }
 
 .dark .limit-row strong {

@@ -73,7 +73,7 @@ const MovementsView = ({ query = '' }) => {
         <div className="category-metrics">
           <div className="category-metrics-title">
             <strong>Gastos por categoría</strong>
-            <span className="privacy-sensitive">{displayMoney(totals.expenses)}</span>
+            <span className="movement-expense-total privacy-sensitive">{displayMoney(totals.expenses)}</span>
           </div>
           
           {categoryMetrics.length > 0 ? categoryMetrics.slice(0, 5).map((category) => {
@@ -118,7 +118,7 @@ const MovementsView = ({ query = '' }) => {
         </button>
         <button>
           <span>Gastos</span>
-          <strong className="privacy-sensitive">{displayMoney(totals.expenses)}</strong>
+          <strong className="negative privacy-sensitive">{displayMoney(totals.expenses)}</strong>
         </button>
         <button>
           <span>Ahorro</span>

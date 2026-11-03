@@ -133,9 +133,10 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
   return (
     <div className="sheet-layer" style={{ zIndex: 90 }} onMouseDown={onClose}>
       <section 
-        className="bottom-sheet transaction-sheet" 
+        className={`bottom-sheet transaction-sheet ${type === 'Ingreso' ? 'income' : 'expense'}`}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="transaction-title"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="sheet-handle" />
@@ -143,7 +144,7 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
           <Icon name="close" size={18} />
         </button>
 
-        <div className="record-tabs">
+        <div className="record-tabs transaction-tabs">
           <button
             type="button"
             className={type === 'Gasto' ? 'active' : ''}
@@ -163,10 +164,10 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
         <h2 id="transaction-title">
           {isEditing ? 'Editar movimiento' : type === 'Gasto' ? 'Nuevo gasto' : 'Nuevo ingreso'}
         </h2>
-        <p>Introduce los datos para registrar la transacción en tu balance.</p>
+        <p>{type === 'Gasto' ? 'Registra un gasto en tu balance.' : 'Registra un ingreso en tu balance.'}</p>
 
         <form onSubmit={handleSubmit}>
-          <label>
+          <label className="amount-field">
             Importe (€)
             <input
               type="number"
@@ -181,7 +182,7 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
             />
           </label>
 
-          <label style={{ marginTop: '10px' }}>
+          <label>
             Concepto
             <input
               type="text"
@@ -191,7 +192,7 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
             />
           </label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+          <div className="transaction-fields-grid">
             <label>
               Categoría
               <select
@@ -222,7 +223,7 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
             </label>
           </div>
 
-          <label style={{ marginTop: '10px' }}>
+          <label>
             Fecha
             <input
               type="date"
@@ -233,25 +234,14 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
           </label>
 
           {/* Adjuntos y OCR */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+          <div className="transaction-attachments">
             <label 
-              className="sheet-submit" 
-              style={{ 
-                flex: 1, 
-                background: '#f1f1ef', 
-                color: '#090909', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: '6px', 
-                fontSize: '11px', 
-                cursor: 'pointer',
-                margin: 0
-              }}
+              className="transaction-attachment"
             >
-              <Camera size={14} />
+              <Camera size={16} />
               {isScanning ? 'Escaneando...' : 'Escanear ticket'}
               <input 
+                className="visually-hidden-file"
                 type="file" 
                 accept="image/*" 
                 capture="environment" 
@@ -262,23 +252,12 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
             </label>
 
             <label 
-              className="sheet-submit" 
-              style={{ 
-                flex: 1, 
-                background: '#f1f1ef', 
-                color: '#090909', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: '6px', 
-                fontSize: '11px', 
-                cursor: 'pointer',
-                margin: 0
-              }}
+              className="transaction-attachment"
             >
-              <Paperclip size={14} />
+              <Paperclip size={16} />
               {invoice ? 'Factura lista' : 'Adjuntar factura'}
               <input 
+                className="visually-hidden-file"
                 type="file" 
                 accept="image/*,application/pdf" 
                 onChange={handleFileUpload} 
@@ -288,23 +267,22 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
           </div>
 
           {invoice && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: '#f5f5f2', borderRadius: '8px', marginTop: '8px', fontSize: '11px' }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
-                📎 {invoice.name}
-              </span>
+            <div className="invoice-attachment">
+              <Paperclip size={14} />
+              <span>{invoice.name}</span>
               <button 
                 type="button" 
                 onClick={() => setInvoice(null)} 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
-                <X size={13} />
+                <X size={15} />
               </button>
             </div>
           )}
 
-          <button className="sheet-submit limits-submit" style={{ marginTop: '18px', background: '#090909' }} type="submit">
-            {isEditing ? 'Guardar' : 'Añadir'}
-            <Icon name="arrow" size={16} />
+          <button className="transaction-submit" type="submit">
+            {isEditing ? 'Guardar cambios' : type === 'Gasto' ? 'Añadir gasto' : 'Añadir ingreso'}
+            <Icon name="arrow" size={17} />
           </button>
         </form>
       </section>
