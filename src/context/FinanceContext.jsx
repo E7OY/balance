@@ -613,6 +613,40 @@ export const FinanceProvider = ({ children }) => {
     setInvestmentRecords((previousRecords) => previousRecords.filter((record) => record.id !== recordId));
   };
 
+  const sellInvestmentRecords = (recordIds, salePrice) => {
+    const recordsToSell = investmentRecords.filter((record) => recordIds.includes(record.id) && !record.soldAt);
+    if (!recordIds.length || recordsToSell.length !== recordIds.length) {
+      throw new Error('No se encontraron todas las compras que quieres vender.');
+    }
+
+    const price = Number(salePrice);
+    if (!Number.isFinite(price) || price < 0) {
+      throw new Error('El precio de venta no es válido.');
+    }
+
+    const soldAt = new Date().toISOString();
+    const proceeds = recordsToSell.reduce((total, record) => (
+      total + (record.asset
+        ? price * (Number(record.units) || 0)
+        : Number(record.currentValue) || 0)
+    ), 0);
+
+    setInvestmentRecords((previousRecords) => previousRecords.map((record) => (
+      recordIds.includes(record.id)
+        ? {
+          ...record,
+          soldAt,
+          soldPrice: record.asset ? price : undefined,
+          soldValue: record.asset
+            ? Number((price * (Number(record.units) || 0)).toFixed(2))
+            : Number(record.currentValue) || 0,
+        }
+        : record
+    )));
+
+    return proceeds;
+  };
+
   const deleteActiveProfile = async () => {
     if (profiles.length <= 1) {
       throw new Error('No puedes eliminar el único perfil que queda.');
@@ -1105,6 +1139,7 @@ export const FinanceProvider = ({ children }) => {
         updateInvestmentRecord,
         updateInvestmentPrice,
         deleteInvestmentRecord,
+        sellInvestmentRecords,
         setMonthlyGoals,
         previousMonthGoals,
         monthlyCategoryCaps,

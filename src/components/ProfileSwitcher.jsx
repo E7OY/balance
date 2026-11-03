@@ -15,7 +15,7 @@ function Icon({ name, size = 17 }) {
   );
 }
 
-const ProfileSwitcher = ({ theme, setTheme, onClose }) => {
+const ProfileSwitcher = ({ theme, setTheme, defaultHomeTab, onDefaultHomeTabChange, onClose }) => {
   const {
     activeProfile,
     transactions,
@@ -139,6 +139,21 @@ const ProfileSwitcher = ({ theme, setTheme, onClose }) => {
             <i />
           </button>
         </div>
+        <label className="setting-select-row">
+          <span>
+            <strong>Pantalla principal</strong>
+            <small>Elige qué sección se abre al iniciar</small>
+          </span>
+          <select
+            aria-label="Pantalla principal"
+            value={defaultHomeTab}
+            onChange={(event) => onDefaultHomeTabChange(event.target.value)}
+          >
+            <option value="expenses">Gastos</option>
+            <option value="investments">Inversiones</option>
+            <option value="movements">Movimientos</option>
+          </select>
+        </label>
         <div className="setting-toggle">
           <span>
             <strong>Notificaciones</strong>
@@ -229,7 +244,7 @@ const ProfileSwitcher = ({ theme, setTheme, onClose }) => {
               </label>
               
               <button className="sheet-submit" type="submit">
-                Guardar cambios
+                Guardar
                 <Icon name="arrow" size={16} />
               </button>
             </form>

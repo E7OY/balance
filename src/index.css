@@ -242,6 +242,339 @@ select:focus-visible {
   font-size: 11px;
 }
 
+.investment-detail-page {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  overflow-y: auto;
+  padding: 28px 24px 140px;
+  background: #fff;
+  color: #090909;
+  scrollbar-width: none;
+}
+
+.investment-detail-page::-webkit-scrollbar {
+  display: none;
+}
+
+.investment-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
+  color: #858581;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.investment-detail-back {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f1ef;
+  color: #090909;
+}
+
+.investment-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.investment-detail-name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.investment-detail-symbol {
+  color: #858581;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.investment-detail-balance > span,
+.investment-detail-balance > small {
+  display: block;
+  color: #858581;
+  font-size: 14px;
+}
+
+.investment-detail-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.investment-detail-value-row strong {
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: -1.2px;
+}
+
+.investment-detail-value-row span,
+.investment-detail-balance > small {
+  font-weight: 700;
+}
+
+.investment-detail-value-row .positive,
+.investment-detail-balance .positive {
+  color: #21c58b;
+}
+
+.investment-detail-value-row .negative,
+.investment-detail-balance .negative {
+  color: #ef554f;
+}
+
+.investment-detail-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 24px 0 34px;
+}
+
+.investment-detail-summary > div {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  background: #f3f3f1;
+}
+
+.investment-detail-summary > div > span {
+  color: #858581;
+  font-size: 12px;
+}
+
+.investment-detail-summary > div > strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.investment-quote-error {
+  color: #df3838 !important;
+}
+
+.investment-detail-periods {
+  margin-top: 40px;
+}
+
+.investment-detail-chart {
+  position: relative;
+  height: 250px;
+  margin: 20px -24px 38px;
+}
+
+.investment-detail-chart svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.investment-detail-chart .spend-line.positive {
+  stroke: #21c58b;
+}
+
+.investment-detail-chart .spend-line.negative {
+  stroke: #ef554f;
+}
+
+.investment-detail-chart > p {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  padding: 0 36px;
+  color: #858581;
+  text-align: center;
+  font-size: 14px;
+}
+
+.investment-detail-section {
+  margin-top: 34px;
+}
+
+.investment-detail-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 16px;
+  color: #090909;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.investment-detail-description {
+  color: #52524f;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.investment-key-data {
+  margin: 0;
+}
+
+.investment-key-data > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e5e5e2;
+  font-size: 14px;
+}
+
+.investment-key-data dt {
+  color: #858581;
+}
+
+.investment-key-data dd {
+  margin: 0;
+  color: #090909;
+  font-weight: 700;
+  text-align: right;
+}
+
+.investment-purchase-list {
+  display: grid;
+}
+
+.investment-purchases-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.investment-purchases-heading h2 {
+  min-width: 0;
+}
+
+.investment-sell-button,
+.investment-sell-confirmation button {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #f3f3f1;
+  color: #090909;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.investment-sell-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.investment-sell-confirmation {
+  margin: 4px 0 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f3f3f1;
+}
+
+.investment-sell-confirmation p {
+  margin: 0;
+  color: #52524f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.investment-sell-confirmation > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.investment-sell-confirmation button:first-child {
+  background: #111;
+  color: #fff;
+}
+
+.investment-sell-confirmation button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.investment-purchase {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e5e2;
+}
+
+.investment-purchase-info strong,
+.investment-purchase-info small {
+  display: block;
+}
+
+.investment-purchase-info strong,
+.investment-purchase-amount {
+  color: #090909;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.investment-purchase-info small {
+  margin-top: 4px;
+  color: #858581;
+  font-size: 12px;
+}
+
+.dark .investment-detail-page {
+  background: #000;
+  color: #f5f5f2;
+}
+
+.dark .investment-detail-back {
+  background: #151515;
+  color: #f5f5f2;
+}
+
+.dark .investment-detail-summary > div,
+.dark .investment-sell-button,
+.dark .investment-sell-confirmation {
+  background: #111;
+}
+
+.dark .investment-sell-confirmation p {
+  color: #c4c4c0;
+}
+
+.dark .investment-sell-confirmation button:first-child {
+  background: #f3f3f0;
+  color: #090909;
+}
+
+.dark .investment-sell-confirmation button:not(:first-child) {
+  background: #242422;
+  color: #f5f5f2;
+}
+
+.dark .investment-detail-section h2,
+.dark .investment-key-data dd,
+.dark .investment-purchase-info strong,
+.dark .investment-purchase-amount {
+  color: #f5f5f2;
+}
+
+.dark .investment-detail-description {
+  color: #c4c4c0;
+}
+
+.dark .investment-key-data > div,
+.dark .investment-purchase {
+  border-color: #222;
+}
+
 .category-graph {
   height: auto;
   min-height: 110px;
@@ -460,6 +793,10 @@ select:focus-visible {
 
 .movement-amount {
   white-space: nowrap;
+}
+
+.movement-amount.expense {
+  color: #e74c3c;
 }
 
 .movement-amount.income {
@@ -694,6 +1031,32 @@ select:focus-visible {
   border-bottom: 1px solid #eeeeec;
   background: transparent;
   text-align: left;
+}
+
+.setting-select-row {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #eeeeec;
+  text-align: left;
+}
+
+.setting-select-row > span {
+  min-width: 0;
+}
+
+.setting-select-row select {
+  max-width: 130px;
+  padding: 8px 26px 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: #f3f3f1;
+  color: #090909;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .settings-group span strong,
@@ -1218,6 +1581,7 @@ select:focus-visible {
 .dark .movement,
 .dark .settings-group > button,
 .dark .setting-toggle,
+.dark .setting-select-row,
 .dark .detail-list,
 .dark .detail-list > div,
 .dark .limits-list,
@@ -1227,6 +1591,11 @@ select:focus-visible {
 
 .dark .summary-grid button {
   background: #111;
+}
+
+.dark .setting-select-row select {
+  background: #1a1a19;
+  color: #f5f5f2;
 }
 
 .dark .summary-grid span,

@@ -167,7 +167,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
               {transaction.category} · {transaction.date}
             </small>
           </span>
-          <strong className={`movement-amount ${!isExpense ? 'income' : ''}`}>
+          <strong className={`movement-amount ${isExpense ? 'expense' : 'income'}`}>
             {!isExpense ? '+' : '−'}
             {displayMoney(Number(transaction.amount))}
           </strong>

@@ -157,7 +157,6 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
       <section className="overview expenses">
         <div className="overview-label">
           <span>{titleLabel}</span>
-          <button aria-label="Cambiar mes">⌄</button>
         </div>
         <div className="amount-line">
           <h1 className="privacy-sensitive">{displayMoney(totals.expenses)}</h1>
@@ -196,11 +195,11 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
       <section className="summary-grid">
         <button>
           <span>Gastos</span>
-          <strong className="privacy-sensitive">{displayMoney(totals.expenses)}</strong>
+          <strong className="privacy-sensitive" style={{ color: '#e74c3c' }}>{displayMoney(totals.expenses)}</strong>
         </button>
         <button>
           <span>Disponible</span>
-          <strong className="privacy-sensitive">{displayMoney(totals.income - totals.expenses)}</strong>
+          <strong className="privacy-sensitive" style={{ color: 'green' }}>{displayMoney(totals.income - totals.expenses)}</strong>
         </button>
         <button onClick={onOpenLimits}>
           <span>Categorías activas</span>
@@ -211,7 +210,7 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
       <section className="movements">
         <div className="section-title home-transactions">
           <h2>Transacciones</h2>
-          <ChevronRight className="section-chevron" size={22} strokeWidth={2.5} aria-hidden="true" />
+          {/* <ChevronRight className="section-chevron" size={22} strokeWidth={2.5} aria-hidden="true" /> */}
         </div>
         <div className="movement-list">
           {latestExpenses.map((expense) => (

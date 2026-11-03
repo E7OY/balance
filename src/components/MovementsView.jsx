@@ -58,8 +58,7 @@ const MovementsView = ({ query = '' }) => {
     <>
       <section className="overview movements">
         <div className="overview-label">
-          <span>Balance del mes</span>
-          <button aria-label="Cambiar mes">⌄</button>
+          <span>Disponible este mes</span>
         </div>
         <div className="amount-line">
           <h1 className="privacy-sensitive">{displayMoney(available)}</h1>
@@ -69,12 +68,6 @@ const MovementsView = ({ query = '' }) => {
         </div>
         <p>de tus ingresos disponibles</p>
       </section>
-
-      <div className="periods" role="tablist">
-        {["1D", "1S", "1M", "1A", "Máx"].map((item) => (
-          <button key={item} className={period === item ? "active" : ""} onClick={() => setPeriod(item)}>{item}</button>
-        ))}
-      </div>
 
       <section className="graph category-graph">
         <div className="category-metrics">

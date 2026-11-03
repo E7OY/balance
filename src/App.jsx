@@ -8,6 +8,13 @@ import InvestmentForm from './components/InvestmentForm';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CategoryLimitsForm from './components/CategoryLimitsForm';
 import { triggerHaptic } from './utils/haptics';
+import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage';
+
+const homeTabs = ['expenses', 'investments', 'movements'];
+const getPreferredHomeTab = (profileId) => {
+  const savedTab = getFromLocalStorage(`finance:${profileId}:defaultHomeTab`);
+  return homeTabs.includes(savedTab) ? savedTab : 'expenses';
+};
 
 function Icon({ name, size = 17 }) {
   const paths = {
@@ -34,10 +41,12 @@ const App = () => {
     editingTransaction,
     setEditingTransaction,
     activeProfile,
+    activeProfileId,
     setFilters
   } = useFinance();
 
-  const [activeTab, setActiveTab] = useState('expenses');
+  const [activeTab, setActiveTab] = useState(() => getPreferredHomeTab(activeProfileId));
+  const [defaultHomeTab, setDefaultHomeTab] = useState(() => getPreferredHomeTab(activeProfileId));
   const [transactionType, setTransactionType] = useState('expense');
   const [theme, setTheme] = useState(() => localStorage.getItem('balance-theme') || 'dark');
   
@@ -56,6 +65,23 @@ const App = () => {
     root.style.colorScheme = theme;
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const preferredTab = getPreferredHomeTab(activeProfileId);
+    setActiveTab(preferredTab);
+    setDefaultHomeTab(preferredTab);
+    setQuery('');
+    setSearchOpen(false);
+  }, [activeProfileId]);
+
+  const handleDefaultHomeTabChange = (tab) => {
+    if (!homeTabs.includes(tab)) return;
+    saveToLocalStorage(`finance:${activeProfileId}:defaultHomeTab`, tab);
+    setDefaultHomeTab(tab);
+    setActiveTab(tab);
+    setQuery('');
+    setSearchOpen(false);
+  };
 
   const initials = (activeProfile?.name || 'US').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -182,7 +208,13 @@ const App = () => {
         
         {/* MODALES INDEPENDIENTES DE PANTALLA COMPLETA */}
         {isProfileOpen && (
-          <ProfileSwitcher theme={theme} setTheme={setTheme} onClose={() => setIsProfileOpen(false)} />
+          <ProfileSwitcher
+            theme={theme}
+            setTheme={setTheme}
+            defaultHomeTab={defaultHomeTab}
+            onDefaultHomeTabChange={handleDefaultHomeTabChange}
+            onClose={() => setIsProfileOpen(false)}
+          />
         )}
         
         {isLimitsOpen && (
