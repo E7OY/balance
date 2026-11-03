@@ -116,16 +116,16 @@ const HomeOverview = ({ onOverlayOpenChange, onShowMovements }) => {
   return (
     <div className="mt-4 space-y-4">
       <section aria-labelledby="available-balance-title" className="px-1 py-3 sm:px-2">
-        <p className="mt-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400">Disponible neto</p>
+        <p className="mt-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400">Disponible neto</p>
         <p
           data-preserve-colors
-          className={`privacy-sensitive mt-1 break-words text-center text-6xl font-bold tabular-nums tracking-tight text-zinc-950 dark:text-white sm:text-5xl ${
+          className={`privacy-sensitive mt-1 break-words text-left text-6xl font-bold tabular-nums tracking-tight text-zinc-950 dark:text-white sm:text-5xl ${
             available < 0 ? 'text-rose-700 dark:text-rose-400' : ''
           }`}
         >
           <AnimatedCurrency value={available} />
         </p>
-        <div className="mx-auto mt-2 flex w-fit items-center gap-2">
+        <div className="mt-2 flex w-fit items-center gap-2">
           <p data-preserve-colors className={`text-xs font-semibold tabular-nums ${monthlyChange >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-[#FF6579]'}`}>
             {monthlyChange > 0 ? '+' : ''}{formatCurrency(monthlyChange)}
           </p>

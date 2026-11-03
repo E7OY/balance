@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/helpers';
+import AnimatedCurrency from './AnimatedCurrency';
 import { Card } from './ui/card';
 
 const monthNames = Array.from({ length: 12 }, (_, month) =>
@@ -11,16 +12,19 @@ const AnnualOverview = () => {
   const { transactions, filters, monthlyGoalsByMonth } = useFinance();
   const [activeMonth, setActiveMonth] = useState(null);
   const [hoveredMonth, setHoveredMonth] = useState(null);
+  
   useEffect(() => {
     setActiveMonth(null);
     setHoveredMonth(null);
   }, [filters.year]);
+  
   const yearTransactions = useMemo(
     () => transactions.filter((transaction) => (
       typeof transaction.date === 'string' && transaction.date.startsWith(`${filters.year}-`)
     )),
     [transactions, filters.year],
   );
+  
   const report = useMemo(() => {
     const monthlyTotals = Array.from({ length: 12 }, () => ({
       income: 0,
@@ -54,12 +58,14 @@ const AnnualOverview = () => {
     const categories = Object.entries(expensesByCategory)
       .map(([category, amount]) => ({ category, amount }))
       .sort((left, right) => right.amount - left.amount);
+    
     const biggestMonth = monthlyTotals.reduce(
       (largest, month, index) => month.expenses > largest.amount
         ? { amount: month.expenses, index }
         : largest,
       { amount: 0, index: 0 },
     );
+    
     let saved = 0;
     let invested = 0;
     monthlyTotals.forEach((month, index) => {
@@ -91,6 +97,7 @@ const AnnualOverview = () => {
       )), 1),
     };
   }, [yearTransactions, monthlyGoalsByMonth, filters.year]);
+  
   const currentDate = new Date();
   const monthsElapsed = filters.year === currentDate.getFullYear()
     ? currentDate.getMonth() + 1
@@ -105,7 +112,8 @@ const AnnualOverview = () => {
   const hasAnnualData = report.income > 0 || report.expenses > 0;
 
   const balanceText = formatCurrency(report.balance);
-  const balanceFontClass = balanceText.length > 12 ? 'text-[38px]' : balanceText.length > 10 ? 'text-[44px]' : 'text-[50px]';
+  const balanceFontClass = balanceText.length > 12 ? 'text-[38px] sm:text-[44px]' : balanceText.length > 10 ? 'text-[44px] sm:text-[50px]' : 'text-5xl sm:text-6xl';
+  
   const chartPitch = 350 / 12;
   const chartBaseline = 140;
   const chartMaxBar = 130;
@@ -120,33 +128,33 @@ const AnnualOverview = () => {
 
   return (
     <div className="mt-2 space-y-5">
-      <section aria-label={`Resumen de ahorro de ${filters.year}`} className="text-center">
-        <p className="text-[13px] text-zinc-500 dark:text-[#9b9b9b]">Ahorro del año</p>
-        <p className={`privacy-sensitive mt-1 font-bold leading-tight tracking-[-0.03em] tabular-nums ${balanceFontClass} ${report.balance < 0 ? '!text-[#D6403F] dark:!text-[#FF8A8A]' : 'text-zinc-950 dark:text-white'}`}>
-          {balanceText}
+      <section aria-label={`Resumen de ahorro de ${filters.year}`} className="text-left px-1 py-3 sm:px-2">
+        <p className="mt-3 text-left text-[13px] text-zinc-500 dark:text-[#9b9b9b]">Ahorro del año</p>
+        <p className={`privacy-sensitive mt-1 break-words font-bold tabular-nums text-6xl tracking-[-0.03em] ${balanceFontClass} ${report.balance < 0 ? '!text-[#D6403F] dark:!text-[#FF8A8A]' : 'text-zinc-950 dark:text-white'}`}>
+          <AnimatedCurrency value={report.balance} />
         </p>
         <span className={`mt-2 inline-flex rounded-full px-2.5 py-[5px] text-[13px] font-semibold ${report.balance < 0 ? 'bg-[#FDE4E4] !text-[#D6403F] dark:bg-[#3a1c1c] dark:!text-[#FF8A8A]' : 'bg-[#DDF5E8] !text-[#0F8A5F] dark:bg-[#16332a] dark:!text-[#3DDC97]'}`}>
           {Math.round(savingsPercent)}% de tus ingresos
         </span>
       </section>
 
-      <section aria-label={`Ingresos y gastos de ${filters.year}`} className="grid grid-cols-2 gap-2.5">
-        <Card as="article" className="min-w-0 rounded-[20px] p-4 dark:bg-[#1f1f1f] !border-none">
-          <p className="text-[13px] text-zinc-500 dark:text-[#9b9b9b]">Ingresos</p>
-          <p className="privacy-sensitive mt-1 truncate text-xl font-bold tabular-nums !text-[#0F8A5F] dark:!text-[#3DDC97]">
+      <section aria-label={`Ingresos y gastos de ${filters.year}`} className="grid grid-cols-2 gap-3 mt-6">
+        <div className="min-w-0 rounded-2xl bg-[#F4F2F4] p-3.5 dark:bg-[#28282C] sm:p-4">
+          <p className="min-w-0 truncate text-[13px] text-zinc-500 dark:text-[#9b9b9b]">Ingresos</p>
+          <p className="privacy-sensitive mt-2 text-lg font-semibold tabular-nums !text-[#0F8A5F] dark:!text-[#3DDC97] sm:text-xl">
             {formatCurrency(report.income)}
           </p>
-        </Card>
-        <Card as="article" className="min-w-0 rounded-[20px] p-4 dark:bg-[#1f1f1f] !border-none">
-          <p className="text-[13px] text-zinc-500 dark:text-[#9b9b9b]">Gastos</p>
-          <p className="privacy-sensitive mt-1 truncate text-xl font-bold tabular-nums !text-[#D6403F] dark:!text-[#FF8A8A]">
+        </div>
+        <div className="min-w-0 rounded-2xl bg-[#F4F2F4] p-3.5 dark:bg-[#28282C] sm:p-4">
+          <p className="min-w-0 truncate text-[13px] text-zinc-500 dark:text-[#9b9b9b]">Gastos</p>
+          <p className="privacy-sensitive mt-2 text-lg font-semibold tabular-nums !text-[#D6403F] dark:!text-[#FF8A8A] sm:text-xl">
             {formatCurrency(report.expenses)}
           </p>
-        </Card>
+        </div>
       </section>
 
-      <section aria-labelledby="annual-monthly-title">
-        <div className="mb-3 flex items-center justify-between gap-3">
+      <section aria-labelledby="annual-monthly-title" className="mt-8">
+        <div className="mb-3 flex items-center justify-between gap-3 px-1">
           <h2 id="annual-monthly-title" className="text-lg font-bold text-zinc-900 dark:text-white">Por meses</h2>
           <div className="flex items-center gap-3 text-xs text-zinc-600 dark:text-[#c4c4c4]">
             <span className="inline-flex items-center gap-1.5"><i className="size-2 rounded-full bg-[#AB9FF2]" />Ingresos</span>
@@ -154,7 +162,7 @@ const AnnualOverview = () => {
           </div>
         </div>
         {!hasAnnualData && (
-          <p className="mb-2 text-xs text-zinc-500 dark:text-[#9b9b9b]">Aún no hay movimientos en {filters.year}.</p>
+          <p className="mb-2 text-xs text-zinc-500 dark:text-[#9b9b9b] px-1">Aún no hay movimientos en {filters.year}.</p>
         )}
         <svg
           viewBox="0 0 350 168"
@@ -217,7 +225,7 @@ const AnnualOverview = () => {
             );
           })}
         </svg>
-        <div aria-live="polite" className="mt-3 min-h-[3.25rem]">
+        <div aria-live="polite" className="mt-3 min-h-[3.25rem] px-1">
           {displayedTotals ? (
             <>
               <div className="flex items-baseline justify-between gap-3">
@@ -247,7 +255,7 @@ const AnnualOverview = () => {
         </div>
       </section>
 
-      <Card as="section" aria-label="Resumen anual" className="!border-none divide-y divide-zinc-200/70 rounded-[20px] px-4 py-1 dark:divide-[#2e2e2e] dark:bg-[#1f1f1f]">
+      <Card as="section" aria-label="Resumen anual" className="!border-none divide-y divide-zinc-200/70 rounded-[20px] bg-[#F4F2F4] px-4 py-1 dark:divide-[#2e2e2e] dark:bg-[#1f1f1f] mt-8">
         <div className="flex items-center justify-between gap-3 py-3 text-[15px]">
           <span className="text-zinc-500 dark:text-[#9b9b9b]">Mejor mes</span>
           <span className={`privacy-sensitive truncate text-right font-semibold tabular-nums ${bestMonth.balance >= 0 ? '!text-[#0F8A5F] dark:!text-[#3DDC97]' : '!text-[#D6403F] dark:!text-[#FF8A8A]'}`}>
