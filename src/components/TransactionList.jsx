@@ -80,7 +80,7 @@ const TransactionList = () => {
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-1 py-3 dark:border-zinc-800 sm:gap-3 sm:py-4">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 sm:text-base">
-            Movimientos del mes
+            Transacciones
           </h2>
           <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 sm:mt-1 sm:text-sm">
             {sortedTransactions.length === 1

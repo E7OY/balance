@@ -211,7 +211,7 @@ const HomeOverview = ({ onOverlayOpenChange, onShowMovements }) => {
               onClick={onShowMovements}
               className="inline-flex items-center gap-1 text-left text-base font-semibold text-zinc-900 hover:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-100 dark:hover:text-zinc-300"
             >
-              <span id="latest-transactions-title">Últimos movimientos</span>
+              <span id="latest-transactions-title">Transacciones</span>
               <ChevronRight size={18} aria-hidden="true" />
             </button>
             <p className="mt-0.5 text-sm capitalize text-zinc-500 dark:text-zinc-400">

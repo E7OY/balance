@@ -415,7 +415,7 @@ const App = () => {
               </div>
             )) : (
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                {activeTab === 'transactions' ? 'Movimientos' : 'Inversiones'}
+                {activeTab === 'transactions' ? 'Transacciones' : 'Inversiones'}
               </h1>
             )}
             {activeTab === 'home' && !isAnnualView && spendingAlerts
