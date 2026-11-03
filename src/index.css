@@ -2,7 +2,7 @@
 @config "../tailwind.config.js";
 
 :root {
-  font-family: "Inter", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #090909;
   background: #f2f2f0;
   font-synthesis: none;
@@ -49,7 +49,7 @@ select:focus-visible {
 
 .phone {
   position: relative;
-  width: min(100%, 430px);
+  width: min(100%, 520px);
   height: min(900px, calc(100vh - 56px));
   min-height: 720px;
   overflow: hidden;
@@ -65,7 +65,7 @@ select:focus-visible {
 .screen-content {
   height: 100%; 
   overflow-y: auto;
-  padding: 24px 28px 110px;
+  padding: 32px 24px 140px;
   scrollbar-width: none;
 }
 
@@ -82,7 +82,7 @@ select:focus-visible {
 .tabs {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 18px;
 }
 
 .tabs button {
@@ -90,8 +90,8 @@ select:focus-visible {
   border: 0;
   background: transparent;
   color: #b1b1af;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   transition: color 0.2s;
 }
 
@@ -100,20 +100,20 @@ select:focus-visible {
 }
 
 .avatar-button {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 50%;
   background: #eeeeeb;
   color: #777;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .search-bar {
-  height: 38px;
+  height: 46px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -129,7 +129,7 @@ select:focus-visible {
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .search-bar button {
@@ -139,7 +139,7 @@ select:focus-visible {
 }
 
 .overview {
-  margin-top: 31px;
+  margin-top: 48px;
 }
 
 .overview-label {
@@ -147,7 +147,7 @@ select:focus-visible {
   align-items: center;
   justify-content: space-between;
   color: #9a9a97;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .overview-label button {
@@ -160,12 +160,12 @@ select:focus-visible {
 .amount-line {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-top: 9px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .amount-line h1 {
-  font-size: 25px;
+  font-size: 40px;
   line-height: 1;
   font-weight: 700;
   letter-spacing: -1.3px;
@@ -173,7 +173,7 @@ select:focus-visible {
 
 .change {
   color: #15924c;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
 }
 .change.negative {
@@ -183,13 +183,14 @@ select:focus-visible {
 .overview > p {
   margin-top: 7px;
   color: #b1b1ae;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .periods {
   display: flex;
-  gap: 26px;
-  margin-top: 25px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 30px;
 }
 
 .periods button {
@@ -197,8 +198,8 @@ select:focus-visible {
   border: 0;
   background: transparent;
   color: #b4b4b1;
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .periods button.active {
@@ -216,15 +217,41 @@ select:focus-visible {
   overflow: visible;
 }
 
+.investment-graph {
+  position: relative;
+}
+
+.investment-chart-message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 24px;
+  color: #858581;
+  text-align: center;
+  font-size: 13px;
+}
+
+.investment-chart-error {
+  color: #df242b;
+}
+
+.investment-chart-note {
+  margin: -12px 0 16px;
+  color: #858581;
+  font-size: 11px;
+}
+
 .category-graph {
-  height: 205px;
+  height: auto;
+  min-height: 110px;
   margin-inline: 0;
-  padding-top: 14px;
+  padding-top: 18px;
 }
 
 .category-metrics {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .category-metrics-title,
@@ -239,12 +266,13 @@ select:focus-visible {
 }
 
 .category-metrics-title strong {
-  font-size: 10px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .category-metrics-title span {
   color: #999996;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .category-metric > div {
@@ -253,7 +281,7 @@ select:focus-visible {
 
 .category-metric span,
 .category-metric strong {
-  font-size: 8px;
+  font-size: 13px;
 }
 
 .category-metric span {
@@ -261,11 +289,11 @@ select:focus-visible {
 }
 
 .category-metric strong {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .category-metric i {
-  height: 4px;
+  height: 5px;
   display: block;
   overflow: hidden;
   border-radius: 4px;
@@ -283,7 +311,7 @@ select:focus-visible {
 .category-alert {
   margin: -2px 0 6px;
   color: #df242b;
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -315,32 +343,33 @@ select:focus-visible {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid #eeeeec;
-  border-bottom: 1px solid #eeeeec;
+  gap: 10px;
 }
 
 .summary-grid button {
   display: grid;
-  gap: 8px;
-  padding: 15px 8px 15px 0;
+  min-width: 0;
+  gap: 10px;
+  padding: 16px 12px;
   border: 0;
-  background: transparent;
+  border-radius: 16px;
+  background: #f3f3f1;
   text-align: left;
 }
 
 .summary-grid button + button {
-  padding-left: 13px;
-  border-left: 1px solid #eeeeec;
+  padding-left: 12px;
 }
 
 .summary-grid span {
   color: #a8a8a5;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .summary-grid strong {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .summary-grid strong.positive {
@@ -351,7 +380,7 @@ select:focus-visible {
 }
 
 .movements {
-  margin-top: 27px;
+  margin-top: 38px;
 }
 
 .section-title {
@@ -360,31 +389,40 @@ select:focus-visible {
   justify-content: space-between;
 }
 
+.section-title.home-transactions {
+  justify-content: flex-start;
+  gap: 4px;
+}
+
 .section-title h2 {
-  font-size: 12px;
+  font-size: 20px;
   font-weight: 700;
+}
+
+.section-chevron {
+  flex: 0 0 auto;
+  color: #777;
 }
 
 .section-title button {
   border: 0;
   background: transparent;
   color: #a6a6a3;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .movement-list {
-  margin-top: 11px;
+  margin-top: 18px;
 }
 
 .movement {
   width: 100%;
   display: grid;
-  grid-template-columns: 32px 1fr auto 12px;
+  grid-template-columns: 48px minmax(0, 1fr) auto 18px;
   align-items: center;
-  gap: 10px;
-  padding: 10px 0;
+  gap: 14px;
+  padding: 18px 0;
   border: 0;
-  border-top: 1px solid #f0f0ee;
   background: transparent;
   text-align: left;
   transition: opacity 0.2s;
@@ -394,8 +432,8 @@ select:focus-visible {
 }
 
 .movement-icon {
-  width: 31px;
-  height: 31px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -410,14 +448,14 @@ select:focus-visible {
 
 .movement-info strong,
 .movement-amount {
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .movement-info small {
   margin-top: 4px;
   color: #aaa;
-  font-size: 7px;
+  font-size: 12px;
 }
 
 .movement-amount {
@@ -429,13 +467,13 @@ select:focus-visible {
 }
 
 .asset-logo {
-  width: 31px;
-  height: 31px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   color: #fff;
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 700;
   background: #2f62d0;
 }
@@ -451,14 +489,14 @@ select:focus-visible {
 }
 
 .holding-value strong {
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .holding-value small {
   margin-top: 4px;
   color: #15924c;
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 600;
 }
 .holding-value small.negative {
@@ -468,27 +506,27 @@ select:focus-visible {
 .bottom-actions {
   position: absolute;
   right: 24px;
-  bottom: 28px;
+  bottom: max(24px, env(safe-area-inset-bottom));
   left: 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
+  gap: 14px;
   z-index: 5;
 }
 
 .bottom-actions button,
 .sheet-submit {
-  height: 48px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 17px;
+  padding: 0 22px;
   border: 0;
-  border-radius: 11px;
+  border-radius: 18px;
   background: #090909;
   color: #fff;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   box-shadow: 0 5px 15px rgb(0 0 0 / 0.12);
   transition: transform 0.1s;
 }
@@ -537,7 +575,7 @@ select:focus-visible {
 }
 
 .profile-header > strong {
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .profile-back,
@@ -558,8 +596,8 @@ select:focus-visible {
 .profile-edit {
   justify-self: end;
   padding: 5px 0;
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .profile-identity {
@@ -571,8 +609,8 @@ select:focus-visible {
 
 .profile-avatar,
 .profile-edit-avatar {
-  width: 66px;
-  height: 66px;
+  width: 76px;
+  height: 76px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -584,7 +622,7 @@ select:focus-visible {
 
 .profile-identity h1 {
   margin-top: 16px;
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 700;
   letter-spacing: -0.7px;
@@ -593,7 +631,7 @@ select:focus-visible {
 .profile-identity p {
   margin-top: 7px;
   color: #999996;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .verified {
@@ -602,7 +640,7 @@ select:focus-visible {
   border-radius: 99px;
   background: #e8f7ed;
   color: #18814a;
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -618,17 +656,17 @@ select:focus-visible {
 
 .profile-balance span {
   color: #999996;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .profile-balance strong {
-  font-size: 19px;
+  font-size: 23px;
   letter-spacing: -0.8px;
 }
 
 .profile-balance small {
   color: #15924c;
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -639,7 +677,7 @@ select:focus-visible {
 .settings-group > p {
   margin-bottom: 5px;
   color: #aaa9a5;
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.8px;
 }
@@ -664,19 +702,19 @@ select:focus-visible {
 }
 
 .settings-group span strong {
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .settings-group span small {
   margin-top: 4px;
   color: #9c9c98;
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .setting-value {
   color: #aaa9a5;
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -724,15 +762,15 @@ select:focus-visible {
   border-radius: 10px;
   background: #090909;
   color: #fff;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .app-version {
   margin-top: 14px;
   color: #b4b4b0;
   text-align: center;
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .profile-edit-layer {
@@ -816,8 +854,8 @@ select:focus-visible {
   border-radius: 6px;
   background: transparent;
   color: #92928e;
-  font-size: 8px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .record-tabs button.active {
@@ -840,18 +878,18 @@ select:focus-visible {
 }
 
 .bottom-sheet h2 {
-  max-width: 250px;
-  font-size: 22px;
+  max-width: 320px;
+  font-size: 25px;
   line-height: 1.05;
   font-weight: 700;
   letter-spacing: -0.9px;
 }
 
 .bottom-sheet > p {
-  max-width: 310px;
+  max-width: 380px;
   margin-top: 11px;
   color: #999996;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -865,19 +903,19 @@ select:focus-visible {
   display: grid;
   gap: 6px;
   color: #8e8e8a;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .bottom-sheet input,
 .bottom-sheet select {
   width: 100%;
-  height: 40px;
+  height: 48px;
   padding: 0 11px;
   border: 1px solid #e8e8e5;
   border-radius: 8px;
   background: #f7f7f5;
   color: #111;
-  font-size: 10px;
+  font-size: 14px;
   outline: 0;
 }
 
@@ -900,6 +938,33 @@ select:focus-visible {
 .limits-sheet {
   max-height: 88%;
   overflow-y: auto;
+}
+
+.investment-sheet {
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+.investment-status,
+.investment-error,
+.investment-preview {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.investment-status,
+.investment-preview {
+  color: #777;
+}
+
+.investment-error {
+  color: #df242b;
+}
+
+.investment-submit {
+  width: 100%;
+  justify-content: center;
+  background: #090909;
 }
 
 .limits-sheet form {
@@ -931,13 +996,13 @@ select:focus-visible {
 
 .limit-row strong {
   color: #111;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .limit-row small {
   margin-top: 4px;
   color: #999996;
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .limit-input {
@@ -958,7 +1023,7 @@ select:focus-visible {
   right: 9px;
   transform: translateY(-50%);
   color: #999996;
-  font-size: 8px;
+  font-size: 12px;
   font-style: normal;
 }
 
@@ -984,7 +1049,7 @@ select:focus-visible {
 .detail-kicker {
   margin-bottom: 8px !important;
   color: #999996 !important;
-  font-size: 7px !important;
+  font-size: 11px !important;
   font-weight: 700;
   letter-spacing: 0.8px;
 }
@@ -992,7 +1057,7 @@ select:focus-visible {
 .detail-amount {
   display: block;
   margin-top: 13px;
-  font-size: 27px;
+  font-size: 32px;
   line-height: 1;
   letter-spacing: -1.2px;
 }
@@ -1007,9 +1072,9 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 41px;
+  min-height: 48px;
   border-bottom: 1px solid #ececea;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .detail-list span {
@@ -1026,7 +1091,7 @@ select:focus-visible {
 
 .detail-action {
   width: 100%;
-  height: 47px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1036,8 +1101,8 @@ select:focus-visible {
   border-radius: 11px;
   background: #090909;
   color: #fff;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 @keyframes fade-in {
@@ -1067,7 +1132,7 @@ select:focus-visible {
 .dark .screen-content,
 .dark .profile-page,
 .dark .bottom-sheet {
-  background: #0d0d0d;
+  background: #000;
   color: #f5f5f2;
 }
 
@@ -1131,6 +1196,11 @@ select:focus-visible {
   background: #f5f5f2;
 }
 
+.dark .investment-status,
+.dark .investment-preview {
+  color: #a1a1a1;
+}
+
 .dark .category-metric.exceeded b {
   background: #f04444;
 }
@@ -1145,7 +1215,6 @@ select:focus-visible {
 }
 
 .dark .summary-grid,
-.dark .summary-grid button + button,
 .dark .movement,
 .dark .settings-group > button,
 .dark .setting-toggle,
@@ -1154,6 +1223,10 @@ select:focus-visible {
 .dark .limits-list,
 .dark .limit-row {
   border-color: #292927;
+}
+
+.dark .summary-grid button {
+  background: #111;
 }
 
 .dark .summary-grid span,
@@ -1239,5 +1312,37 @@ select:focus-visible {
     border: 0;
     border-radius: 0;
     box-shadow: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .screen-content {
+    padding-inline: 18px;
+  }
+
+  .tabs {
+    gap: 12px;
+  }
+
+  .tabs button {
+    font-size: 15px;
+  }
+
+  .avatar-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .summary-grid {
+    gap: 7px;
+  }
+
+  .summary-grid button,
+  .summary-grid button + button {
+    padding-inline: 9px;
+  }
+
+  .summary-grid strong {
+    font-size: clamp(12px, 3.8vw, 15px);
   }
 }

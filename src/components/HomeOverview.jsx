@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import TransactionItem from './TransactionItem';
 
@@ -151,13 +152,6 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
     period === 'Máx' ? 'en toda la cuenta' :
     'frente al mes pasado';
 
-  // Texto entre paréntesis para la sección inferior:
-  const sectionPeriodTag = 
-    period === '1M' ? monthName : 
-    period === '1A' ? yearName : 
-    period === 'Máx' ? 'Total' : 
-    period;
-
   return (
     <>
       <section className="overview expenses">
@@ -215,17 +209,16 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
       </section>
 
       <section className="movements">
-        <div className="section-title">
-          {/* AHORA MUESTRA EL NOMBRE DEL MES (EJ: ÚLTIMOS GASTOS (NOVIEMBRE)) */}
-          <h2>Últimos gastos ({sectionPeriodTag})</h2>
-          <button>Ordenar por ⌄</button>
+        <div className="section-title home-transactions">
+          <h2>Transacciones</h2>
+          <ChevronRight className="section-chevron" size={22} strokeWidth={2.5} aria-hidden="true" />
         </div>
         <div className="movement-list">
           {latestExpenses.map((expense) => (
             <TransactionItem key={expense.id} transaction={expense} layout="list" />
           ))}
           {latestExpenses.length === 0 && (
-             <p style={{fontSize: '9px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados.</p>
+             <p style={{fontSize: '12px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados.</p>
           )}
         </div>
       </section>

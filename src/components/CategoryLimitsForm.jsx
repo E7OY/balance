@@ -207,7 +207,7 @@ const CategoryLimitsForm = ({ onClose }) => {
             })}
           </div>
           <button className="sheet-submit limits-submit" style={{ marginTop: '20px', background: '#090909' }} type="submit">
-            Guardar cambios
+            Guardar
             <Icon name="arrow" size={16} />
           </button>
         </form>

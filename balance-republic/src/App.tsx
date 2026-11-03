@@ -982,7 +982,7 @@ export default function App() {
                   />
                 </label>
                 <button className="sheet-submit" type="submit">
-                  Guardar cambios
+                  Guardar
                   <Icon name="arrow" size={16} />
                 </button>
               </form>

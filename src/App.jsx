@@ -4,6 +4,7 @@ import HomeOverview from './components/HomeOverview';
 import MovementsView from './components/MovementsView';
 import InvestmentsOverview from './components/InvestmentsOverview';
 import TransactionForm from './components/TransactionForm';
+import InvestmentForm from './components/InvestmentForm';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CategoryLimitsForm from './components/CategoryLimitsForm';
 import { triggerHaptic } from './utils/haptics';
@@ -43,6 +44,7 @@ const App = () => {
   // ESTADOS GLOBALES
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLimitsOpen, setIsLimitsOpen] = useState(false);
+  const [isInvestmentFormOpen, setIsInvestmentFormOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   
@@ -162,14 +164,14 @@ const App = () => {
               <button onClick={() => setSearchOpen(true)}>
                 Buscar <Icon name="search" size={16} />
               </button>
-              <button onClick={() => openForm('investment')}>
+              <button onClick={() => setIsInvestmentFormOpen(true)}>
                 Invertir <Icon name="arrow" size={16} />
               </button>
             </>
           ) : (
             <>
               <button onClick={() => setSearchOpen(true)}>
-                Analizar <Icon name="search" size={16} />
+                Buscar <Icon name="search" size={16} />
               </button>
               <button onClick={() => openForm('expense')}>
                 Añadir <Icon name="arrow" size={16} />
@@ -185,6 +187,9 @@ const App = () => {
         
         {isLimitsOpen && (
           <CategoryLimitsForm onClose={() => setIsLimitsOpen(false)} />
+        )}
+        {isInvestmentFormOpen && (
+          <InvestmentForm onClose={() => setIsInvestmentFormOpen(false)} />
         )}
       </div>
 

@@ -255,7 +255,7 @@ const SummaryCards = () => {
     <>
       {anomalyMessage && (
         <div className="mt-6 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-          <span className="inline-flex size-5 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-900 dark:bg-amber-400/20 dark:text-amber-200">
+          <span className="inline-flex size-5 items-center justify-center rounded-full bg-amber-200 text-[12px] font-bold text-amber-900 dark:bg-amber-400/20 dark:text-amber-200">
             !
           </span>
           <span>{anomalyMessage}</span>

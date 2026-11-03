@@ -306,7 +306,7 @@ const ProfileSwitcher = ({ theme, setTheme, onClose }) => {
               </label>
 
               {syncFormError && (
-                <p style={{ color: '#df242b', marginTop: '10px', fontSize: '10px', fontWeight: '600' }}>{syncFormError}</p>
+                <p style={{ color: '#df242b', marginTop: '10px', fontSize: '12px', fontWeight: '600' }}>{syncFormError}</p>
               )}
               
               <button className="sheet-submit limits-submit" style={{ marginTop: '20px' }} type="submit">

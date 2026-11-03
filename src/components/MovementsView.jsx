@@ -99,7 +99,7 @@ const MovementsView = ({ query = '' }) => {
                   <span style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
                     <strong>{category.name}</strong>
                     {limit > 0 && (
-                      <small style={{ fontSize: '10px', color: '#888', fontWeight: 500 }}>
+                      <small style={{ fontSize: '12px', color: '#888', fontWeight: 600 }}>
                         (Tope: {displayMoney(limit)})
                       </small>
                     )}
@@ -107,7 +107,7 @@ const MovementsView = ({ query = '' }) => {
                   <strong className="privacy-sensitive">{displayMoney(category.amount)}</strong>
                 </div>
                 {exceeded && (
-                  <p className="category-alert" style={{ margin: '2px 0 0', fontSize: '10px', color: '#df242b', fontWeight: 600 }}>
+                  <p className="category-alert" style={{ margin: '2px 0 0', fontSize: '11px', color: '#df242b', fontWeight: 700 }}>
                     Tope superado por {displayMoney(category.amount - limit)}
                   </p>
                 )}
@@ -122,12 +122,12 @@ const MovementsView = ({ query = '' }) => {
               </div>
             );
           }) : (
-            <p style={{fontSize: '9px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados este mes.</p>
+            <p style={{fontSize: '12px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados este mes.</p>
           )}
         </div>
       </section>
 
-      <section className="summary-grid">
+      <section className="summary-grid mt-10">
         <button>
           <span>Ingresos</span>
           <strong className="positive privacy-sensitive">{displayMoney(totals.income)}</strong>
@@ -151,7 +151,7 @@ const MovementsView = ({ query = '' }) => {
             <TransactionItem key={transaction.id} transaction={transaction} layout="list" />
           ))}
           {visibleTransactions.length === 0 && (
-             <p style={{fontSize: '9px', color: '#999', marginTop: '10px', textAlign: 'center'}}>No se encontraron movimientos.</p>
+             <p style={{fontSize: '12px', color: '#999', marginTop: '10px', textAlign: 'center'}}>No se encontraron movimientos.</p>
           )}
         </div>
       </section>

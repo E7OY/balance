@@ -303,7 +303,7 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
           )}
 
           <button className="sheet-submit limits-submit" style={{ marginTop: '18px', background: '#090909' }} type="submit">
-            {isEditing ? 'Guardar cambios' : 'Registrar movimiento'}
+            {isEditing ? 'Guardar' : 'Añadir'}
             <Icon name="arrow" size={16} />
           </button>
         </form>

@@ -133,7 +133,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
         {/* Acciones al deslizar */}
         {swipeActions === 'edit' && (
           <div className="absolute inset-y-0 left-0 flex w-[70px] items-center justify-center bg-[#f1f1ef] dark:bg-[#242422]">
-            <button onClick={() => setEditingTransaction(transaction)} className="flex h-full w-full flex-col items-center justify-center gap-1 text-[9px] font-bold text-[#090909] dark:text-[#f5f5f2]">
+            <button onClick={() => setEditingTransaction(transaction)} className="flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#090909] dark:text-[#f5f5f2]">
               <Pencil size={15} /> Editar
             </button>
           </div>
@@ -143,7 +143,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
           <div className="absolute inset-y-0 right-0 flex w-[70px] items-center justify-center bg-[#df242b]">
             <button 
               onClick={() => { triggerHaptic(); deleteTransaction(transaction.id); }} 
-              className="flex h-full w-full flex-col items-center justify-center gap-1 text-[9px] font-bold text-white"
+              className="flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-bold text-white"
             >
               <Trash2 size={15} /> Borrar
             </button>
