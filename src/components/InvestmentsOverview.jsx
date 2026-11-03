@@ -60,6 +60,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     updateInvestmentPrice,
     deleteInvestmentRecord,
   } = useFinance();
+  
   const [editingId, setEditingId] = useState(null);
   const [selectedAmountPreset, setSelectedAmountPreset] = useState('custom');
   const [successContribution, setSuccessContribution] = useState(null);
@@ -73,13 +74,18 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [marketNotice, setMarketNotice] = useState('');
+  
   const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [chartPeriod, setChartPeriod] = useState('1D');
+  const [chartScrubIndex, setChartScrubIndex] = useState(null);
+  const chartRef = useRef(null);
+  
   const [marketHistory, setMarketHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [selectedEntryId, setSelectedEntryId] = useState(null);
   const amountInputRef = useRef(null);
+
   const availableFunds = useMemo(() => {
     const monthKey = date.slice(0, 7);
     const cashBalance = transactions.reduce((balance, transaction) => {
@@ -171,6 +177,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const [portfolioHistoryByAsset, setPortfolioHistoryByAsset] = useState({});
   const [isLoadingPortfolioHistory, setIsLoadingPortfolioHistory] = useState(false);
   const [portfolioHistoryError, setPortfolioHistoryError] = useState('');
+  
   const selectedRecord = investmentRecords.find((record) => record.id === selectedRecordId) || null;
   const selectedAssetRecords = useMemo(() => {
     if (!selectedRecord) return [];
@@ -180,6 +187,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       && record.asset?.id === selectedRecord.asset.id
     ));
   }, [investmentRecords, selectedRecord]);
+
   const selectedHistory = useMemo(() => {
     const historyByTimestamp = new Map();
     marketHistory.forEach((point) => {
@@ -221,6 +229,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     const periodHistory = history.filter((point) => Date.parse(point.timestamp) >= startTime);
     return periodHistory;
   }, [selectedAssetRecords, chartPeriod, marketHistory]);
+
   const selectedEntries = useMemo(() => selectedAssetRecords.flatMap((record) => {
     const invested = Number(record.investedAmount);
     const units = Number(record.units);
@@ -230,15 +239,20 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     }
     return [{ id: record.id, date: record.date, timestamp, invested, units, price: invested / units }];
   }), [selectedAssetRecords]);
+
   const entrySummary = useMemo(() => {
     if (selectedEntries.length === 0) return null;
     const totalInvested = selectedEntries.reduce((total, entry) => total + entry.invested, 0);
     const totalUnits = selectedEntries.reduce((total, entry) => total + entry.units, 0);
     return { count: selectedEntries.length, averagePrice: totalInvested / totalUnits };
   }, [selectedEntries]);
+
   useEffect(() => {
     setSelectedEntryId(null);
+    setChartScrubIndex(null);
   }, [selectedRecordId, chartPeriod]);
+
+  // 1. PRIMERO declaramos chartGeometry
   const chartGeometry = useMemo(() => {
     if (selectedHistory.length === 0) return null;
     let chartHistory = selectedHistory;
@@ -281,34 +295,99 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       : (maximum - minimum) * 0.15;
     const low = minimum - padding;
     const high = maximum + padding;
-    const points = chartHistory.map((point) => {
+    
+    const pointsData = chartHistory.map((point) => {
       const x = timeSpan > 0 ? ((Date.parse(point.timestamp) - firstTime) / timeSpan) * 1000 : 500;
       const y = 16 + ((high - Number(point.price)) / (high - low)) * 218;
-      return { x, y };
+      return { x, y, price: Number(point.price), timestamp: point.timestamp };
     });
+
     const firstPrice = prices[0];
     const currentPrice = prices[prices.length - 1];
+
     return {
-      polyline: points.length > 1 ? points.map((point) => `${point.x},${point.y}`).join(' ') : '',
-      lastPoint: points[points.length - 1],
-      hasTrend: points.length > 1,
+      points: pointsData,
+      polyline: pointsData.length > 1 ? pointsData.map((p) => `${p.x},${p.y}`).join(' ') : '',
+      area: pointsData.length > 1 ? [`0,250`, pointsData.map((p) => `${p.x},${p.y}`).join(' '), `1000,250`].join(' ') : '',
+      lastPoint: pointsData[pointsData.length - 1],
+      hasTrend: pointsData.length > 1,
       difference: currentPrice - firstPrice,
       differencePercent: firstPrice > 0 ? ((currentPrice - firstPrice) / firstPrice) * 100 : 0,
       currentPrice,
-      entries: visibleEntries.map((entry) => ({
-        ...entry,
-        x: ((entry.timestamp - firstTime) / timeSpan) * 1000,
-        y: 16 + ((high - entry.price) / (high - low)) * 218,
-      })),
+      entries: visibleEntries.map((entry) => {
+        const x = timeSpan > 0 ? ((entry.timestamp - firstTime) / timeSpan) * 1000 : 500;
+        let y = 16 + ((high - entry.price) / (high - low)) * 218;
+
+        if (pointsData.length > 1) {
+          const rightIdx = pointsData.findIndex(p => p.x >= x);
+          if (rightIdx > 0) {
+            const leftP = pointsData[rightIdx - 1];
+            const rightP = pointsData[rightIdx];
+            if (rightP.x > leftP.x) {
+              const ratio = (x - leftP.x) / (rightP.x - leftP.x);
+              y = leftP.y + ratio * (rightP.y - leftP.y);
+            } else {
+              y = rightP.y;
+            }
+          } else if (rightIdx === 0) {
+            y = pointsData[0].y;
+          } else {
+            y = pointsData[pointsData.length - 1].y;
+          }
+        }
+
+        return { ...entry, x, y };
+      }),
     };
   }, [selectedHistory, selectedEntries]);
+
+  // 2. LUEGO declaramos las funciones y variables que usan chartGeometry
+  const scrubIndividualChart = (clientX) => {
+    const element = chartRef.current;
+    const count = chartGeometry?.points?.length || 0;
+    if (!element || count === 0) return;
+    const { left, width } = element.getBoundingClientRect();
+    if (width <= 0) return;
+    const ratio = Math.min(1, Math.max(0, (clientX - left) / width));
+    setChartScrubIndex(count > 1 ? Math.round(ratio * (count - 1)) : 0);
+  };
+
+  const handleIndividualChartKeyDown = (event) => {
+    const count = chartGeometry?.points?.length || 0;
+    if (count === 0) return;
+    const current = chartScrubIndex ?? count - 1;
+    let next;
+    if (event.key === 'ArrowLeft') next = Math.max(0, current - 1);
+    else if (event.key === 'ArrowRight') next = Math.min(count - 1, current + 1);
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = count - 1;
+    else if (event.key === 'Escape') {
+      setChartScrubIndex(null);
+      return;
+    } else return;
+    event.preventDefault();
+    setChartScrubIndex(next);
+  };
+
+  const chartScrubPoint = chartScrubIndex !== null && chartGeometry ? chartGeometry.points[chartScrubIndex] : null;
+  const chartShownPrice = chartScrubPoint ? chartScrubPoint.price : (chartGeometry?.currentPrice ?? (Number(selectedRecord?.currentPrice) || 0));
+  const chartStartPrice = chartGeometry?.points[0]?.price || 0;
+  const chartShownDifference = chartScrubPoint
+    ? chartScrubPoint.price - chartStartPrice
+    : (chartGeometry?.difference ?? 0);
+  const chartShownPercent = chartScrubPoint
+    ? (chartStartPrice > 0 ? (chartShownDifference / chartStartPrice) * 100 : 0)
+    : (chartGeometry?.differencePercent ?? 0);
+
   const selectedEntry = chartGeometry?.entries.find((entry) => entry.id === selectedEntryId) ?? null;
   const entryCurrentPrice = chartGeometry?.currentPrice ?? (Number(selectedRecord?.currentPrice) || 0);
+  
   const trackedAssetKey = investmentRecords
     .filter((record) => record.asset && Number.isFinite(Number(record.units)))
     .map((record) => `${record.id}:${record.asset.provider}:${record.asset.id}`)
     .sort()
     .join('|');
+    
   const totals = useMemo(() => investmentRecords.reduce((result, record) => {
     const invested = Number(record.investedAmount) || 0;
     const current = Number(record.currentValue) || 0;
@@ -321,6 +400,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const selectedAssetKey = selectedRecord?.asset
     ? `${selectedRecord.asset.provider}:${selectedRecord.asset.id}`
     : '';
+    
   const portfolioAssetGroups = useMemo(() => {
     const groups = new Map();
     investmentRecords.forEach((record) => {
@@ -354,6 +434,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       lots: group.lots.sort((left, right) => left.date.localeCompare(right.date)),
     }));
   }, [investmentRecords]);
+  
   const portfolioAssetKey = portfolioAssetGroups
     .map(({ key, lots }) => `${key}:${lots.map((lot) => `${lot.date}-${lot.units}`).join(',')}`)
     .join('|');
@@ -568,27 +649,38 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     }
 
     const controller = new AbortController();
-    setMarketHistory([]);
-    setIsLoadingHistory(true);
-    setHistoryError('');
-    getInvestmentHistory(selectedRecord.asset, chartPeriod, controller.signal)
-      .then((points) => setMarketHistory(points))
-      .catch((error) => {
+    const fetchHistory = async (retryCount = 2) => {
+      setIsLoadingHistory(true);
+      try {
+        const points = await getInvestmentHistory(selectedRecord.asset, chartPeriod, controller.signal);
+        if (!controller.signal.aborted) {
+          setMarketHistory(points);
+          setHistoryError('');
+        }
+      } catch (error) {
+        if (retryCount > 0 && !controller.signal.aborted) {
+          setTimeout(() => fetchHistory(retryCount - 1), 1500);
+          return;
+        }
         if (!controller.signal.aborted) {
           setMarketHistory([]);
           setHistoryError(error.message);
         }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setIsLoadingHistory(false);
-      });
+      } finally {
+        if (!controller.signal.aborted && retryCount === 0) setIsLoadingHistory(false);
+      }
+    };
+
+    setMarketHistory([]);
+    setHistoryError('');
+    fetchHistory();
 
     return () => controller.abort();
   }, [selectedAssetKey, chartPeriod, selectedRecordId]);
 
   useEffect(() => {
     let isCancelled = false;
-    const refreshPrices = async () => {
+    const refreshPrices = async (retryCount = 2) => {
       const trackedRecords = investmentRecords.filter(
         (record) => record.asset && Number.isFinite(Number(record.units)),
       );
@@ -601,24 +693,29 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       setIsRefreshing(true);
       try {
         const { quotes, failures } = await getInvestmentQuotes(trackedRecords.map((record) => record.asset));
+        if (isCancelled) return;
+
         trackedRecords.forEach((record) => {
           const quote = quotes.get(`${record.asset.provider}:${record.asset.id}`);
           if (quote) updateInvestmentPrice(record.id, quote);
         });
-        if (isCancelled) return;
 
         setMarketNotice(failures.length > 0
           ? `No se pudieron actualizar algunas cotizaciones. ${failures[0].message}`
           : `Cotizaciones actualizadas a las ${new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }).format(new Date())}.`);
       } catch (error) {
+        if (retryCount > 0 && !isCancelled) {
+          setTimeout(() => refreshPrices(retryCount - 1), 2000);
+          return;
+        }
         if (!isCancelled) setMarketNotice(`No se pudieron actualizar las cotizaciones. ${error.message}`);
       } finally {
-        if (!isCancelled) setIsRefreshing(false);
+        if (!isCancelled && retryCount === 0) setIsRefreshing(false);
       }
     };
 
     refreshPrices();
-    const intervalId = window.setInterval(refreshPrices, 60 * 1000);
+    const intervalId = window.setInterval(() => refreshPrices(2), 60 * 1000);
     return () => {
       isCancelled = true;
       window.clearInterval(intervalId);
@@ -633,18 +730,27 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     }
 
     let isCancelled = false;
-    setPreviewQuote(null);
-    setIsLoadingQuote(true);
-    getInvestmentQuote(selectedAsset)
-      .then((quote) => {
-        if (!isCancelled) setPreviewQuote(quote);
-      })
-      .catch((error) => {
+    const fetchQuote = async (retryCount = 2) => {
+      setIsLoadingQuote(true);
+      try {
+        const quote = await getInvestmentQuote(selectedAsset);
+        if (!isCancelled) {
+          setPreviewQuote(quote);
+          setErrorMessage('');
+        }
+      } catch (error) {
+        if (retryCount > 0 && !isCancelled) {
+          setTimeout(() => fetchQuote(retryCount - 1), 1500);
+          return;
+        }
         if (!isCancelled) setErrorMessage(`No se pudo consultar el precio. ${error.message}`);
-      })
-      .finally(() => {
-        if (!isCancelled) setIsLoadingQuote(false);
-      });
+      } finally {
+        if (!isCancelled && retryCount === 0) setIsLoadingQuote(false);
+      }
+    };
+
+    setPreviewQuote(null);
+    fetchQuote();
 
     return () => { isCancelled = true; };
   }, [selectedAsset]);
@@ -1340,6 +1446,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
           </p>
         )}
       </Card>
+      
       {selectedRecord && (
         <div
           className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 backdrop-blur-sm sm:items-center sm:p-4"
@@ -1368,25 +1475,25 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
               </button>
             </div>
 
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Precio actual</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {chartScrubPoint ? formatScrubLabel(chartScrubPoint.timestamp, chartPeriod) : 'Precio actual'}
+            </p>
             <p className="privacy-sensitive mt-1 text-4xl font-semibold tracking-tight">
-              {selectedRecord.currentPrice
-                ? formatUnitPrice(Number(selectedRecord.currentPrice))
-                : formatCurrency(Number(selectedRecord.currentValue))}
+              {formatUnitPrice(Number(chartShownPrice))}
             </p>
             {chartGeometry?.hasTrend ? (
               <p
                 data-preserve-colors
                 className={`mt-2 text-sm font-semibold ${
-                  chartGeometry.difference >= 0
+                  chartShownDifference >= 0
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-rose-600 dark:text-rose-400'
                 }`}
               >
-                {chartGeometry.difference > 0 ? '+' : ''}
-                {formatUnitPrice(Math.abs(chartGeometry.difference))}
-                {' '}({chartGeometry.differencePercent > 0 ? '+' : ''}
-                {chartGeometry.differencePercent.toFixed(2)}%) · {chartPeriod}
+                {chartShownDifference > 0 ? '+' : ''}
+                {formatUnitPrice(Math.abs(chartShownDifference))}
+                {' '}({chartShownPercent > 0 ? '+' : ''}
+                {chartShownPercent.toFixed(2)}%) · {chartPeriod}
               </p>
             ) : (
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
@@ -1404,7 +1511,29 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                   <TrendingUp size={28} className="animate-pulse text-zinc-300 dark:text-zinc-700" aria-hidden="true" />
                 </div>
               ) : chartGeometry ? (
-                <>
+                <div
+                  ref={chartRef}
+                  role="slider"
+                  tabIndex={0}
+                  aria-label={`Evolución del precio de ${selectedRecord.name}`}
+                  aria-orientation="horizontal"
+                  aria-valuemin={0}
+                  aria-valuemax={Math.max(0, (chartGeometry.points?.length || 1) - 1)}
+                  aria-valuenow={chartScrubIndex ?? Math.max(0, (chartGeometry.points?.length || 1) - 1)}
+                  onPointerDown={(event) => {
+                    if (event.pointerType !== 'mouse') event.currentTarget.setPointerCapture?.(event.pointerId);
+                    scrubIndividualChart(event.clientX);
+                  }}
+                  onPointerMove={(event) => scrubIndividualChart(event.clientX)}
+                  onPointerUp={(event) => {
+                    if (event.pointerType !== 'mouse') setChartScrubIndex(null);
+                  }}
+                  onPointerCancel={() => setChartScrubIndex(null)}
+                  onPointerLeave={() => setChartScrubIndex(null)}
+                  onKeyDown={handleIndividualChartKeyDown}
+                  onBlur={() => setChartScrubIndex(null)}
+                  className="relative size-full cursor-crosshair touch-pan-y select-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
+                >
                   <svg
                     viewBox="0 0 1000 250"
                     preserveAspectRatio="none"
@@ -1412,6 +1541,31 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                     aria-label={`Gráfico del precio de ${selectedRecord.name} durante ${chartPeriod}`}
                     className="size-full overflow-visible"
                   >
+                    <defs>
+                      <linearGradient id="asset-chart-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={chartGeometry.difference >= 0 ? '#22c55e' : '#f43f5e'} stopOpacity="0.28" />
+                        <stop offset="100%" stopColor={chartGeometry.difference >= 0 ? '#22c55e' : '#f43f5e'} stopOpacity="0" />
+                      </linearGradient>
+                      {chartScrubPoint && (
+                        <clipPath id="asset-chart-scrub-clip">
+                          <rect x="0" y="-20" width={chartScrubPoint.x} height="290" />
+                        </clipPath>
+                      )}
+                    </defs>
+                    <polygon points={chartGeometry.area} fill="url(#asset-chart-fill)" />
+
+                    {chartGeometry.points.length > 1 && chartScrubPoint && (
+                      <polyline
+                        points={chartGeometry.polyline}
+                        fill="none"
+                        stroke={chartGeometry.difference >= 0 ? '#22c55e' : '#f43f5e'}
+                        strokeOpacity="0.3"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    )}
                     <polyline
                       points={chartGeometry.polyline}
                       fill="none"
@@ -1420,20 +1574,30 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       vectorEffect="non-scaling-stroke"
+                      clipPath={chartScrubPoint ? 'url(#asset-chart-scrub-clip)' : undefined}
                     />
                     <circle
-                      cx={chartGeometry.lastPoint.x}
-                      cy={chartGeometry.lastPoint.y}
+                      cx={chartScrubPoint ? chartScrubPoint.x : chartGeometry.lastPoint.x}
+                      cy={chartScrubPoint ? chartScrubPoint.y : chartGeometry.lastPoint.y}
                       r="5"
                       fill={chartGeometry.difference >= 0 ? '#22c55e' : '#f43f5e'}
                     />
                   </svg>
+                  
+                  {chartScrubPoint && (
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 w-px -translate-x-1/2 bg-zinc-300 dark:bg-white/25"
+                      style={{ left: `${chartScrubPoint.x / 10}%` }}
+                    />
+                  )}
+
                   <span
                     aria-hidden="true"
                     className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
                     style={{
-                      left: `${chartGeometry.lastPoint.x / 10}%`,
-                      top: `${chartGeometry.lastPoint.y / 2.5}%`,
+                      left: `${(chartScrubPoint || chartGeometry.lastPoint).x / 10}%`,
+                      top: `${(chartScrubPoint || chartGeometry.lastPoint).y / 2.5}%`,
                     }}
                   >
                     <InvestmentAssetIcon
@@ -1445,7 +1609,10 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                     <button
                       key={entry.id}
                       type="button"
-                      onClick={() => setSelectedEntryId((current) => (current === entry.id ? null : entry.id))}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEntryId((current) => (current === entry.id ? null : entry.id));
+                      }}
                       aria-pressed={selectedEntryId === entry.id}
                       aria-label={`Entrada del ${formatDate(entry.date)} a ${formatUnitPrice(entry.price)} por unidad`}
                       title={`Entrada · ${formatDate(entry.date)} · ${formatUnitPrice(entry.price)}`}
@@ -1461,7 +1628,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                       />
                     </button>
                   ))}
-                </>
+                </div>
               ) : (
                 <div className="flex size-full items-center justify-center border-b border-zinc-200 dark:border-zinc-800">
                   <TrendingUp size={28} className="text-zinc-300 dark:text-zinc-700" aria-hidden="true" />
