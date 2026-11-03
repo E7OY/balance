@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 
 const InvestmentAssetIcon = ({ asset, className = 'size-11' }) => {
   const [imageFailed, setImageFailed] = useState(false);
-  const image = asset?.image;
+  // Reemplazar versiones pequeñas por 'large'
+  const image = asset?.image?.replace('/thumb/', '/large/').replace('/small/', '/large/');
   const symbol = asset?.symbol || asset?.name || '?';
 
   return (
