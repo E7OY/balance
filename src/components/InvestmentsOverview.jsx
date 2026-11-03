@@ -35,6 +35,19 @@ const formatAmountInput = (value) => {
   return String(value || '').includes('.') ? `${grouped},${decimalPart}` : grouped;
 };
 
+const gainTextClass = '!text-[#0F8A5F] dark:!text-[#3DDC97]';
+const lossTextClass = '!text-[#D6403F] dark:!text-[#FF8A8A]';
+const formatSignedPercent = (value) => `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+
+const formatScrubLabel = (timestamp, period) => {
+  const options = period === '1S'
+    ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }
+    : period === '1M' || period === '3M'
+      ? { day: 'numeric', month: 'short' }
+      : { day: 'numeric', month: 'short', year: 'numeric' };
+  return new Intl.DateTimeFormat('es-ES', options).format(new Date(timestamp));
+};
+
 const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const {
     transactions,
@@ -65,6 +78,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   const [marketHistory, setMarketHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState('');
+  const [selectedEntryId, setSelectedEntryId] = useState(null);
   const amountInputRef = useRef(null);
   const availableFunds = useMemo(() => {
     const monthKey = date.slice(0, 7);
@@ -152,6 +166,8 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
   }, [isFormOpen, selectedAsset]);
 
   const [portfolioChartPeriod, setPortfolioChartPeriod] = useState('1M');
+  const [portfolioScrubIndex, setPortfolioScrubIndex] = useState(null);
+  const portfolioChartRef = useRef(null);
   const [portfolioHistoryByAsset, setPortfolioHistoryByAsset] = useState({});
   const [isLoadingPortfolioHistory, setIsLoadingPortfolioHistory] = useState(false);
   const [portfolioHistoryError, setPortfolioHistoryError] = useState('');
@@ -205,6 +221,24 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
     const periodHistory = history.filter((point) => Date.parse(point.timestamp) >= startTime);
     return periodHistory;
   }, [selectedAssetRecords, chartPeriod, marketHistory]);
+  const selectedEntries = useMemo(() => selectedAssetRecords.flatMap((record) => {
+    const invested = Number(record.investedAmount);
+    const units = Number(record.units);
+    const timestamp = Date.parse(`${record.date}T00:00:00`);
+    if (!Number.isFinite(invested) || invested <= 0 || !Number.isFinite(units) || units <= 0 || !Number.isFinite(timestamp)) {
+      return [];
+    }
+    return [{ id: record.id, date: record.date, timestamp, invested, units, price: invested / units }];
+  }), [selectedAssetRecords]);
+  const entrySummary = useMemo(() => {
+    if (selectedEntries.length === 0) return null;
+    const totalInvested = selectedEntries.reduce((total, entry) => total + entry.invested, 0);
+    const totalUnits = selectedEntries.reduce((total, entry) => total + entry.units, 0);
+    return { count: selectedEntries.length, averagePrice: totalInvested / totalUnits };
+  }, [selectedEntries]);
+  useEffect(() => {
+    setSelectedEntryId(null);
+  }, [selectedRecordId, chartPeriod]);
   const chartGeometry = useMemo(() => {
     if (selectedHistory.length === 0) return null;
     let chartHistory = selectedHistory;
@@ -233,16 +267,20 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       }
     }
     const prices = selectedHistory.map((point) => Number(point.price));
-    const minimum = Math.min(...prices);
-    const maximum = Math.max(...prices);
+    const firstTime = Date.parse(chartHistory[0].timestamp);
+    const lastTime = Date.parse(chartHistory[chartHistory.length - 1].timestamp);
+    const timeSpan = lastTime - firstTime;
+    const visibleEntries = timeSpan > 0
+      ? selectedEntries.filter((entry) => entry.timestamp >= firstTime && entry.timestamp <= lastTime)
+      : [];
+    const scalePrices = [...prices, ...visibleEntries.map((entry) => entry.price)];
+    const minimum = Math.min(...scalePrices);
+    const maximum = Math.max(...scalePrices);
     const padding = maximum === minimum
       ? Math.max(maximum * 0.002, Number.EPSILON)
       : (maximum - minimum) * 0.15;
     const low = minimum - padding;
     const high = maximum + padding;
-    const firstTime = Date.parse(chartHistory[0].timestamp);
-    const lastTime = Date.parse(chartHistory[chartHistory.length - 1].timestamp);
-    const timeSpan = lastTime - firstTime;
     const points = chartHistory.map((point) => {
       const x = timeSpan > 0 ? ((Date.parse(point.timestamp) - firstTime) / timeSpan) * 1000 : 500;
       const y = 16 + ((high - Number(point.price)) / (high - low)) * 218;
@@ -256,8 +294,16 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       hasTrend: points.length > 1,
       difference: currentPrice - firstPrice,
       differencePercent: firstPrice > 0 ? ((currentPrice - firstPrice) / firstPrice) * 100 : 0,
+      currentPrice,
+      entries: visibleEntries.map((entry) => ({
+        ...entry,
+        x: ((entry.timestamp - firstTime) / timeSpan) * 1000,
+        y: 16 + ((high - entry.price) / (high - low)) * 218,
+      })),
     };
-  }, [selectedHistory]);
+  }, [selectedHistory, selectedEntries]);
+  const selectedEntry = chartGeometry?.entries.find((entry) => entry.id === selectedEntryId) ?? null;
+  const entryCurrentPrice = chartGeometry?.currentPrice ?? (Number(selectedRecord?.currentPrice) || 0);
   const trackedAssetKey = investmentRecords
     .filter((record) => record.asset && Number.isFinite(Number(record.units)))
     .map((record) => `${record.id}:${record.asset.provider}:${record.asset.id}`)
@@ -427,6 +473,74 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       differencePercent: firstValue > 0 ? ((currentValue - firstValue) / firstValue) * 100 : 0,
     };
   }, [portfolioChartValues]);
+
+  const portfolioEntryMarkers = useMemo(() => {
+    if (!portfolioChartGeometry || portfolioChartValues.length === 0) return [];
+    const firstTimestamp = portfolioChartValues[0].timestamp;
+    const countsByIndex = new Map();
+    portfolioAssetGroups.forEach((group) => {
+      group.lots.forEach((lot) => {
+        const timestamp = Date.parse(`${lot.date}T00:00:00`);
+        if (!Number.isFinite(timestamp) || timestamp < firstTimestamp) return;
+        const index = portfolioChartValues.findIndex((point) => point.timestamp >= timestamp);
+        if (index < 0) return;
+        countsByIndex.set(index, (countsByIndex.get(index) || 0) + 1);
+      });
+    });
+    return [...countsByIndex.entries()].map(([index, count]) => ({
+      index,
+      count,
+      x: portfolioChartGeometry.points[index].x,
+      y: portfolioChartGeometry.points[index].y,
+    }));
+  }, [portfolioAssetGroups, portfolioChartValues, portfolioChartGeometry]);
+
+  useEffect(() => {
+    setPortfolioScrubIndex(null);
+  }, [portfolioChartPeriod, portfolioChartValues.length]);
+
+  const scrubPortfolioChart = (clientX) => {
+    const element = portfolioChartRef.current;
+    const count = portfolioChartValues.length;
+    if (!element || count === 0) return;
+    const { left, width } = element.getBoundingClientRect();
+    if (width <= 0) return;
+    const ratio = Math.min(1, Math.max(0, (clientX - left) / width));
+    setPortfolioScrubIndex(count > 1 ? Math.round(ratio * (count - 1)) : 0);
+  };
+
+  const handlePortfolioChartKeyDown = (event) => {
+    const count = portfolioChartValues.length;
+    if (count === 0) return;
+    const current = portfolioScrubIndex ?? count - 1;
+    let next;
+    if (event.key === 'ArrowLeft') next = Math.max(0, current - 1);
+    else if (event.key === 'ArrowRight') next = Math.min(count - 1, current + 1);
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = count - 1;
+    else if (event.key === 'Escape') {
+      setPortfolioScrubIndex(null);
+      return;
+    } else return;
+    event.preventDefault();
+    setPortfolioScrubIndex(next);
+  };
+
+  const portfolioScrubPoint = portfolioScrubIndex !== null ? portfolioChartValues[portfolioScrubIndex] ?? null : null;
+  const portfolioScrubGeometry = portfolioScrubPoint && portfolioChartGeometry
+    ? portfolioChartGeometry.points[portfolioScrubIndex] ?? null
+    : null;
+  const portfolioScrubEntry = portfolioScrubIndex !== null
+    ? portfolioEntryMarkers.find((marker) => marker.index === portfolioScrubIndex) ?? null
+    : null;
+  const portfolioShownPoint = portfolioScrubPoint ?? portfolioChartValues[portfolioChartValues.length - 1] ?? null;
+  const portfolioStartValue = portfolioChartValues[0]?.value ?? 0;
+  const portfolioShownDifference = portfolioScrubPoint
+    ? portfolioScrubPoint.value - portfolioStartValue
+    : portfolioChartGeometry?.difference ?? 0;
+  const portfolioShownPercent = portfolioScrubPoint
+    ? (portfolioStartValue > 0 ? (portfolioShownDifference / portfolioStartValue) * 100 : 0)
+    : portfolioChartGeometry?.differencePercent ?? 0;
 
   const portfolioAllocation = useMemo(() => {
     const amounts = new Map();
@@ -702,58 +816,141 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
 
       <Card as="section" data-phantom-surface aria-label="Evolución y distribución de la cartera" className="relative left-1/2 w-[calc(100vw-3rem)] max-w-7xl -translate-x-1/2 p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Evolución</h2>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Valor de los activos vinculados</p>
+          <div className="min-w-0">
+            {portfolioScrubPoint ? (
+              <>
+                <p className="privacy-sensitive truncate text-xl font-bold leading-6 tabular-nums text-zinc-950 dark:text-white">
+                  {formatCurrency(portfolioScrubPoint.value)}
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  {formatScrubLabel(portfolioScrubPoint.timestamp, portfolioChartPeriod)}
+                  {portfolioScrubEntry && (
+                    <span className="font-semibold text-[#6B58D6] dark:text-[#AB9FF2]">
+                      {' · '}{portfolioScrubEntry.count > 1 ? `${portfolioScrubEntry.count} aportaciones` : 'Aportación'}
+                    </span>
+                  )}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Evolución</h2>
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Valor de los activos vinculados</p>
+              </>
+            )}
           </div>
           {portfolioChartGeometry && (
             <span
               data-preserve-colors
               className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold tabular-nums ${
-                portfolioChartGeometry.difference >= 0
+                portfolioShownDifference >= 0
                   ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
                   : 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300'
               }`}
             >
-              {portfolioChartGeometry.difference > 0 ? '+' : ''}{portfolioChartGeometry.differencePercent.toFixed(2)}%
+              {portfolioScrubPoint && (
+                <span className="privacy-sensitive">
+                  {portfolioShownDifference > 0 ? '+' : portfolioShownDifference < 0 ? '−' : ''}{formatCurrency(Math.abs(portfolioShownDifference))}
+                  {' · '}
+                </span>
+              )}
+              {portfolioShownDifference > 0 ? '+' : ''}{portfolioShownPercent.toFixed(2)}%
             </span>
           )}
         </div>
 
         <div className="mt-3 h-40 sm:h-48">
           {portfolioChartGeometry ? (
-            <svg
-              viewBox="0 0 1000 180"
-              preserveAspectRatio="none"
-              role="img"
+            <div
+              ref={portfolioChartRef}
+              role="slider"
+              tabIndex={0}
               aria-label={`Evolución de la cartera durante ${portfolioChartPeriod}`}
-              className="size-full overflow-visible"
+              aria-orientation="horizontal"
+              aria-valuemin={0}
+              aria-valuemax={Math.max(0, portfolioChartValues.length - 1)}
+              aria-valuenow={portfolioScrubIndex ?? Math.max(0, portfolioChartValues.length - 1)}
+              aria-valuetext={portfolioShownPoint ? `${formatScrubLabel(portfolioShownPoint.timestamp, portfolioChartPeriod)}: ${formatCurrency(portfolioShownPoint.value)}` : undefined}
+              onPointerDown={(event) => {
+                if (event.pointerType !== 'mouse') event.currentTarget.setPointerCapture?.(event.pointerId);
+                scrubPortfolioChart(event.clientX);
+              }}
+              onPointerMove={(event) => scrubPortfolioChart(event.clientX)}
+              onPointerUp={(event) => {
+                if (event.pointerType !== 'mouse') setPortfolioScrubIndex(null);
+              }}
+              onPointerCancel={() => setPortfolioScrubIndex(null)}
+              onPointerLeave={() => setPortfolioScrubIndex(null)}
+              onKeyDown={handlePortfolioChartKeyDown}
+              onBlur={() => setPortfolioScrubIndex(null)}
+              className="relative size-full cursor-crosshair touch-pan-y select-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
             >
-              <defs>
-                <linearGradient id="portfolio-chart-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <polygon points={portfolioChartGeometry.area} fill="url(#portfolio-chart-fill)" />
-              {portfolioChartGeometry.points.length > 1 && (
-                <polyline
-                  points={portfolioChartGeometry.line}
-                  fill="none"
-                  stroke="#a78bfa"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
+              <svg
+                viewBox="0 0 1000 180"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+                className="size-full overflow-visible"
+              >
+                <defs>
+                  <linearGradient id="portfolio-chart-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+                  </linearGradient>
+                  {portfolioScrubGeometry && (
+                    <clipPath id="portfolio-chart-scrub-clip">
+                      <rect x="0" y="-20" width={portfolioScrubGeometry.x} height="220" />
+                    </clipPath>
+                  )}
+                </defs>
+                <polygon points={portfolioChartGeometry.area} fill="url(#portfolio-chart-fill)" />
+                {portfolioChartGeometry.points.length > 1 && portfolioScrubGeometry && (
+                  <polyline
+                    points={portfolioChartGeometry.line}
+                    fill="none"
+                    stroke="#a78bfa"
+                    strokeOpacity="0.3"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
+                {portfolioChartGeometry.points.length > 1 && (
+                  <polyline
+                    points={portfolioChartGeometry.line}
+                    fill="none"
+                    stroke="#a78bfa"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                    clipPath={portfolioScrubGeometry ? 'url(#portfolio-chart-scrub-clip)' : undefined}
+                  />
+                )}
+              </svg>
+              {portfolioEntryMarkers.map((marker) => (
+                <span
+                  key={marker.index}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#AB9FF2] bg-white dark:bg-[#131313]"
+                  style={{ left: `${marker.x / 10}%`, top: `${(marker.y / 180) * 100}%` }}
+                />
+              ))}
+              {portfolioScrubGeometry && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 w-px -translate-x-1/2 bg-zinc-300 dark:bg-white/25"
+                  style={{ left: `${portfolioScrubGeometry.x / 10}%` }}
                 />
               )}
-              <circle
-                cx={portfolioChartGeometry.lastPoint.x}
-                cy={portfolioChartGeometry.lastPoint.y}
-                r="5"
-                fill="#c4b5fd"
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#AB9FF2] ${portfolioScrubGeometry ? 'ring-4 ring-[#AB9FF2]/25' : ''}`}
+                style={{
+                  left: `${(portfolioScrubGeometry ?? portfolioChartGeometry.lastPoint).x / 10}%`,
+                  top: `${((portfolioScrubGeometry ?? portfolioChartGeometry.lastPoint).y / 180) * 100}%`,
+                }}
               />
-            </svg>
+            </div>
           ) : isLoadingPortfolioHistory ? (
             <div role="status" className="flex h-full items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
               <TrendingUp size={18} className="mr-2 animate-pulse" aria-hidden="true" />
@@ -768,6 +965,12 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
           )}
         </div>
 
+        {portfolioEntryMarkers.length > 0 && (
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+            <span className="size-2 rounded-full border-2 border-[#AB9FF2]" aria-hidden="true" />
+            Aportaciones
+          </p>
+        )}
         <div className="mt-2 grid grid-cols-5 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-[#1C1C1C]" role="group" aria-label="Periodo del gráfico de cartera">
           {[
             ['1S', '1S', '1 semana'],
@@ -994,7 +1197,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
       {successContribution && createPortal((
         <div
           data-investment-backdrop
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[110] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setSuccessContribution(null);
           }}
@@ -1004,29 +1207,34 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
             aria-modal="true"
             aria-labelledby="contribution-success-title"
             data-investment-dialog
-            className="w-full max-w-sm rounded-2xl bg-[#FFFDF8] p-6 text-center text-zinc-900 shadow-2xl dark:bg-[#28282C] dark:text-white"
+            className="flex max-h-[100dvh] w-full max-w-md flex-col items-center overflow-y-auto rounded-t-[28px] bg-[#FFFDF8] px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3 text-zinc-900 shadow-2xl dark:bg-[#1a1a1a] dark:text-white sm:rounded-[28px]"
           >
-            <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-              <Check size={23} strokeWidth={2.5} aria-hidden="true" />
+            <div aria-hidden="true" className="mb-3.5 h-1 w-10 rounded-full bg-zinc-300 dark:bg-[#3a3a3a]" />
+            <span className="mt-2.5 flex size-[72px] items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-[#16332a] dark:text-[#3DDC97]">
+              <Check size={34} strokeWidth={2.2} aria-hidden="true" />
             </span>
-            <h2 id="contribution-success-title" className="text-base font-semibold">Aportación realizada</h2>
-            <p className="privacy-sensitive mt-2 text-3xl font-semibold tabular-nums">
+            <h2 id="contribution-success-title" className="mt-4 text-xl font-bold">Aportación realizada</h2>
+            <p className="privacy-sensitive mb-3.5 mt-1.5 text-[40px] font-bold leading-tight tracking-[-0.025em] tabular-nums">
               {formatCurrency(successContribution.amount)}
             </p>
-            <dl className="mt-5 space-y-2 text-left text-xs">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-zinc-500 dark:text-zinc-400">Activo</dt>
-                <dd className="truncate font-medium">{successContribution.assetName}</dd>
+            <dl className="w-full text-[15px]">
+              <div className="flex items-center justify-between gap-3 border-b border-zinc-200 py-[13px] dark:border-[#2a2a2a]">
+                <dt className="text-zinc-500 dark:text-[#9b9b9b]">Desde</dt>
+                <dd>Dinero disponible</dd>
               </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-zinc-500 dark:text-zinc-400">Fecha</dt>
-                <dd className="font-medium">{formatDate(successContribution.date)}</dd>
+              <div className="flex items-center justify-between gap-3 border-b border-zinc-200 py-[13px] dark:border-[#2a2a2a]">
+                <dt className="text-zinc-500 dark:text-[#9b9b9b]">Hacia</dt>
+                <dd className="min-w-0 truncate">{successContribution.assetName}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3 py-[13px]">
+                <dt className="text-zinc-500 dark:text-[#9b9b9b]">Fecha</dt>
+                <dd>{formatDate(successContribution.date)}</dd>
               </div>
             </dl>
             <button
               type="button"
               onClick={() => setSuccessContribution(null)}
-              className="mt-6 h-10 w-full rounded-full bg-[#AB9FF2] text-sm font-semibold text-zinc-950 transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
+              className="mt-6 h-[54px] w-full rounded-full bg-[#AB9FF2] text-base font-bold text-[#131313] transition-colors hover:bg-[#9A8BE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
             >
               Listo
             </button>
@@ -1036,7 +1244,7 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                 setSuccessContribution(null);
                 document.getElementById('investment-portfolio')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
-              className="mt-3 text-xs font-medium text-violet-700 hover:underline dark:text-violet-300"
+              className="mt-2.5 rounded-full px-4 py-2.5 text-[15px] font-semibold text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:text-[#AB9FF2]"
             >
               Ver cartera
             </button>
@@ -1233,6 +1441,26 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                       className="size-8 border-2 border-white shadow-lg dark:border-black"
                     />
                   </span>
+                  {chartGeometry.entries.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      onClick={() => setSelectedEntryId((current) => (current === entry.id ? null : entry.id))}
+                      aria-pressed={selectedEntryId === entry.id}
+                      aria-label={`Entrada del ${formatDate(entry.date)} a ${formatUnitPrice(entry.price)} por unidad`}
+                      title={`Entrada · ${formatDate(entry.date)} · ${formatUnitPrice(entry.price)}`}
+                      className="absolute z-10 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2]"
+                      style={{ left: `${entry.x / 10}%`, top: `${entry.y / 2.5}%` }}
+                    >
+                      <span
+                        className={`block rounded-full border-2 border-[#AB9FF2] transition-all ${
+                          selectedEntryId === entry.id
+                            ? 'size-4 bg-[#AB9FF2] ring-4 ring-[#AB9FF2]/25'
+                            : 'size-3 bg-white dark:bg-[#131313]'
+                        }`}
+                      />
+                    </button>
+                  ))}
                 </>
               ) : (
                 <div className="flex size-full items-center justify-center border-b border-zinc-200 dark:border-zinc-800">
@@ -1240,6 +1468,38 @@ const InvestmentsOverview = ({ isFormOpen, onFormOpenChange }) => {
                 </div>
               )}
             </div>
+
+            {entrySummary && entryCurrentPrice > 0 && (() => {
+              const basePrice = selectedEntry ? selectedEntry.price : entrySummary.averagePrice;
+              const change = basePrice > 0 ? ((entryCurrentPrice - basePrice) / basePrice) * 100 : 0;
+              const changeClass = change >= 0 ? gainTextClass : lossTextClass;
+              return (
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-zinc-100 px-3.5 py-3 text-xs dark:bg-zinc-900" aria-live="polite">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+                      <span className="size-2 shrink-0 rounded-full border-2 border-[#AB9FF2]" aria-hidden="true" />
+                      {selectedEntry
+                        ? `Entrada · ${formatDate(selectedEntry.date)}`
+                        : entrySummary.count > 1 ? `Precio medio de entrada (${entrySummary.count})` : 'Precio de entrada'}
+                    </p>
+                    <p className="mt-0.5 truncate text-sm font-semibold tabular-nums">
+                      {formatUnitPrice(basePrice)}
+                      {selectedEntry && (
+                        <span className="privacy-sensitive font-normal text-zinc-500 dark:text-zinc-400"> · {formatCurrency(selectedEntry.invested)}</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-zinc-500 dark:text-zinc-400">Precio actual</p>
+                    <p className="mt-0.5 text-sm font-semibold tabular-nums">
+                      {formatUnitPrice(entryCurrentPrice)}
+                      {' '}
+                      <span className={changeClass}>{formatSignedPercent(change)}</span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="mt-5 grid grid-cols-6 gap-1 rounded-full bg-zinc-100 p-1 dark:bg-zinc-900">
               {[

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChartNoAxesCombined, ChevronLeft, House, Plus, ReceiptText, TrendingUp, X } from 'lucide-react';
+import { ChartNoAxesCombined, ChevronDown, ChevronLeft, House, Plus, ReceiptText, TrendingUp, X } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import AnnualOverview from './components/AnnualOverview';
 import HomeOverview from './components/HomeOverview';
@@ -360,21 +360,22 @@ const App = () => {
                   type="button"
                   onClick={() => setIsAnnualView(false)}
                   aria-label="Volver a la vista mensual"
-                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-[#F4F2F4] text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#28282C] dark:text-zinc-200"
+                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-[#F4F2F4] text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#1f1f1f] dark:text-white"
                 >
-                  <ChevronLeft size={17} aria-hidden="true" />
+                  <ChevronLeft size={22} strokeWidth={1.7} aria-hidden="true" />
                 </button>
-                <h1 className="min-w-0 flex-1 text-center text-sm font-semibold text-zinc-900 dark:text-zinc-100">Vista anual</h1>
-                <label className="shrink-0">
+                <h1 className="min-w-0 flex-1 text-center text-[17px] font-semibold text-zinc-900 dark:text-white">Vista anual</h1>
+                <label className="relative shrink-0">
                   <span className="sr-only">Seleccionar año</span>
                   <select
                     aria-label="Seleccionar año"
                     value={filters.year}
                     onChange={(event) => setFilters((previous) => ({ ...previous, year: Number(event.target.value) }))}
-                    className="h-8 rounded-full border-0 bg-[#F4F2F4] px-2.5 text-[10px] font-semibold text-violet-800 outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#28282C] dark:text-violet-300"
+                    className="h-10 cursor-pointer appearance-none rounded-full border-0 bg-[#EFEBFF] py-0 pl-4 pr-9 text-sm font-semibold text-[#6B58D6] outline-none focus-visible:ring-2 focus-visible:ring-[#AB9FF2] dark:bg-[#2a2640] dark:text-[#AB9FF2]"
                   >
                     {annualYears.map((year) => <option key={year} value={year}>{year}</option>)}
                   </select>
+                  <ChevronDown size={16} aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6B58D6] dark:text-[#AB9FF2]" />
                 </label>
               </div>
             ) : (
