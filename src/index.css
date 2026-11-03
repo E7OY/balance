@@ -90,9 +90,13 @@ select:focus-visible {
   border: 0;
   background: transparent;
   color: #b1b1af;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   transition: color 0.2s;
+}
+
+.tabs button:nth-child(-n + 2) {
+  font-size: 20px;
 }
 
 .tabs button.active {
@@ -641,14 +645,7 @@ select:focus-visible {
   transition: width 0.3s ease;
 }
 
-.category-alert {
-  margin: -2px 0 6px;
-  color: #df242b;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.category-metric.exceeded > div strong {
+.category-metric.exceeded > div > .category-metric-value {
   color: #df242b;
 }
 
@@ -1008,11 +1005,11 @@ select:focus-visible {
 }
 
 .settings-group {
-  margin-top: 25px;
+  margin-top: 22px;
 }
 
 .settings-group > p {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   color: #aaa9a5;
   font-size: 11px;
   font-weight: 700;
@@ -1022,11 +1019,12 @@ select:focus-visible {
 .settings-group > button,
 .setting-toggle {
   width: 100%;
-  min-height: 52px;
+  min-height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0;
+  gap: 12px;
+  padding: 8px 0;
   border: 0;
   border-bottom: 1px solid #eeeeec;
   background: transparent;
@@ -1035,11 +1033,12 @@ select:focus-visible {
 
 .setting-select-row {
   width: 100%;
-  min-height: 60px;
+  min-height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 8px 0;
   border-bottom: 1px solid #eeeeec;
   text-align: left;
 }
@@ -1065,12 +1064,12 @@ select:focus-visible {
 }
 
 .settings-group span strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .settings-group span small {
-  margin-top: 4px;
+  margin-top: 3px;
   color: #9c9c98;
   font-size: 11px;
 }
@@ -1568,8 +1567,7 @@ select:focus-visible {
   background: #f04444;
 }
 
-.dark .category-metric.exceeded > div strong,
-.dark .category-alert {
+.dark .category-metric.exceeded > div > .category-metric-value {
   color: #f05a5f;
 }
 
@@ -1694,7 +1692,11 @@ select:focus-visible {
   }
 
   .tabs button {
-    font-size: 15px;
+    font-size: 16px;
+  }
+
+  .tabs button:nth-child(-n + 2) {
+    font-size: 17px;
   }
 
   .avatar-button {

@@ -89,21 +89,12 @@ const MovementsView = ({ query = '' }) => {
             return (
               <div className={`category-metric ${exceeded ? "exceeded" : ""}`} key={category.name}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                    <strong>{category.name}</strong>
-                    {limit > 0 && (
-                      <small style={{ fontSize: '12px', color: '#888', fontWeight: 600 }}>
-                        (Tope: {displayMoney(limit)})
-                      </small>
-                    )}
-                  </span>
-                  <strong className="privacy-sensitive">{displayMoney(category.amount)}</strong>
+                  <strong>{category.name}</strong>
+                  <strong className="category-metric-value privacy-sensitive">
+                    {displayMoney(category.amount)}
+                    {limit > 0 && <> / {displayMoney(limit)}</>}
+                  </strong>
                 </div>
-                {exceeded && (
-                  <p className="category-alert" style={{ margin: '2px 0 0', fontSize: '11px', color: '#df242b', fontWeight: 700 }}>
-                    Tope superado por {displayMoney(category.amount - limit)}
-                  </p>
-                )}
                 <i>
                   <b 
                     style={{ 

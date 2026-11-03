@@ -15,6 +15,9 @@ const getPreferredHomeTab = (profileId) => {
   const savedTab = getFromLocalStorage(`finance:${profileId}:defaultHomeTab`);
   return homeTabs.includes(savedTab) ? savedTab : 'expenses';
 };
+const getInvestmentsEnabled = (profileId) => (
+  getFromLocalStorage(`finance:${profileId}:showInvestments`) === true
+);
 
 function Icon({ name, size = 17 }) {
   const paths = {
@@ -47,6 +50,7 @@ const App = () => {
 
   const [activeTab, setActiveTab] = useState(() => getPreferredHomeTab(activeProfileId));
   const [defaultHomeTab, setDefaultHomeTab] = useState(() => getPreferredHomeTab(activeProfileId));
+  const [investmentsEnabled, setInvestmentsEnabled] = useState(() => getInvestmentsEnabled(activeProfileId));
   const [transactionType, setTransactionType] = useState('expense');
   const [theme, setTheme] = useState(() => localStorage.getItem('balance-theme') || 'dark');
   
@@ -67,7 +71,15 @@ const App = () => {
   }, [theme]);
 
   useEffect(() => {
-    const preferredTab = getPreferredHomeTab(activeProfileId);
+    const showInvestments = getInvestmentsEnabled(activeProfileId);
+    const savedPreferredTab = getPreferredHomeTab(activeProfileId);
+    const preferredTab = !showInvestments && savedPreferredTab === 'investments'
+      ? 'expenses'
+      : savedPreferredTab;
+    if (preferredTab !== savedPreferredTab) {
+      saveToLocalStorage(`finance:${activeProfileId}:defaultHomeTab`, preferredTab);
+    }
+    setInvestmentsEnabled(showInvestments);
     setActiveTab(preferredTab);
     setDefaultHomeTab(preferredTab);
     setQuery('');
@@ -75,12 +87,24 @@ const App = () => {
   }, [activeProfileId]);
 
   const handleDefaultHomeTabChange = (tab) => {
-    if (!homeTabs.includes(tab)) return;
+    if (!homeTabs.includes(tab) || (tab === 'investments' && !investmentsEnabled)) return;
     saveToLocalStorage(`finance:${activeProfileId}:defaultHomeTab`, tab);
     setDefaultHomeTab(tab);
     setActiveTab(tab);
     setQuery('');
     setSearchOpen(false);
+  };
+
+  const handleInvestmentsVisibilityChange = (enabled) => {
+    saveToLocalStorage(`finance:${activeProfileId}:showInvestments`, enabled);
+    setInvestmentsEnabled(enabled);
+    if (!enabled) {
+      if (defaultHomeTab === 'investments') {
+        saveToLocalStorage(`finance:${activeProfileId}:defaultHomeTab`, 'expenses');
+        setDefaultHomeTab('expenses');
+      }
+      if (activeTab === 'investments') setActiveTab('expenses');
+    }
   };
 
   const initials = (activeProfile?.name || 'US').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -145,9 +169,11 @@ const App = () => {
               <button className={activeTab === 'movements' ? 'active' : ''} onClick={() => handleTabChange('movements')}>
                 Movimientos
               </button>
-              <button className={activeTab === 'investments' ? 'active' : ''} onClick={() => handleTabChange('investments')}>
-                Inversiones
-              </button>
+              {investmentsEnabled && (
+                <button className={activeTab === 'investments' ? 'active' : ''} onClick={() => handleTabChange('investments')}>
+                  Inversiones
+                </button>
+              )}
             </div>
             <button className="avatar-button" onClick={() => setIsProfileOpen(true)}>
               {initials}
@@ -213,6 +239,8 @@ const App = () => {
             setTheme={setTheme}
             defaultHomeTab={defaultHomeTab}
             onDefaultHomeTabChange={handleDefaultHomeTabChange}
+            investmentsEnabled={investmentsEnabled}
+            onInvestmentsVisibilityChange={handleInvestmentsVisibilityChange}
             onClose={() => setIsProfileOpen(false)}
           />
         )}

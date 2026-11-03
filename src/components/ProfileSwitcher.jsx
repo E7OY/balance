@@ -15,7 +15,15 @@ function Icon({ name, size = 17 }) {
   );
 }
 
-const ProfileSwitcher = ({ theme, setTheme, defaultHomeTab, onDefaultHomeTabChange, onClose }) => {
+const ProfileSwitcher = ({
+  theme,
+  setTheme,
+  defaultHomeTab,
+  onDefaultHomeTabChange,
+  investmentsEnabled,
+  onInvestmentsVisibilityChange,
+  onClose,
+}) => {
   const {
     activeProfile,
     transactions,
@@ -139,6 +147,21 @@ const ProfileSwitcher = ({ theme, setTheme, defaultHomeTab, onDefaultHomeTabChan
             <i />
           </button>
         </div>
+        <div className="setting-toggle">
+          <span>
+            <strong>Mostrar Inversiones</strong>
+            <small>Añade la pantalla de inversiones al menú</small>
+          </span>
+          <button
+            className={`switch ${investmentsEnabled ? "on" : ""}`}
+            onClick={() => onInvestmentsVisibilityChange(!investmentsEnabled)}
+            role="switch"
+            aria-checked={investmentsEnabled}
+            aria-label="Mostrar página de inversiones"
+          >
+            <i />
+          </button>
+        </div>
         <label className="setting-select-row">
           <span>
             <strong>Pantalla principal</strong>
@@ -150,7 +173,7 @@ const ProfileSwitcher = ({ theme, setTheme, defaultHomeTab, onDefaultHomeTabChan
             onChange={(event) => onDefaultHomeTabChange(event.target.value)}
           >
             <option value="expenses">Gastos</option>
-            <option value="investments">Inversiones</option>
+            {investmentsEnabled && <option value="investments">Inversiones</option>}
             <option value="movements">Movimientos</option>
           </select>
         </label>
