@@ -1,4 +1,4 @@
-# Balance
+# Axiom
 
 Aplicación web para llevar las finanzas personales: registra ingresos y gastos, revisa el saldo mensual, organiza movimientos por categoría y define objetivos y límites de gasto.
 
