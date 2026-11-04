@@ -3,6 +3,7 @@
 
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 17px;
   color: #090909;
   background: #fff;
   font-synthesis: none;
@@ -91,13 +92,13 @@ select:focus-visible {
   border: 0;
   background: transparent;
   color: #b1b1af;
-  font-size: 18px;
+  font-size: 19.4px;
   font-weight: 700;
   transition: color 0.2s;
 }
 
 .tabs button:nth-child(-n + 2) {
-  font-size: 20px;
+  font-size: 21.6px;
 }
 
 .tabs button.active {
@@ -113,7 +114,7 @@ select:focus-visible {
   border-radius: 50%;
   background: #eeeeeb;
   color: #777;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -134,7 +135,7 @@ select:focus-visible {
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 14px;
+  font-size: 15.1px;
 }
 
 .search-bar button {
@@ -152,14 +153,14 @@ select:focus-visible {
   align-items: center;
   justify-content: space-between;
   color: #9a9a97;
-  font-size: 15px;
+  font-size: 16.2px;
 }
 
 .overview-label button {
   border: 0;
   background: transparent;
   color: #888;
-  font-size: 15px;
+  font-size: 16.2px;
 }
 
 .amount-line {
@@ -170,7 +171,7 @@ select:focus-visible {
 }
 
 .amount-line h1 {
-  font-size: 40px;
+  font-size: 43.2px;
   line-height: 1;
   font-weight: 700;
   letter-spacing: -1.3px;
@@ -178,7 +179,7 @@ select:focus-visible {
 
 .change {
   color: #15924c;
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 .change.negative {
@@ -188,7 +189,7 @@ select:focus-visible {
 .overview > p {
   margin-top: 7px;
   color: #b1b1ae;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .periods {
@@ -203,7 +204,7 @@ select:focus-visible {
   border: 0;
   background: transparent;
   color: #b4b4b1;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -234,7 +235,7 @@ select:focus-visible {
   padding: 0 24px;
   color: #858581;
   text-align: center;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .investment-chart-error {
@@ -244,7 +245,7 @@ select:focus-visible {
 .investment-chart-note {
   margin: -12px 0 16px;
   color: #858581;
-  font-size: 11px;
+  font-size: 11.9px;
 }
 
 .investment-detail-page {
@@ -268,7 +269,7 @@ select:focus-visible {
   gap: 12px;
   margin-bottom: 30px;
   color: #858581;
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 600;
 }
 
@@ -292,13 +293,13 @@ select:focus-visible {
 }
 
 .investment-detail-name {
-  font-size: 20px;
+  font-size: 21.6px;
   font-weight: 700;
 }
 
 .investment-detail-symbol {
   color: #858581;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -306,7 +307,7 @@ select:focus-visible {
 .investment-detail-balance > small {
   display: block;
   color: #858581;
-  font-size: 14px;
+  font-size: 15.1px;
 }
 
 .investment-detail-value-row {
@@ -317,7 +318,7 @@ select:focus-visible {
 }
 
 .investment-detail-value-row strong {
-  font-size: 38px;
+  font-size: 41px;
   line-height: 1;
   letter-spacing: -1.2px;
 }
@@ -353,12 +354,12 @@ select:focus-visible {
 
 .investment-detail-summary > div > span {
   color: #858581;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .investment-detail-summary > div > strong {
   overflow-wrap: anywhere;
-  font-size: 15px;
+  font-size: 16.2px;
   font-weight: 700;
 }
 
@@ -397,7 +398,7 @@ select:focus-visible {
   padding: 0 36px;
   color: #858581;
   text-align: center;
-  font-size: 14px;
+  font-size: 15.1px;
 }
 
 .investment-detail-section {
@@ -410,13 +411,13 @@ select:focus-visible {
   gap: 5px;
   margin-bottom: 16px;
   color: #090909;
-  font-size: 20px;
+  font-size: 21.6px;
   font-weight: 700;
 }
 
 .investment-detail-description {
   color: #52524f;
-  font-size: 15px;
+  font-size: 16.2px;
   line-height: 1.55;
 }
 
@@ -430,7 +431,7 @@ select:focus-visible {
   gap: 14px;
   padding: 15px 0;
   border-bottom: 1px solid #e5e5e2;
-  font-size: 14px;
+  font-size: 15.1px;
 }
 
 .investment-key-data dt {
@@ -467,7 +468,7 @@ select:focus-visible {
   border-radius: 999px;
   background: #f3f3f1;
   color: #090909;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -486,7 +487,7 @@ select:focus-visible {
 .investment-sell-confirmation p {
   margin: 0;
   color: #52524f;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -524,14 +525,14 @@ select:focus-visible {
 .investment-purchase-info strong,
 .investment-purchase-amount {
   color: #090909;
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 
 .investment-purchase-info small {
   margin-top: 4px;
   color: #858581;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .dark .investment-detail-page {
@@ -604,13 +605,13 @@ select:focus-visible {
 }
 
 .category-metrics-title strong {
-  font-size: 15px;
+  font-size: 16.2px;
   font-weight: 700;
 }
 
 .category-metrics-title span {
   color: #999996;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .category-metric > div {
@@ -619,7 +620,7 @@ select:focus-visible {
 
 .category-metric span,
 .category-metric strong {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .category-metric span {
@@ -694,11 +695,11 @@ select:focus-visible {
 
 .summary-grid span {
   color: #a8a8a5;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .summary-grid strong {
-  font-size: 15px;
+  font-size: 16.2px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -730,7 +731,7 @@ select:focus-visible {
 }
 
 .section-title h2 {
-  font-size: 20px;
+  font-size: 21.6px;
   font-weight: 700;
 }
 
@@ -743,7 +744,7 @@ select:focus-visible {
   border: 0;
   background: transparent;
   color: #a6a6a3;
-  font-size: 11px;
+  font-size: 11.9px;
 }
 
 .movement-list {
@@ -783,14 +784,14 @@ select:focus-visible {
 
 .movement-info strong,
 .movement-amount {
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 
 .movement-info small {
   margin-top: 2px;
   color: #aaa;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .movement-amount {
@@ -812,7 +813,7 @@ select:focus-visible {
   place-items: center;
   border-radius: 50%;
   color: #fff;
-  font-size: 16px;
+  font-size: 17.3px;
   font-weight: 700;
   background: #2f62d0;
 }
@@ -828,14 +829,14 @@ select:focus-visible {
 }
 
 .holding-value strong {
-  font-size: 16px;
+  font-size: 17.3px;
   font-weight: 700;
 }
 
 .holding-value small {
   margin-top: 4px;
   color: #15924c;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 .holding-value small.negative {
@@ -864,7 +865,7 @@ select:focus-visible {
   border-radius: 18px;
   background: #090909;
   color: #fff;
-  font-size: 17px;
+  font-size: 18.4px;
   font-weight: 700;
   box-shadow: 0 5px 15px rgb(0 0 0 / 0.12);
   transition: transform 0.1s;
@@ -875,7 +876,7 @@ select:focus-visible {
 }
 
 .action-symbol {
-  font-size: 19px;
+  font-size: 20.5px;
   line-height: 1;
   font-weight: 400;
 }
@@ -918,13 +919,13 @@ select:focus-visible {
   border-radius: 50%;
   background: #eeeeeb;
   color: #52524f;
-  font-size: 17px;
+  font-size: 18.4px;
   font-weight: 700;
 }
 
 .profile-identity h1 {
   margin-top: 0;
-  font-size: 24px;
+  font-size: 25.9px;
   line-height: 1;
   font-weight: 700;
   letter-spacing: -0.7px;
@@ -933,13 +934,13 @@ select:focus-visible {
 .profile-identity p {
   margin-top: 7px;
   color: #999996;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .profile-identity .profile-type {
   margin-top: 7px;
   color: #52524f;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -971,13 +972,13 @@ select:focus-visible {
 }
 
 .profile-shortcut strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .profile-shortcut small {
   color: #777773;
-  font-size: 10px;
+  font-size: 10.8px;
   line-height: 1.25;
 }
 
@@ -987,7 +988,7 @@ select:focus-visible {
   border-radius: 99px;
   background: #e8f7ed;
   color: #18814a;
-  font-size: 11px;
+  font-size: 11.9px;
   font-weight: 700;
 }
 
@@ -1008,7 +1009,7 @@ select:focus-visible {
 .profile-services > p {
   margin-bottom: 8px;
   color: #aaa9a5;
-  font-size: 11px;
+  font-size: 11.9px;
   font-weight: 700;
   letter-spacing: 0.8px;
 }
@@ -1047,29 +1048,29 @@ select:focus-visible {
 }
 
 .profile-service-copy strong {
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 
 .profile-service-copy small {
   margin-top: 3px;
   color: #9c9c98;
-  font-size: 11px;
+  font-size: 11.9px;
 }
 
 .profile-balance span {
   color: #999996;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .profile-balance strong {
-  font-size: 23px;
+  font-size: 24.8px;
   letter-spacing: -0.8px;
 }
 
 .profile-balance small {
   color: #15924c;
-  font-size: 11px;
+  font-size: 11.9px;
   font-weight: 600;
 }
 
@@ -1080,7 +1081,7 @@ select:focus-visible {
 .settings-group > p {
   margin-bottom: 8px;
   color: #aaa9a5;
-  font-size: 11px;
+  font-size: 11.9px;
   font-weight: 700;
   letter-spacing: 0.8px;
 }
@@ -1121,7 +1122,7 @@ select:focus-visible {
   border-radius: 10px;
   background: #f3f3f1;
   color: #090909;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -1131,19 +1132,19 @@ select:focus-visible {
 }
 
 .settings-group span strong {
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 
 .settings-group span small {
   margin-top: 3px;
   color: #9c9c98;
-  font-size: 11px;
+  font-size: 11.9px;
 }
 
 .setting-value {
   color: #aaa9a5;
-  font-size: 11px;
+  font-size: 11.9px;
   font-weight: 600;
 }
 
@@ -1191,7 +1192,7 @@ select:focus-visible {
   border-radius: 10px;
   background: #090909;
   color: #fff;
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 
@@ -1199,7 +1200,7 @@ select:focus-visible {
   margin-top: 14px;
   color: #b4b4b0;
   text-align: center;
-  font-size: 11px;
+  font-size: 11.9px;
 }
 
 .profile-edit-layer {
@@ -1210,7 +1211,7 @@ select:focus-visible {
   width: 42px;
   height: 42px;
   margin-bottom: 18px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .profile-edit-sheet .sheet-submit {
@@ -1255,7 +1256,7 @@ select:focus-visible {
   border-radius: 50%;
   background: #ed1d24;
   color: #fff;
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 
@@ -1283,7 +1284,7 @@ select:focus-visible {
   border-radius: 6px;
   background: transparent;
   color: #92928e;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -1308,7 +1309,7 @@ select:focus-visible {
 
 .bottom-sheet h2 {
   max-width: 320px;
-  font-size: 25px;
+  font-size: 27px;
   line-height: 1.05;
   font-weight: 700;
   letter-spacing: -0.9px;
@@ -1318,7 +1319,7 @@ select:focus-visible {
   max-width: 380px;
   margin-top: 11px;
   color: #999996;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -1332,7 +1333,7 @@ select:focus-visible {
   display: grid;
   gap: 6px;
   color: #8e8e8a;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .bottom-sheet input,
@@ -1344,7 +1345,7 @@ select:focus-visible {
   border-radius: 8px;
   background: #f7f7f5;
   color: #111;
-  font-size: 14px;
+  font-size: 15.1px;
   outline: 0;
 }
 
@@ -1400,7 +1401,7 @@ select:focus-visible {
   min-width: 88px;
   padding: 9px 16px;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .transaction-sheet.expense .transaction-tabs button.active {
@@ -1416,13 +1417,13 @@ select:focus-visible {
 }
 
 .transaction-sheet h2 {
-  font-size: 26px;
+  font-size: 28.1px;
   letter-spacing: -0.8px;
 }
 
 .transaction-sheet > p {
   margin-top: 7px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .transaction-sheet form {
@@ -1434,7 +1435,7 @@ select:focus-visible {
 .transaction-fields-grid label {
   gap: 7px;
   color: #777773;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1446,7 +1447,7 @@ select:focus-visible {
   border-radius: 13px;
   background: #f7f7f5;
   color: #111;
-  font-size: 14px;
+  font-size: 15.1px;
 }
 
 .transaction-sheet .amount-field {
@@ -1462,7 +1463,7 @@ select:focus-visible {
   border: 0;
   background: transparent;
   color: #111;
-  font-size: 34px;
+  font-size: 36.7px;
   font-weight: 700;
   letter-spacing: -1px;
   outline: none;
@@ -1496,7 +1497,7 @@ select:focus-visible {
   overflow: hidden;
   border-radius: 12px;
   color: #343432 !important;
-  font-size: 11px !important;
+  font-size: 11.9px !important;
   font-weight: 600;
   text-align: center;
   cursor: pointer;
@@ -1520,7 +1521,7 @@ select:focus-visible {
   padding: 10px 12px;
   border-radius: 11px;
   background: #f5f5f2;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .invoice-attachment > span {
@@ -1554,7 +1555,7 @@ select:focus-visible {
   border-radius: 15px;
   background: var(--transaction-accent);
   color: #fff;
-  font-size: 15px;
+  font-size: 16.2px;
   font-weight: 700;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
@@ -1576,7 +1577,7 @@ select:focus-visible {
 .investment-status,
 .investment-error,
 .investment-preview {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.45;
 }
 
@@ -1624,13 +1625,13 @@ select:focus-visible {
 
 .limit-row strong {
   color: #111;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .limit-row small {
   margin-top: 4px;
   color: #999996;
-  font-size: 11px;
+  font-size: 11.9px;
 }
 
 .limit-input {
@@ -1651,7 +1652,7 @@ select:focus-visible {
   right: 9px;
   transform: translateY(-50%);
   color: #999996;
-  font-size: 12px;
+  font-size: 13px;
   font-style: normal;
 }
 
@@ -1677,7 +1678,7 @@ select:focus-visible {
 .detail-kicker {
   margin-bottom: 8px !important;
   color: #999996 !important;
-  font-size: 11px !important;
+  font-size: 11.9px !important;
   font-weight: 700;
   letter-spacing: 0.8px;
 }
@@ -1685,7 +1686,7 @@ select:focus-visible {
 .detail-amount {
   display: block;
   margin-top: 13px;
-  font-size: 32px;
+  font-size: 34.6px;
   line-height: 1;
   letter-spacing: -1.2px;
 }
@@ -1702,7 +1703,7 @@ select:focus-visible {
   justify-content: space-between;
   min-height: 48px;
   border-bottom: 1px solid #ececea;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .detail-list span {
@@ -1729,7 +1730,7 @@ select:focus-visible {
   border-radius: 11px;
   background: #090909;
   color: #fff;
-  font-size: 14px;
+  font-size: 15.1px;
   font-weight: 700;
 }
 
@@ -2004,11 +2005,11 @@ select:focus-visible {
   }
 
   .tabs button {
-    font-size: 16px;
+    font-size: 17.3px;
   }
 
   .tabs button:nth-child(-n + 2) {
-    font-size: 17px;
+    font-size: 18.4px;
   }
 
   .avatar-button {
@@ -2026,7 +2027,7 @@ select:focus-visible {
   }
 
   .summary-grid strong {
-    font-size: clamp(12px, 3.8vw, 15px);
+    font-size: clamp(13px, 4.1vw, 16.2px);
   }
 }
 
