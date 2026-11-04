@@ -5,6 +5,7 @@ import { useFinance } from '../context/FinanceContext';
 import InvestmentAssetIcon from './InvestmentAssetIcon';
 import { getInvestmentHistory, getInvestmentQuote } from '../utils/investmentMarketData';
 import './investmentDetailSheet.css';
+import { useElasticScroll } from '../hooks/useElasticScroll';
 
 const periods = ['1D', '1S', '1M', '1A', 'Máx'];
 const periodDurations = {
@@ -119,8 +120,9 @@ const getAssetLogoStyle = (name, symbol) => {
 };
 
 const sampleImageColor = (source) => new Promise((resolve) => {
+  if (!source) return resolve(null);
   const image = new Image();
-  image.crossOrigin = 'anonymous';
+  // No usamos crossOrigin = 'anonymous' para evitar que CDNs externos sin cabecera CORS fallen bloqueados por el navegador
   image.onload = () => {
     try {
       const size = 24;
@@ -147,6 +149,7 @@ const sampleImageColor = (source) => new Promise((resolve) => {
       }
       resolve(weight > 0 ? rgbToHex(red / weight, green / weight, blue / weight) : null);
     } catch {
+      // Si el canvas está manchado (tainted) por CORS de CDN externo, silenciosamente devolvemos null y usará el fallback hash
       resolve(null);
     }
   };
@@ -429,6 +432,7 @@ const InvestmentDetail = ({
           onPointerCancel={finishDrag}
         >
           <div className="investment-sheet-handle" />
+          <span className="investment-sheet-title">Detalle de inversión</span>
         </div>
         <div
           className="investment-sheet-body"
@@ -579,7 +583,7 @@ const InvestmentDetail = ({
                   {(scrubCoordinate || chartCoordinates.length > 0) && (
                     <span
                       aria-hidden="true"
-                      className={`investment-chart-dot ${chartTrend} ${scrubCoordinate ? 'active' : ''}`}
+                      className={`investment-chart-dot neutral ${scrubCoordinate ? 'active' : ''}`}
                       style={{
                         left: `${((scrubCoordinate ?? chartCoordinates[chartCoordinates.length - 1]).x / 390) * 100}%`,
                         top: `${((scrubCoordinate ?? chartCoordinates[chartCoordinates.length - 1]).y / 190) * 100}%`,
@@ -718,12 +722,18 @@ const InvestmentDetail = ({
 };
 
 const InvestmentsOverview = ({ query = '' }) => {
+  const scrollContainerRef = useRef(null);
+  const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } = useElasticScroll(75, 0.35);
   const { investmentRecords, sellInvestmentRecords, updateInvestmentPrice } = useFinance();
   const [period, setPeriod] = useState('1M');
   const [selectedInvestmentId, setSelectedInvestmentId] = useState(null);
   const [historyByAsset, setHistoryByAsset] = useState({});
   const [historyError, setHistoryError] = useState('');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Estado para el scrub interactivo en el gráfico de cartera general
+  const [portfolioScrubIndex, setPortfolioScrubIndex] = useState(null);
+  const portfolioChartRef = useRef(null);
 
   const marketAssets = useMemo(() => [...new Map(
     investmentRecords
@@ -841,11 +851,54 @@ const InvestmentsOverview = ({ query = '' }) => {
   const minValue = chartValues.length ? Math.min(...chartValues) : 0;
   const maxValue = chartValues.length ? Math.max(...chartValues) : 0;
   const valueRange = maxValue - minValue;
-  const chartPath = chartPoints.map((point, index) => {
+  const chartCoordinates = chartPoints.map((point, index) => {
     const x = chartPoints.length > 1 ? (index / (chartPoints.length - 1)) * 390 : 195;
     const y = valueRange > 0 ? 164 - ((point.value - minValue) / valueRange) * 138 : 95;
-    return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
-  }).join(' ');
+    return { x, y, ...point };
+  });
+  const chartPath = chartCoordinates.map((point, index) => (
+    `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`
+  )).join(' ');
+
+  // Reiniciar el cursor interactivo al cambiar de periodo
+  useEffect(() => {
+    setPortfolioScrubIndex(null);
+  }, [period]);
+
+  const scrubPortfolioChart = (clientX) => {
+    const element = portfolioChartRef.current;
+    const count = chartPoints.length;
+    if (!element || count === 0) return;
+    const { left, width } = element.getBoundingClientRect();
+    if (width <= 0) return;
+    const ratio = Math.min(1, Math.max(0, (clientX - left) / width));
+    setPortfolioScrubIndex(count > 1 ? Math.round(ratio * (count - 1)) : 0);
+  };
+
+  const handlePortfolioKeyDown = (event) => {
+    const count = chartPoints.length;
+    if (count === 0) return;
+    const current = portfolioScrubIndex ?? count - 1;
+    let next;
+    if (event.key === 'ArrowLeft') next = Math.max(0, current - 1);
+    else if (event.key === 'ArrowRight') next = Math.min(count - 1, current + 1);
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = count - 1;
+    else if (event.key === 'Escape') {
+      event.stopPropagation();
+      setPortfolioScrubIndex(null);
+      return;
+    } else return;
+    event.preventDefault();
+    setPortfolioScrubIndex(next);
+  };
+
+  const activeScrubPoint = portfolioScrubIndex !== null ? chartCoordinates[portfolioScrubIndex] : null;
+  const firstValue = chartPoints[0]?.value ?? 0;
+  const activeScrubDelta = activeScrubPoint ? activeScrubPoint.value - firstValue : performance;
+  const activeScrubDeltaPercent = activeScrubPoint && firstValue > 0 ? (activeScrubDelta / firstValue) * 100 : performancePercent;
+  const isUp = activeScrubDelta >= 0;
+
   const hasManualInvestments = investmentRecords.some((record) => !record.asset && !record.soldAt);
   const selectedInvestment = investmentRecords.find((record) => record.id === selectedInvestmentId && !record.soldAt);
   const selectedPurchases = selectedInvestment
@@ -853,20 +906,30 @@ const InvestmentsOverview = ({ query = '' }) => {
     : [];
 
   return (
-    <>
+    <div
+      ref={scrollContainerRef}
+      className={`elastic-scroll-wrapper ${isSnapping ? 'snapping' : ''}`}
+      style={{ transform: `translate3d(0, ${pullY}px, 0)` }}
+      onTouchStart={onTouchStart}
+      onTouchMove={(e) => onTouchMove(e, scrollContainerRef.current?.closest('.screen-content'))}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+    >
       <section className="overview investments">
         <div className="overview-label">
-          <span>Valor de la cartera</span>
+          <span>{activeScrubPoint ? formatScrubLabel(activeScrubPoint.timestamp, period) : 'Valor de la cartera'}</span>
         </div>
         <div className="amount-line">
-          <h1 className="privacy-sensitive">{displayMoney(totals.currentValue)}</h1>
-          {totals.invested > 0 && (
-            <span className={`change ${performance < 0 ? 'negative' : ''}`}>
-              {performance > 0 ? '+' : ''}{performancePercent.toFixed(2)} %
+          <h1 className="privacy-sensitive">
+            {displayMoney(activeScrubPoint ? activeScrubPoint.value : totals.currentValue)}
+          </h1>
+          {(activeScrubPoint ? firstValue > 0 : totals.invested > 0) && (
+            <span className={`change ${!isUp ? 'negative' : ''}`}>
+              {isUp ? '+' : ''}{activeScrubDeltaPercent.toFixed(2)} %
             </span>
           )}
         </div>
-        <p>Rentabilidad desde el inicio</p>
+        <p>{activeScrubPoint ? (isUp ? `+${displayMoney(activeScrubDelta)} en el periodo` : `${displayMoney(activeScrubDelta)} en el periodo`) : 'Rentabilidad desde el inicio'}</p>
       </section>
 
       <div className="periods" role="tablist" aria-label="Periodo de la gráfica">
@@ -885,12 +948,76 @@ const InvestmentsOverview = ({ query = '' }) => {
       </div>
 
       <section className="graph investment-graph" aria-label={`Evolución de la cartera: ${period}`}>
-        {chartPoints.length > 0 && (
-          <svg viewBox="0 0 390 190" preserveAspectRatio="none" role="img" aria-label="Gráfico de valor histórico de la cartera en euros">
-            <path className="baseline" d="M0 164H390" />
-            {chartPath && <path className="spend-line" d={chartPath} />}
-          </svg>
-        )}
+        {chartPoints.length > 0 ? (
+          <div
+            ref={portfolioChartRef}
+            className="investment-chart-scrub"
+            data-chart-scrub
+            role="slider"
+            tabIndex={0}
+            aria-label="Gráfico interactivo de evolución de cartera"
+            aria-valuemin={0}
+            aria-valuemax={chartPoints.length - 1}
+            aria-valuenow={portfolioScrubIndex ?? chartPoints.length - 1}
+            onPointerDown={(event) => {
+              if (event.pointerType !== 'mouse') event.currentTarget.setPointerCapture?.(event.pointerId);
+              scrubPortfolioChart(event.clientX);
+            }}
+            onPointerMove={(event) => {
+              if (portfolioScrubIndex !== null || event.buttons > 0) scrubPortfolioChart(event.clientX);
+            }}
+            onPointerUp={(event) => {
+              if (event.pointerType !== 'mouse') setPortfolioScrubIndex(null);
+            }}
+            onPointerCancel={() => setPortfolioScrubIndex(null)}
+            onPointerLeave={() => setPortfolioScrubIndex(null)}
+            onKeyDown={handlePortfolioKeyDown}
+            onBlur={() => setPortfolioScrubIndex(null)}
+          >
+            <svg viewBox="0 0 390 190" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                {activeScrubPoint && (
+                  <clipPath id="portfolio-scrub-clip">
+                    <rect x="0" y="-20" width={activeScrubPoint.x} height="230" />
+                  </clipPath>
+                )}
+              </defs>
+              <path className="baseline" d="M0 164H390" />
+              {activeScrubPoint && (
+                <path
+                  className={`spend-line ${isUp ? 'positive' : 'negative'}`}
+                  d={chartPath}
+                  style={{ opacity: 0.28 }}
+                />
+              )}
+              <path
+                className={`spend-line ${isUp ? 'positive' : 'negative'}`}
+                d={chartPath}
+                clipPath={activeScrubPoint ? 'url(#portfolio-scrub-clip)' : undefined}
+              />
+            </svg>
+
+            {activeScrubPoint && (
+              <span
+                aria-hidden="true"
+                className="investment-chart-cursor"
+                style={{ left: `${(activeScrubPoint.x / 390) * 100}%` }}
+              />
+            )}
+
+            {activeScrubPoint && (
+              <span
+                aria-hidden="true"
+                className="investment-chart-dot neutral active"
+                style={{
+                  left: `${(activeScrubPoint.x / 390) * 100}%`,
+                  top: `${(activeScrubPoint.y / 190) * 100}%`,
+                }}
+              />
+            )}
+          </div>
+        ) : null}
+
         {isLoadingHistory && <p className="investment-chart-message" role="status">Cargando histórico del mercado…</p>}
         {!isLoadingHistory && historyError && !chartPoints.length && (
           <p className="investment-chart-message investment-chart-error" role="alert">{historyError}</p>
@@ -902,6 +1029,7 @@ const InvestmentsOverview = ({ query = '' }) => {
           <p className="investment-chart-message">No hay histórico disponible para este periodo.</p>
         )}
       </section>
+
       {hasManualInvestments && (
         <p className="investment-chart-note">Las inversiones manuales se muestran con el último valor registrado.</p>
       )}
@@ -997,7 +1125,7 @@ const InvestmentsOverview = ({ query = '' }) => {
           onUpdatePrice={updateInvestmentPrice}
         />
       )}
-    </>
+    </div>
   );
 };
 

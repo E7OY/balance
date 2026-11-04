@@ -146,9 +146,6 @@ const CategoryLimitsForm = ({ onClose }) => {
       >
         <div className="sheet-handle" />
         <div className="sheet-icon limits">%</div>
-        <button className="sheet-close" onClick={onClose} type="button">
-          <Icon name="close" size={18} />
-        </button>
         
         <h2 id="limits-title">Topes por categoría</h2>
         <p>Define cuánto quieres gastar como máximo o añade nuevas categorías.</p>

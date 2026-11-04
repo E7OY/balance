@@ -224,7 +224,7 @@
   height: 9px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  background: #15924c;
+  background: #030303;
   pointer-events: none;
   transition: width 0.12s ease, height 0.12s ease, box-shadow 0.12s ease;
 }
@@ -236,7 +236,7 @@
 .investment-chart-dot.active {
   width: 13px;
   height: 13px;
-  box-shadow: 0 0 0 5px rgb(21 146 76 / 0.18);
+  box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.18);
 }
 
 .investment-chart-dot.active.negative {
