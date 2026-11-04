@@ -2041,3 +2041,58 @@ select:focus-visible {
 .elastic-scroll-wrapper.snapping {
   transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.15); /* Rebote con desaceleración */
 }
+
+.dark .app-header .tabs button {
+  color: #a3a3a3;
+}
+
+.dark .app-header .tabs button.active {
+  color: #f5f5f2;
+}
+
+.dark .tab-indicator {
+  background: #262624;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Carrusel de vistas (Swipe / Slide horizontal entre pantallas) */
+.tab-viewport {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.tab-track {
+  display: flex;
+  width: 300%; /* 3 pestañas: Gastos (0%), Movimientos (-33.333%), Inversiones (-66.666%) */
+  will-change: transform;
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tab-page {
+  width: 33.333333%;
+  flex-shrink: 0;
+  outline: none;
+}
+
+/* Contenedor relativo para transición fluida de vistas */
+.views-transition-container {
+  position: relative;
+  width: 100%;
+}
+
+.view-pane {
+  animation: viewFadeSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+@keyframes viewFadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

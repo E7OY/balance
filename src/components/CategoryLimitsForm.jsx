@@ -166,7 +166,7 @@ const CategoryLimitsForm = ({ onClose }) => {
             type="button" 
             onClick={handleAddCategory}
             className="sheet-submit limits-submit"
-            style={{ width: 'auto', height: '50px', margin: 0, padding: '0 16px', background: '#090909' }}
+            style={{ width: 'auto', height: '50px', margin: 0, padding: '0 16px', fontSize: '12px', background: '#090909' }}
           >
             Añadir
           </button>

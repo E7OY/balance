@@ -70,24 +70,20 @@ const App = () => {
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
 
-  // En App.jsx, dentro del componente App():
-useEffect(() => {
-  const handleGlobalHaptic = (event) => {
-    // Detecta si el toque fue en un botón, enlace, pestaña o elemento clicable
-    const target = event.target.closest('button, [role="tab"], .periods button, .tabs button, .movement');
-    
-    if (target && !target.disabled) {
-      triggerHaptic('light');
-    }
-  };
+  // Vibración háptica instantánea global en botones y pestañas
+  useEffect(() => {
+    const handleGlobalHaptic = (event) => {
+      const target = event.target.closest('button, [role="tab"], .periods button, .tabs button, .movement');
+      if (target && !target.disabled) {
+        triggerHaptic('light');
+      }
+    };
 
-  // Escuchamos pointerdown para que la respuesta sea instantánea al contacto
-  window.addEventListener('pointerdown', handleGlobalHaptic, { passive: true });
-
-  return () => {
-    window.removeEventListener('pointerdown', handleGlobalHaptic);
-  };
-}, []);
+    window.addEventListener('pointerdown', handleGlobalHaptic, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', handleGlobalHaptic);
+    };
+  }, []);
 
   useEffect(() => {
     const showInvestments = getInvestmentsEnabled(activeProfileId);
@@ -146,7 +142,7 @@ useEffect(() => {
       monthSwipeStart.current = null;
       return;
     }
-    if (event.target.closest?.('button, input, select, textarea, a, [role="dialog"], [data-month-swipe-ignore]')) {
+    if (event.target.closest?.('button, input, select, textarea, a, [role="dialog"], [data-month-swipe-ignore], [data-chart-scrub]')) {
       monthSwipeStart.current = null;
       return;
     }
@@ -181,6 +177,7 @@ useEffect(() => {
           onTouchEnd={handleTouchEnd}
           onTouchCancel={() => { monthSwipeStart.current = null; }}
         >
+          {/* Menú de cabecera original intacto */}
           <header
             className="app-header"
             style={investmentsEnabled ? { flexWrap: 'wrap', rowGap: 12 } : undefined}
@@ -235,43 +232,50 @@ useEffect(() => {
                 </div>
               )}
 
-              {activeTab === 'expenses' && <HomeOverview query={query} onOpenLimits={() => setIsLimitsOpen(true)} />}
-              {activeTab === 'movements' && <MovementsView query={query} />}
-              {activeTab === 'investments' && <InvestmentsOverview query={query} />}
+              {/* Contenedor con transición fluida (fade + slide) sin alterar el menú */}
+              <div className="views-transition-container" key={activeTab}>
+                <div className="view-pane">
+                  {activeTab === 'expenses' && <HomeOverview query={query} onOpenLimits={() => setIsLimitsOpen(true)} />}
+                  {activeTab === 'movements' && <MovementsView query={query} />}
+                  {activeTab === 'investments' && <InvestmentsOverview query={query} />}
+                </div>
+              </div>
             </>
           )}
         </main>
 
-        {!isProfileOpen && <div className="bottom-actions">
-          {activeTab === 'movements' ? (
-            <>
-              <button onClick={() => openForm('expense')}>
-                Gasto <span className="action-symbol">−</span>
-              </button>
-              <button onClick={() => openForm('income')}>
-                Ingreso <span className="action-symbol">+</span>
-              </button>
-            </>
-          ) : activeTab === 'investments' ? (
-            <>
-              <button onClick={() => setSearchOpen(true)}>
-                Buscar <Icon name="search" size={16} />
-              </button>
-              <button onClick={() => setIsInvestmentFormOpen(true)}>
-                Invertir <Icon name="arrow" size={16} />
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => setSearchOpen(true)}>
-                Buscar <Icon name="search" size={16} />
-              </button>
-              <button onClick={() => openForm('expense')}>
-                Añadir <Icon name="arrow" size={16} />
-              </button>
-            </>
-          )}
-        </div>}
+        {!isProfileOpen && (
+          <div className="bottom-actions">
+            {activeTab === 'movements' ? (
+              <>
+                <button onClick={() => openForm('expense')}>
+                  Gasto <span className="action-symbol">−</span>
+                </button>
+                <button onClick={() => openForm('income')}>
+                  Ingreso <span className="action-symbol">+</span>
+                </button>
+              </>
+            ) : activeTab === 'investments' ? (
+              <>
+                <button onClick={() => setSearchOpen(true)}>
+                  Buscar <Icon name="search" size={16} />
+                </button>
+                <button onClick={() => setIsInvestmentFormOpen(true)}>
+                  Invertir <Icon name="arrow" size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setSearchOpen(true)}>
+                  Buscar <Icon name="search" size={16} />
+                </button>
+                <button onClick={() => openForm('expense')}>
+                  Añadir <Icon name="arrow" size={16} />
+                </button>
+              </>
+            )}
+          </div>
+        )}
         
         {/* MODALES INDEPENDIENTES DE PANTALLA COMPLETA */}
         {isLimitsOpen && (
