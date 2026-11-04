@@ -211,8 +211,8 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
 
   const titleLabel = 
     period === '1D' ? 'Gastos del día' :
-    period === '1S' ? 'Gastos de la 1ª semana' :
-    period === '1M' ? `Gastos del mes de ${monthName}` :
+    period === '1S' ? 'Gastos de la semana' :
+    period === '1M' ? `Gastos de ${monthName}` :
     period === '1A' ? `Gastos del año ${yearName}` :
     'Gastos históricos totales';
 
@@ -264,7 +264,7 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
         ))}
       </div>
 
-      <section className="graph" aria-label="Gráfica interactiva de gastos">
+      <section className="graph" aria-label="Gráfica interactiva de gastos" data-month-swipe-ignore>
         <div
           ref={chartRef}
           className="investment-chart-scrub"

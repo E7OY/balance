@@ -159,7 +159,7 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
           style={{ transform: `translateX(${swipeOffset})`, transition: 'transform 0.2s ease-out' }}
         >
           <span className="movement-icon">
-            {getCategoryIcon(transaction.category, transaction.type,20)}
+            {getCategoryIcon(transaction.category, transaction.type,14)}
           </span>
           <span className="movement-info">
             <strong>{transaction.description || transaction.category}</strong>
@@ -187,14 +187,14 @@ const TransactionItem = ({ transaction, layout = 'list' }) => {
           >
             <div className="sheet-handle" />
             <div className="detail-merchant-icon">
-              {getCategoryIcon(transaction.category, transaction.type, 22)}
+              {getCategoryIcon(transaction.category, transaction.type, 18)}
             </div>
             <button
               className="sheet-close"
               onClick={() => setIsDetailOpen(false)}
               aria-label="Cerrar"
             >
-              <Icon name="close" size={18} />
+              <Icon name="close" size={14} />
             </button>
             
             <p className="detail-kicker">

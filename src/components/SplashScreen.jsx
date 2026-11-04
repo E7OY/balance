@@ -9,7 +9,7 @@ const prefersReducedMotion = () => (
 );
 
 // Pantalla negra con logo y nombre al entrar en la app (solo al arrancar, no al navegar).
-const SplashScreen = ({ name = 'Axion', logo = 'favicon.svg' }) => {
+const SplashScreen = ({ logo = 'favicon.svg', name = 'Axion' }) => {
   const [phase, setPhase] = useState(() => (prefersReducedMotion() ? 'gone' : 'visible'));
   const [logoFailed, setLogoFailed] = useState(false);
 

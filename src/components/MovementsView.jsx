@@ -70,7 +70,7 @@ const MovementsView = ({ query = '' }) => {
     >
       <section className="overview movements">
         <div className="overview-label">
-          <span>Disponible el mes {new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(filters.year, filters.month))}</span>
+          <span>Disponible {new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(filters.year, filters.month))}</span>
         </div>
         <div className="amount-line">
           <h1 className="privacy-sensitive">{displayMoney(available)}</h1>
@@ -78,14 +78,23 @@ const MovementsView = ({ query = '' }) => {
             {savingsPercent > 0 ? '+' : ''}{savingsPercent.toFixed(1)} %
           </span>
         </div>
-        <p>de tus ingresos</p>
       </section>
 
-      <div className="periods" role="tablist">
-        {["1D", "1S", "1M", "1A", "Máx"].map((item) => (
-          <button key={item} className={period === item ? "active" : ""} onClick={() => setPeriod(item)}>{item}</button>
-        ))}
-      </div>
+      
+      <section className="summary-grid mt-6">
+        <button>
+          <span>Ingresos</span>
+          <strong className="positive privacy-sensitive">{displayMoney(totals.income)}</strong>
+        </button>
+        <button>
+          <span>Gastos</span>
+          <strong className="privacy-sensitive" style={{ color: '#df242b' }}>{displayMoney(totals.expenses)}</strong>
+        </button>
+        <button>
+          <span>Ahorro</span>
+          <strong className="privacy-sensitive">{displayMoney(available)}</strong>
+        </button>
+      </section>
 
       <section className="graph category-graph">
         <div className="category-metrics">
@@ -137,24 +146,9 @@ const MovementsView = ({ query = '' }) => {
         </div>
       </section>
 
-      <section className="summary-grid mt-10">
-        <button>
-          <span>Ingresos</span>
-          <strong className="positive privacy-sensitive">{displayMoney(totals.income)}</strong>
-        </button>
-        <button>
-          <span>Gastos</span>
-          <strong className="privacy-sensitive">{displayMoney(totals.expenses)}</strong>
-        </button>
-        <button>
-          <span>Ahorro</span>
-          <strong className="privacy-sensitive">{displayMoney(available)}</strong>
-        </button>
-      </section>
-
       <section className="movements">
         <div className="section-title">
-          <h2>Todos los movimientos</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold' }}>Todos los movimientos</h2>
         </div>
         <div className="movement-list">
           {visibleTransactions.map((transaction) => (

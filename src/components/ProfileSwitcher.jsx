@@ -146,8 +146,8 @@ const ProfileSwitcher = ({
   return (
     <section className="profile-page" aria-label="Perfil">
       <div className="profile-identity">
-        <h1>Axion de {customName}</h1>
         <p className="profile-type">Personal</p>
+        <h1>Axion de {customName}</h1>
         <p>{syncUser ? syncUser.email : 'Cuenta local'}</p>
         {syncUser && <span className="verified">Nube activada</span>}
       </div>
