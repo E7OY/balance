@@ -18,8 +18,11 @@
 
   button,
   input,
+  label,
   select {
     font: inherit;
+    border: 0px !important;
+    outline: 0 !important;
   }
 
   button {
@@ -1495,9 +1498,7 @@ select:focus-visible {
   gap: 7px;
   padding: 8px;
   overflow: hidden;
-  border: 1px solid #e8e8e5;
   border-radius: 12px;
-  background: #fff;
   color: #343432 !important;
   font-size: 11px !important;
   font-weight: 600;
@@ -1545,12 +1546,13 @@ select:focus-visible {
 }
 
 .transaction-submit {
-  width: 100%;
+  width: 50%;
   min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 4px;
+  margin-left: auto; /* Empuja el elemento completamente a la derecha */
   padding: 0 18px;
   border: 0;
   border-radius: 15px;
@@ -1930,7 +1932,7 @@ select:focus-visible {
 }
 
 .dark .transaction-attachment {
-  border-color: #30302e;
+  border: 1px solid #30302e !important;
   background: #1b1b1a;
   color: #e7e7e4 !important;
 }
