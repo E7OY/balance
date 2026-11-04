@@ -53,7 +53,7 @@ const loadProfileSetup = () => {
     : [];
   const profiles = validProfiles.length > 0
     ? validProfiles
-    : [{ id: 'default', name: 'Mi perfil' }];
+    : [{ id: 'default', name: 'Axion de Mi perfil' }];
   const storedActiveId = getFromLocalStorage(ACTIVE_PROFILE_KEY);
   const activeProfileId = profiles.some((profile) => profile.id === storedActiveId)
     ? storedActiveId

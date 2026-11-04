@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { getPushNotificationsEnabled, setPushNotificationsEnabled } from '../utils/pushNotifications';
 
-function Icon({ name, size = 17 }) {
+function Icon({ name, size = 17, style }) {
   const paths = {
     arrow: <path d="M5 12h14M14 7l5 5-5 5" />,
     chevron: <path d="m9 7 5 5-5 5" />,
@@ -13,9 +13,43 @@ function Icon({ name, size = 17 }) {
     settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.8Z" /></>
   };
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={style}>
       {paths[name]}
     </svg>
+  );
+}
+
+// Color del icono con buen contraste sobre el fondo real del botón (claro u oscuro)
+const getReadableIconColor = (element) => {
+  let node = element;
+  while (node && node !== document.documentElement) {
+    const background = window.getComputedStyle(node).backgroundColor;
+    const match = background.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\)/);
+    if (match && (match[4] === undefined || Number(match[4]) > 0.5)) {
+      const [red, green, blue] = [match[1], match[2], match[3]].map(Number);
+      const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+      return luminance > 0.55 ? '#090909' : '#f5f5f2';
+    }
+    node = node.parentElement;
+  }
+  return null;
+};
+
+function ShortcutIcon({ name, theme }) {
+  const ref = useRef(null);
+  const [color, setColor] = useState(null);
+
+  useEffect(() => {
+    const update = () => setColor(getReadableIconColor(ref.current?.closest('button')));
+    update();
+    const timer = window.setTimeout(update, 150);
+    return () => window.clearTimeout(timer);
+  }, [theme]);
+
+  return (
+    <span ref={ref} style={{ display: 'inline-flex' }}>
+      <Icon name={name} size={20} style={color ? { color, stroke: 'currentColor' } : undefined} />
+    </span>
   );
 }
 
@@ -26,6 +60,8 @@ const ProfileSwitcher = ({
   onDefaultHomeTabChange,
   investmentsEnabled,
   onInvestmentsVisibilityChange,
+  profileName,
+  onProfileNameChange,
 }) => {
   const {
     activeProfile,
@@ -42,7 +78,7 @@ const ProfileSwitcher = ({
   // Estados generales y de edición
   const [notifications, setNotifications] = useState(() => getPushNotificationsEnabled(activeProfile.id));
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [customName, setCustomName] = useState(activeProfile?.name || 'Usuario');
+  const customName = profileName || activeProfile?.name || 'Mi perfil';
   
   // Estados para la sincronización (Firebase)
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
@@ -53,7 +89,7 @@ const ProfileSwitcher = ({
   const settingsRef = useRef(null);
   const syncRef = useRef(null);
 
-  const initials = customName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  const initials = customName.split(' ').filter(Boolean).map((word) => word[0]).slice(0, 2).join('').toUpperCase();
 
   // Calcula el total ahorrado históricamente (Ingresos totales - Gastos totales de todos los meses)
   const totalWealth = transactions.reduce((acc, tx) => {
@@ -84,10 +120,10 @@ const ProfileSwitcher = ({
 
   const handleUpdateProfile = (e) => {
     e.preventDefault();
-    const newName = e.target.name.value;
-    if (!newName.trim()) return;
-    
-    setCustomName(newName);
+    const newName = String(new FormData(e.currentTarget).get('name') || '').trim();
+    if (!newName) return;
+
+    onProfileNameChange(newName);
     setProfileEditOpen(false);
   };
 
@@ -110,7 +146,7 @@ const ProfileSwitcher = ({
   return (
     <section className="profile-page" aria-label="Perfil">
       <div className="profile-identity">
-        <h1>{customName}</h1>
+        <h1>Axion de {customName}</h1>
         <p className="profile-type">Personal</p>
         <p>{syncUser ? syncUser.email : 'Cuenta local'}</p>
         {syncUser && <span className="verified">Nube activada</span>}
@@ -118,18 +154,18 @@ const ProfileSwitcher = ({
 
       <div className="profile-shortcuts" aria-label="Accesos rápidos">
         <button className="profile-shortcut" onClick={() => setProfileEditOpen(true)}>
-          <Icon name="user" size={20} />
-          <strong>Cuenta</strong>
+          <ShortcutIcon name="user" theme={theme} />
+          <strong className='dark:text-white'>Cuenta</strong>
           <small>Datos personales</small>
         </button>
         <button className="profile-shortcut" onClick={handleSyncShortcut}>
-          <Icon name="cloud" size={20} />
-          <strong>Nube</strong>
+          <ShortcutIcon name="cloud" theme={theme} />
+          <strong className='dark:text-white'>Nube</strong>
           <small>{syncUser ? 'Sincronizada' : 'Copia de seguridad'}</small>
         </button>
         <button className="profile-shortcut" onClick={exportData}>
-          <Icon name="download" size={20} />
-          <strong>Exportar</strong>
+          <ShortcutIcon name="download" theme={theme} />
+          <strong className='dark:text-white'>Exportar</strong>
           <small>Descargar datos</small>
         </button>
       </div>

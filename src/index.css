@@ -4,7 +4,7 @@
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #090909;
-  background: #f2f2f0;
+  background: #fff;
   font-synthesis: none;
 }
 
@@ -12,7 +12,7 @@
   body {
     min-width: 320px;
     min-height: 100vh;
-    background: #f2f2f0;
+    background: #fff;
     margin: 0;
   }
 
@@ -56,12 +56,7 @@ select:focus-visible {
   height: min(900px, calc(100vh - 56px));
   min-height: 720px;
   overflow: hidden;
-  border: 1px solid #dededc;
-  border-radius: 38px;
   background: #fff;
-  box-shadow:
-    0 20px 55px rgb(0 0 0 / 0.1),
-    0 2px 8px rgb(0 0 0 / 0.06);
 }
 
 /* Modificado para quitar la status bar falsa si prefieres que ocupe todo */

@@ -1,0 +1,75 @@
+/* Pantalla negra de entrada a la app (logo + nombre) */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.4s ease;
+}
+
+.splash-screen.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-logo {
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
+  object-fit: contain;
+  animation: splash-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  filter:invert(1)
+}
+
+.splash-logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #000;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.splash-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  animation: splash-rise 0.5s ease-out 0.12s both;
+}
+
+@keyframes splash-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes splash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo,
+  .splash-name {
+    animation: none;
+  }
+}

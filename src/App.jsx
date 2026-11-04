@@ -7,6 +7,7 @@ import TransactionForm from './components/TransactionForm';
 import InvestmentForm from './components/InvestmentForm';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CategoryLimitsForm from './components/CategoryLimitsForm';
+import SplashScreen from './components/SplashScreen';
 import { triggerHaptic } from './utils/haptics';
 import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage';
 
@@ -18,6 +19,11 @@ const getPreferredHomeTab = (profileId) => {
 const getInvestmentsEnabled = (profileId) => (
   getFromLocalStorage(`finance:${profileId}:showInvestments`) === true
 );
+
+const getStoredProfileName = (profileId) => {
+  const saved = getFromLocalStorage(`finance:${profileId}:displayName`);
+  return typeof saved === 'string' ? saved.trim() : '';
+};
 
 function Icon({ name, size = 17 }) {
   const paths = {
@@ -53,6 +59,7 @@ const App = () => {
   const [investmentsEnabled, setInvestmentsEnabled] = useState(() => getInvestmentsEnabled(activeProfileId));
   const [transactionType, setTransactionType] = useState('expense');
   const [theme, setTheme] = useState(() => localStorage.getItem('balance-theme') || 'dark');
+  const [profileName, setProfileName] = useState(() => getStoredProfileName(activeProfileId));
   
   // ESTADOS GLOBALES
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -70,21 +77,6 @@ const App = () => {
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
 
-  // Vibración háptica instantánea global en botones y pestañas
-  useEffect(() => {
-    const handleGlobalHaptic = (event) => {
-      const target = event.target.closest('button, [role="tab"], .periods button, .tabs button, .movement');
-      if (target && !target.disabled) {
-        triggerHaptic('light');
-      }
-    };
-
-    window.addEventListener('pointerdown', handleGlobalHaptic, { passive: true });
-    return () => {
-      window.removeEventListener('pointerdown', handleGlobalHaptic);
-    };
-  }, []);
-
   useEffect(() => {
     const showInvestments = getInvestmentsEnabled(activeProfileId);
     const savedPreferredTab = getPreferredHomeTab(activeProfileId);
@@ -95,6 +87,7 @@ const App = () => {
       saveToLocalStorage(`finance:${activeProfileId}:defaultHomeTab`, preferredTab);
     }
     setInvestmentsEnabled(showInvestments);
+    setProfileName(getStoredProfileName(activeProfileId));
     setActiveTab(preferredTab);
     setDefaultHomeTab(preferredTab);
     setQuery('');
@@ -122,7 +115,18 @@ const App = () => {
     }
   };
 
-  const initials = (activeProfile?.name || 'US').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  const handleProfileNameChange = (name) => {
+    saveToLocalStorage(`finance:${activeProfileId}:displayName`, name);
+    setProfileName(name);
+  };
+
+  const initials = (profileName || activeProfile?.name || 'US')
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -142,7 +146,7 @@ const App = () => {
       monthSwipeStart.current = null;
       return;
     }
-    if (event.target.closest?.('button, input, select, textarea, a, [role="dialog"], [data-month-swipe-ignore], [data-chart-scrub]')) {
+    if (event.target.closest?.('button, input, select, textarea, a, [role="dialog"], [data-month-swipe-ignore]')) {
       monthSwipeStart.current = null;
       return;
     }
@@ -170,6 +174,7 @@ const App = () => {
 
   return (
     <div className={`stage ${theme === 'dark' ? 'dark' : ''}`}>
+      <SplashScreen />
       <div className="phone">
         <main 
           className="screen-content"
@@ -177,7 +182,6 @@ const App = () => {
           onTouchEnd={handleTouchEnd}
           onTouchCancel={() => { monthSwipeStart.current = null; }}
         >
-          {/* Menú de cabecera original intacto */}
           <header
             className="app-header"
             style={investmentsEnabled ? { flexWrap: 'wrap', rowGap: 12 } : undefined}
@@ -213,6 +217,8 @@ const App = () => {
               onDefaultHomeTabChange={handleDefaultHomeTabChange}
               investmentsEnabled={investmentsEnabled}
               onInvestmentsVisibilityChange={handleInvestmentsVisibilityChange}
+              profileName={profileName || activeProfile?.name || ''}
+              onProfileNameChange={handleProfileNameChange}
             />
           ) : (
             <>
@@ -232,50 +238,43 @@ const App = () => {
                 </div>
               )}
 
-              {/* Contenedor con transición fluida (fade + slide) sin alterar el menú */}
-              <div className="views-transition-container" key={activeTab}>
-                <div className="view-pane">
-                  {activeTab === 'expenses' && <HomeOverview query={query} onOpenLimits={() => setIsLimitsOpen(true)} />}
-                  {activeTab === 'movements' && <MovementsView query={query} />}
-                  {activeTab === 'investments' && <InvestmentsOverview query={query} />}
-                </div>
-              </div>
+              {activeTab === 'expenses' && <HomeOverview query={query} onOpenLimits={() => setIsLimitsOpen(true)} />}
+              {activeTab === 'movements' && <MovementsView query={query} />}
+              {activeTab === 'investments' && <InvestmentsOverview query={query} />}
             </>
           )}
         </main>
 
-        {!isProfileOpen && (
-          <div className="bottom-actions">
-            {activeTab === 'movements' ? (
-              <>
-                <button onClick={() => openForm('expense')}>
-                  Gasto <span className="action-symbol">−</span>
-                </button>
-                <button onClick={() => openForm('income')}>
-                  Ingreso <span className="action-symbol">+</span>
-                </button>
-              </>
-            ) : activeTab === 'investments' ? (
-              <>
-                <button onClick={() => setSearchOpen(true)}>
-                  Buscar <Icon name="search" size={16} />
-                </button>
-                <button onClick={() => setIsInvestmentFormOpen(true)}>
-                  Invertir <Icon name="arrow" size={16} />
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => setSearchOpen(true)}>
-                  Buscar <Icon name="search" size={16} />
-                </button>
-                <button onClick={() => openForm('expense')}>
-                  Añadir <Icon name="arrow" size={16} />
-                </button>
-              </>
-            )}
-          </div>
-        )}
+        {!isProfileOpen && <div className="bottom-actions">
+          {activeTab === 'movements' ? (
+            <>
+              <button onClick={() => openForm('expense')}>
+                Gasto <span className="action-symbol">−</span>
+              </button>
+              <button onClick={() => openForm('income')}>
+                Ingreso <span className="action-symbol">+</span>
+              </button>
+            </>
+          ) : activeTab === 'investments' ? (
+            <>
+              <button onClick={() => setSearchOpen(true)}>
+                Buscar <Icon name="search" size={16} />
+              </button>
+              <button onClick={() => setIsInvestmentFormOpen(true)}>
+                Invertir <Icon name="arrow" size={16} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setSearchOpen(true)}>
+                Buscar <Icon name="search" size={16} />
+              </button>
+              <button onClick={() => openForm('expense')}>
+                Añadir <Icon name="arrow" size={16} />
+              </button>
+            </>
+          )}
+        </div>}
         
         {/* MODALES INDEPENDIENTES DE PANTALLA COMPLETA */}
         {isLimitsOpen && (
