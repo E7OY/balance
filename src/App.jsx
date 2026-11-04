@@ -162,8 +162,11 @@ const App = () => {
           onTouchEnd={handleTouchEnd}
           onTouchCancel={() => { monthSwipeStart.current = null; }}
         >
-          <header className="app-header">
-            <div className="tabs">
+          <header
+            className="app-header"
+            style={investmentsEnabled ? { flexWrap: 'wrap', rowGap: 12 } : undefined}
+          >
+            <div className="tabs" style={investmentsEnabled ? { width: '100%' } : undefined}>
               <button className={activeTab === 'expenses' ? 'active' : ''} onClick={() => handleTabChange('expenses')}>
                 Gastos
               </button>

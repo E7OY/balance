@@ -275,8 +275,6 @@ const ProfileSwitcher = ({
         </button>
       </div>
 
-      <p className="app-version">Versión 2.0.0</p>
-
       {/* MODAL DE EDICIÓN DE PERFIL */}
       {profileEditOpen && (
         <div 

@@ -1,12 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import TransactionItem from './TransactionItem';
+import { useElasticScroll } from '../hooks/useElasticScroll';
 
 const MovementsView = ({ query = '' }) => {
   const { transactions, filters, categoryLimits, activeProfileId } = useFinance();
   const [period, setPeriod] = useState('1M');
+  const scrollContainerRef = useRef(null);
 
-  // Recupera los topes guardados de forma segura combinando localStorage y contexto
+  // Hook con amortiguación suave de 75px
+  const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } = useElasticScroll(75, 0.35);
+
   const effectiveLimits = useMemo(() => {
     try {
       const storageKey = `balance-category-limits-${activeProfileId || 'default'}`;
@@ -55,10 +59,19 @@ const MovementsView = ({ query = '' }) => {
   const savingsPercent = totals.income > 0 ? (available / totals.income) * 100 : 0;
 
   return (
-    <>
+    <div 
+      ref={scrollContainerRef}
+      className={`elastic-scroll-wrapper ${isSnapping ? 'snapping' : ''}`}
+      style={{ transform: `translate3d(0, ${pullY}px, 0)` }}
+      onTouchStart={onTouchStart}
+      onTouchMove={(e) => onTouchMove(e, scrollContainerRef.current?.closest('.screen-content'))}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+    >
       <section className="overview movements">
         <div className="overview-label">
-          <span>Disponible este mes</span>
+          <span>Balance del mes</span>
+          <button aria-label="Cambiar mes">⌄</button>
         </div>
         <div className="amount-line">
           <h1 className="privacy-sensitive">{displayMoney(available)}</h1>
@@ -69,19 +82,23 @@ const MovementsView = ({ query = '' }) => {
         <p>de tus ingresos disponibles</p>
       </section>
 
+      <div className="periods" role="tablist">
+        {["1D", "1S", "1M", "1A", "Máx"].map((item) => (
+          <button key={item} className={period === item ? "active" : ""} onClick={() => setPeriod(item)}>{item}</button>
+        ))}
+      </div>
+
       <section className="graph category-graph">
         <div className="category-metrics">
           <div className="category-metrics-title">
             <strong>Gastos por categoría</strong>
-            <span className="movement-expense-total privacy-sensitive">{displayMoney(totals.expenses)}</span>
+            <span className="privacy-sensitive">{displayMoney(totals.expenses)}</span>
           </div>
           
           {categoryMetrics.length > 0 ? categoryMetrics.slice(0, 5).map((category) => {
             const rawLimit = effectiveLimits?.[category.name];
             const limit = Number(rawLimit) > 0 ? Number(rawLimit) : 0;
             const exceeded = limit > 0 && category.amount > limit;
-            
-            // Si hay límite configurado, calculamos porcentaje respecto al límite (tope). Si no, respecto al gasto total del mes.
             const percentage = limit > 0 
               ? Math.min(100, Math.round((category.amount / limit) * 100)) 
               : (totals.expenses > 0 ? Math.min(100, (category.amount / totals.expenses) * 100) : 0);
@@ -89,24 +106,34 @@ const MovementsView = ({ query = '' }) => {
             return (
               <div className={`category-metric ${exceeded ? "exceeded" : ""}`} key={category.name}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong>{category.name}</strong>
-                  <strong className="category-metric-value privacy-sensitive">
-                    {displayMoney(category.amount)}
-                    {limit > 0 && <> / {displayMoney(limit)}</>}
-                  </strong>
+                  <span style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                    <strong>{category.name}</strong>
+                    {limit > 0 && (
+                      <small style={{ fontSize: '10px', color: '#888', fontWeight: 500 }}>
+                        (Tope: {displayMoney(limit)})
+                      </small>
+                    )}
+                  </span>
+                  <strong className="privacy-sensitive">{displayMoney(category.amount)}</strong>
                 </div>
+                {exceeded && (
+                  <p className="category-alert" style={{ margin: '2px 0 0', fontSize: '10px', color: '#df242b', fontWeight: 600 }}>
+                    Tope superado por {displayMoney(category.amount - limit)}
+                  </p>
+                )}
                 <i>
                   <b 
                     style={{ 
                       width: `${percentage}%`,
-                      backgroundColor: exceeded ? '#df242b' : undefined 
+                      backgroundColor: exceeded ? '#df242b' : undefined,
+                      transition: 'width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
                     }} 
                   />
                 </i>
               </div>
             );
           }) : (
-            <p style={{fontSize: '12px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados este mes.</p>
+            <p style={{fontSize: '9px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados este mes.</p>
           )}
         </div>
       </section>
@@ -118,7 +145,7 @@ const MovementsView = ({ query = '' }) => {
         </button>
         <button>
           <span>Gastos</span>
-          <strong className="negative privacy-sensitive">{displayMoney(totals.expenses)}</strong>
+          <strong className="privacy-sensitive">{displayMoney(totals.expenses)}</strong>
         </button>
         <button>
           <span>Ahorro</span>
@@ -135,11 +162,11 @@ const MovementsView = ({ query = '' }) => {
             <TransactionItem key={transaction.id} transaction={transaction} layout="list" />
           ))}
           {visibleTransactions.length === 0 && (
-             <p style={{fontSize: '12px', color: '#999', marginTop: '10px', textAlign: 'center'}}>No se encontraron movimientos.</p>
+             <p style={{fontSize: '9px', color: '#999', marginTop: '10px', textAlign: 'center'}}>No se encontraron movimientos.</p>
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 };
 

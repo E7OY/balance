@@ -2023,3 +2023,21 @@ select:focus-visible {
     font-size: clamp(12px, 3.8vw, 15px);
   }
 }
+
+/* Contenedor con inercia nativa de iOS / Trade Republic */
+.screen-content {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: none; /* Evita que rebote el viewport del navegador */
+}
+
+/* Transición suave para el rebote elástico */
+.elastic-scroll-wrapper {
+  will-change: transform;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.elastic-scroll-wrapper.snapping {
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.15); /* Rebote con desaceleración */
+}

@@ -1,0 +1,267 @@
+/* Detalle de inversión como hoja deslizable (cierra arrastrando hacia abajo) */
+.investment-sheet-layer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(0 0 0 / 0.18);
+  z-index: 10;
+  animation: fade-in 0.2s ease-out;
+}
+
+.dark .investment-sheet-layer {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.investment-sheet {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 27px 27px 0 0;
+  background: #fff;
+  box-shadow: 0 -8px 30px rgb(0 0 0 / 0.1);
+  will-change: transform;
+  animation: sheet-up 0.28s ease-out;
+}
+
+.dark .investment-sheet {
+  background: #0d0d0d;
+  color: #f5f5f2;
+}
+
+.investment-sheet-grabber {
+  flex: none;
+  padding: 10px 28px 12px;
+  text-align: center;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.investment-sheet-grabber:active {
+  cursor: grabbing;
+}
+
+.investment-sheet-handle {
+  width: 34px;
+  height: 4px;
+  margin: 0 auto 12px;
+  border-radius: 4px;
+  background: #d5d5d2;
+}
+
+.dark .investment-sheet-handle {
+  background: #444441;
+}
+
+.investment-sheet-title {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.investment-sheet .investment-sheet-close {
+  top: 12px;
+  right: 22px;
+  z-index: 1;
+}
+
+.investment-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 28px 110px;
+  scrollbar-width: none;
+}
+
+.investment-sheet-body::-webkit-scrollbar {
+  display: none;
+}
+
+.investment-sheet .investment-detail-page {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  animation: none;
+}
+
+/* Pie fijo con la acción principal (sin fondo, flota sobre el contenido) */
+.investment-sheet-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0 28px calc(22px + env(safe-area-inset-bottom, 0px));
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+
+.investment-sheet-footer > * {
+  pointer-events: auto;
+}
+
+.investment-sell-action {
+  width: 50%;
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-left: auto;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 700;
+  transition: filter 0.15s ease;
+}
+
+.investment-sell-action:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.investment-sell-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.investment-sheet-footer .investment-sell-confirmation {
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.16);
+}
+
+.dark .investment-sheet-footer .investment-sell-confirmation {
+  background: #161614;
+}
+
+.investment-sheet-footer .investment-sell-confirmation > p {
+  margin: 0 0 10px;
+  color: #858581;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.investment-sheet-footer .investment-sell-confirmation > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.investment-sheet-footer .investment-sell-confirmation button {
+  height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 11px;
+  background: #f1f1ef;
+  color: #090909;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dark .investment-sheet-footer .investment-sell-confirmation button {
+  background: #242422;
+  color: #f5f5f2;
+}
+
+.investment-sheet-footer .investment-sell-confirmation button:disabled {
+  opacity: 0.5;
+}
+
+/* Gráfico interactivo (arrastrar para ver el precio en cada momento) */
+.investment-chart-scrub {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 390 / 190;
+  touch-action: pan-y;
+  cursor: crosshair;
+  user-select: none;
+  outline: none;
+}
+
+.investment-chart-scrub svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.investment-chart-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: #c9c9c6;
+  pointer-events: none;
+}
+
+.dark .investment-chart-cursor {
+  background: #55554f;
+}
+
+.investment-chart-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #15924c;
+  pointer-events: none;
+  transition: width 0.12s ease, height 0.12s ease, box-shadow 0.12s ease;
+}
+
+.investment-chart-dot.negative {
+  background: #000000;
+}
+
+.investment-chart-dot.active {
+  width: 13px;
+  height: 13px;
+  box-shadow: 0 0 0 5px rgb(21 146 76 / 0.18);
+}
+
+.investment-chart-dot.active.negative {
+  box-shadow: 0 0 0 5px rgba(8, 8, 8, 0.18);
+}
+
+.investment-detail-balance .investment-detail-delta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 7px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.investment-detail-balance .investment-detail-delta.up {
+  color: #15924c;
+}
+
+.investment-detail-balance .investment-detail-delta.down {
+  color: #df242b;
+}
+
+.investment-detail-balance .investment-detail-delta-note {
+  color: #9a9a97;
+  font-weight: 500;
+}

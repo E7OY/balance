@@ -140,10 +140,6 @@ const TransactionForm = ({ transaction = null, defaultType = 'expense', onClose 
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="sheet-handle" />
-        <button className="sheet-close" onClick={onClose} type="button" aria-label="Cerrar">
-          <Icon name="close" size={18} />
-        </button>
-
         <div className="record-tabs transaction-tabs">
           <button
             type="button"
