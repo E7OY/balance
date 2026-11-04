@@ -1755,6 +1755,14 @@ select:focus-visible {
   background: #080808;
 }
 
+:root.dark {
+  background: #080808;
+}
+
+:root.dark body {
+  background: #080808;
+}
+
 .dark .phone,
 .dark .screen-content,
 .dark .profile-page,
