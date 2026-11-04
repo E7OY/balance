@@ -114,21 +114,19 @@ const MovementsView = ({ query = '' }) => {
             return (
               <div className={`category-metric ${exceeded ? "exceeded" : ""}`} key={category.name}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                    <strong>{category.name}</strong>
+                  <strong>{category.name}</strong>
+                  <strong
+                    className="privacy-sensitive"
+                    style={{ whiteSpace: 'nowrap', color: exceeded ? '#df242b' : undefined }}
+                  >
+                    {displayMoney(category.amount)}
                     {limit > 0 && (
-                      <small style={{ fontSize: '10px', color: '#888', fontWeight: 500 }}>
-                        (Tope: {displayMoney(limit)})
-                      </small>
+                      <span style={{ color: '#888', fontWeight: 500 }}>
+                        {' / '}{displayMoney(limit)}
+                      </span>
                     )}
-                  </span>
-                  <strong className="privacy-sensitive">{displayMoney(category.amount)}</strong>
+                  </strong>
                 </div>
-                {exceeded && (
-                  <p className="category-alert" style={{ margin: '2px 0 0', fontSize: '10px', color: '#df242b', fontWeight: 600 }}>
-                    Tope superado por {displayMoney(category.amount - limit)}
-                  </p>
-                )}
                 <i>
                   <b 
                     style={{ 
@@ -141,7 +139,7 @@ const MovementsView = ({ query = '' }) => {
               </div>
             );
           }) : (
-            <p style={{fontSize: '9px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados este mes.</p>
+            <p style={{fontSize: '12px', color: '#999', marginTop: '10px'}}>Aún no hay gastos registrados este mes.</p>
           )}
         </div>
       </section>
@@ -155,7 +153,7 @@ const MovementsView = ({ query = '' }) => {
             <TransactionItem key={transaction.id} transaction={transaction} layout="list" />
           ))}
           {visibleTransactions.length === 0 && (
-             <p style={{fontSize: '9px', color: '#999', marginTop: '10px', textAlign: 'center'}}>No se encontraron movimientos.</p>
+             <p style={{fontSize: '12px', color: '#999', marginTop: '10px', textAlign: 'left'}}>No se encontraron movimientos.</p>
           )}
         </div>
       </section>

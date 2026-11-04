@@ -774,7 +774,7 @@ select:focus-visible {
   place-items: center;
   border-radius: 50%;
   background: #f1f1ef;
-  color: rgb(87, 87, 87)
+  color: rgb(43, 43, 43)
 }
 
 .movement-info strong,
@@ -1806,7 +1806,7 @@ select:focus-visible {
 .dark .detail-merchant-icon,
 .dark .sheet-close {
   background: #242422;
-  color: #5a5a5a;
+  color: #dfdfdf;
 }
 
 .dark .search-bar,
