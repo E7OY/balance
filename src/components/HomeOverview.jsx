@@ -242,7 +242,10 @@ const HomeOverview = ({ query = '', onOpenLimits }) => {
           <h1 className="privacy-sensitive">{displayMoney(displayedAmount)}</h1>
           {!activePoint && totals.expenses > 0 && period !== 'Máx' && diffExpenses !== 0 && (
             <span className={`change ${diffExpenses > 0 ? 'negative' : ''}`}>
-              {diffExpenses > 0 ? '+' : ''}{diffExpensesPercent.toFixed(1)} %
+              <span className="change-icon" aria-hidden="true">
+                {diffExpenses > 0 ? '↗' : '↘'}
+              </span>
+              {diffExpenses > 0 ? '+' : ''}{diffExpensesPercent.toFixed(2)}%
             </span>
           )}
         </div>

@@ -178,12 +178,26 @@ select:focus-visible {
 }
 
 .change {
-  color: #15924c;
-  font-size: 15.1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #d9f9e9;
+  color: #07834f;
+  font-size: 13px;
   font-weight: 700;
+  line-height: 1.2;
 }
+
+.change-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
 .change.negative {
-  color: #df242b;
+  background: #ffe3e3;
+  color: #d42f35;
 }
 
 .overview > p {
@@ -693,6 +707,55 @@ select:focus-visible {
   padding-left: 12px;
 }
 
+.summary-grid .movement-analysis-trigger {
+  min-height: 116px;
+  align-content: start;
+  justify-items: start;
+  gap: 15px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 16px;
+  background: #f3f3f1;
+  color: #090909;
+}
+
+.movement-analysis-bubbles {
+  position: relative;
+  width: 58px;
+  height: 48px;
+  display: block;
+}
+
+.movement-analysis-bubbles i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+}
+
+.movement-analysis-bubbles .income {
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  background: #164bff;
+}
+
+.movement-analysis-bubbles .expenses {
+  top: 23px;
+  left: 22px;
+  width: 22px;
+  height: 22px;
+  background: #853cff;
+}
+
+.movement-analysis-bubbles .investments {
+  top: 13px;
+  left: 35px;
+  width: 16px;
+  height: 16px;
+  background: #00c853;
+}
+
 .summary-grid span {
   color: #a8a8a5;
   font-size: 13px;
@@ -713,6 +776,246 @@ select:focus-visible {
 
 .movement-expense-total {
   color: #df242b;
+}
+
+.analysis-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.48);
+}
+
+.analysis-sheet {
+  position: relative;
+  width: min(100%, 520px);
+  height: min(900px, calc(100dvh - 32px));
+  min-height: 0;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 18px 26px max(30px, env(safe-area-inset-bottom));
+  border-radius: 26px;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.28);
+  scrollbar-width: none;
+  transition: transform 220ms ease-out;
+}
+
+.analysis-sheet.is-swiping {
+  transition: none;
+}
+
+.analysis-sheet::-webkit-scrollbar {
+  display: none;
+}
+
+.analysis-handle {
+  width: 42px;
+  height: 5px;
+  margin: 0 auto 34px;
+  border-radius: 99px;
+  background: #c9c9c9;
+}
+
+.analysis-header h2 {
+  margin: 0;
+  color: #111;
+  font-size: 28px;
+  font-weight: 750;
+}
+
+.analysis-header p {
+  margin-top: 7px;
+  color: #777;
+  font-size: 14px;
+}
+
+.analysis-months {
+  display: flex;
+  gap: 25px;
+  overflow-x: auto;
+  margin: 38px -4px 0;
+  padding: 4px;
+  scrollbar-width: none;
+}
+
+.analysis-months::-webkit-scrollbar {
+  display: none;
+}
+
+.analysis-months button {
+  flex: 0 0 auto;
+  padding: 4px 0;
+  background: transparent;
+  color: #777;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.analysis-months button.active {
+  color: #111;
+}
+
+.analysis-bubble-chart {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 160px 140px;
+  align-items: center;
+  justify-items: center;
+  gap: 4px 10px;
+  margin: 25px -8px 26px;
+}
+
+.analysis-bubble {
+  width: min(var(--bubble-size), 100%);
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 50%;
+  color: #0a0a0a;
+  text-align: center;
+  transition: width 0.3s ease;
+}
+
+.analysis-bubble.income,
+.analysis-category i.income {
+  background: #00c853;
+}
+
+.analysis-bubble.expenses,
+.analysis-category i.expenses {
+  background: #8238f4;
+}
+
+.analysis-bubble.investments,
+.analysis-category i.investments {
+  background: #e5e5e5;
+  color: #777;
+}
+
+.analysis-bubble.investments {
+  grid-column: 1 / -1;
+  justify-self: center;
+  transform: translateX(24%);
+}
+
+.analysis-bubble.empty {
+  opacity: 0.55;
+}
+
+.analysis-bubble strong {
+  max-width: 90%;
+  font-size: clamp(13px, 4vw, 18px);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.analysis-bubble > span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.analysis-categories {
+  margin-top: 30px;
+}
+
+.analysis-categories h3 {
+  margin: 0 0 18px;
+  color: #111;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.analysis-category {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 58px;
+}
+
+.analysis-category i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.analysis-category span {
+  color: #222;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.analysis-category strong {
+  color: #777;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 540px) {
+  .analysis-layer {
+    display: block;
+    padding: 0;
+  }
+
+  .analysis-sheet {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding-top: max(18px, env(safe-area-inset-top));
+    border-radius: 0;
+  }
+}
+
+.dark .analysis-sheet {
+  background: #050505;
+  color: #f7f7f7;
+}
+
+.dark .analysis-handle {
+  background: #f2f2f2;
+}
+
+.dark .summary-grid .movement-analysis-trigger {
+  background: #111;
+  color: #f5f5f2;
+}
+
+.dark .analysis-header h2,
+.dark .analysis-categories h3,
+.dark .analysis-months button.active {
+  color: #f7f7f7;
+}
+
+.dark .analysis-months button {
+  color: #6b6b6b;
+}
+
+.dark .analysis-bubble.investments,
+.dark .analysis-category i.investments {
+  background: #252525;
+  color: #777;
+}
+
+.dark .analysis-category span {
+  color: #f0f0f0;
+}
+
+.dark .analysis-category strong {
+  color: #8a8a8a;
+}
+
+.dark .analysis-bubble.investments.empty {
+  opacity: 0.55;
 }
 
 .movements {
@@ -1714,6 +2017,116 @@ select:focus-visible {
   font-weight: 600;
 }
 
+.movement-summary-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.48);
+  animation: fade-in 0.2s ease-out;
+}
+
+.movement-summary-sheet {
+  position: relative;
+  width: min(100%, 520px);
+  max-height: min(82dvh, 760px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 21px 28px max(30px, env(safe-area-inset-bottom));
+  border-radius: 27px 27px 0 0;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 -8px 30px rgb(0 0 0 / 0.12);
+  animation: sheet-up 0.28s ease-out;
+}
+
+.movement-summary-sheet .detail-amount {
+  margin-top: 13px;
+}
+
+.movement-summary-sheet .detail-amount.income,
+.movement-summary-amount.income {
+  color: #15924c;
+}
+
+.movement-summary-sheet .detail-amount.expense,
+.movement-summary-amount.expense {
+  color: #df242b;
+}
+
+.movement-summary-list {
+  display: grid;
+  margin-top: 24px;
+  border-top: 1px solid #ececea;
+}
+
+.movement-summary-row {
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #ececea;
+}
+
+.movement-summary-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.movement-summary-icon.income {
+  background: #e7f6ec;
+  color: #15924c;
+}
+
+.movement-summary-icon.expense {
+  background: #fff0f0;
+  color: #df242b;
+}
+
+.movement-summary-info {
+  min-width: 0;
+}
+
+.movement-summary-info strong,
+.movement-summary-info small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movement-summary-info strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.movement-summary-info small {
+  margin-top: 4px;
+  color: #999996;
+  font-size: 12px;
+}
+
+.movement-summary-amount {
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.movement-summary-empty {
+  padding: 24px 0;
+  color: #999996;
+  font-size: 14px;
+  text-align: center;
+}
+
 .detail-status {
   color: #15924c;
 }
@@ -1862,9 +2275,31 @@ select:focus-visible {
 .dark .movement,
 .dark .detail-list,
 .dark .detail-list > div,
+.dark .movement-summary-list,
+.dark .movement-summary-row,
 .dark .limits-list,
 .dark .limit-row {
   border-color: #292927;
+}
+
+.dark .movement-summary-sheet {
+  background: #111;
+  color: #f5f5f2;
+}
+
+.dark .movement-summary-icon.income {
+  background: #173221;
+  color: #76d996;
+}
+
+.dark .movement-summary-icon.expense {
+  background: #351c1d;
+  color: #ff8588;
+}
+
+.dark .movement-summary-info small,
+.dark .movement-summary-empty {
+  color: #858581;
 }
 
 .dark .summary-grid button {
