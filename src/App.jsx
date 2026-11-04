@@ -70,6 +70,25 @@ const App = () => {
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
 
+  // En App.jsx, dentro del componente App():
+useEffect(() => {
+  const handleGlobalHaptic = (event) => {
+    // Detecta si el toque fue en un botón, enlace, pestaña o elemento clicable
+    const target = event.target.closest('button, [role="tab"], .periods button, .tabs button, .movement');
+    
+    if (target && !target.disabled) {
+      triggerHaptic('light');
+    }
+  };
+
+  // Escuchamos pointerdown para que la respuesta sea instantánea al contacto
+  window.addEventListener('pointerdown', handleGlobalHaptic, { passive: true });
+
+  return () => {
+    window.removeEventListener('pointerdown', handleGlobalHaptic);
+  };
+}, []);
+
   useEffect(() => {
     const showInvestments = getInvestmentsEnabled(activeProfileId);
     const savedPreferredTab = getPreferredHomeTab(activeProfileId);

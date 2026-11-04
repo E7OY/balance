@@ -70,8 +70,7 @@ const MovementsView = ({ query = '' }) => {
     >
       <section className="overview movements">
         <div className="overview-label">
-          <span>Balance del mes</span>
-          <button aria-label="Cambiar mes">⌄</button>
+          <span>Disponible el mes {new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(filters.year, filters.month))}</span>
         </div>
         <div className="amount-line">
           <h1 className="privacy-sensitive">{displayMoney(available)}</h1>
@@ -79,7 +78,7 @@ const MovementsView = ({ query = '' }) => {
             {savingsPercent > 0 ? '+' : ''}{savingsPercent.toFixed(1)} %
           </span>
         </div>
-        <p>de tus ingresos disponibles</p>
+        <p>de tus ingresos</p>
       </section>
 
       <div className="periods" role="tablist">

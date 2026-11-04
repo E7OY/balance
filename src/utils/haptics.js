@@ -7,18 +7,19 @@ const hapticPatterns = {
   heavy: [80],
 };
 
-export const triggerHaptic = (pattern = 'tap') => {
-  if (Capacitor.isNativePlatform()) {
-    const haptic = pattern === 'income'
-      ? Haptics.notification({ type: NotificationType.Success })
-      : Haptics.impact({
-        style: pattern === 'heavy' ? ImpactStyle.Heavy : ImpactStyle.Light,
-      });
-    haptic.catch((error) => console.error('No se pudo activar la respuesta háptica.', error));
-    return;
-  }
+export function triggerHaptic(type = 'light') {
+  if (typeof window === 'undefined' || !('vibrate' in navigator)) return;
 
-  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-    navigator.vibrate(hapticPatterns[pattern] || hapticPatterns.tap);
+  try {
+    if (type === 'light') {
+      // Impacto muy corto e instantáneo (estilo iOS/TR)
+      navigator.vibrate(10);
+    } else if (type === 'medium') {
+      navigator.vibrate(20);
+    } else if (type === 'selection') {
+      navigator.vibrate(8);
+    }
+  } catch (error) {
+    // Si el navegador bloquea la vibración, silenciamos el error
   }
-};
+}
