@@ -881,9 +881,22 @@ select:focus-visible {
   justify-content: center;
   gap: 6px;
   border-radius: 50%;
+  padding: 0;
+  border: 0;
   color: #0a0a0a;
   text-align: center;
+  cursor: pointer;
   transition: width 0.3s ease;
+}
+
+.analysis-bubble[aria-pressed="true"] {
+  outline: 3px solid currentColor;
+  outline-offset: 4px;
+}
+
+.analysis-bubble:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 4px;
 }
 
 .analysis-bubble.income,
@@ -961,6 +974,36 @@ select:focus-visible {
   font-weight: 600;
 }
 
+.analysis-category-detail {
+  min-width: 0;
+}
+
+.analysis-category-detail strong,
+.analysis-category-detail small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analysis-category-detail strong {
+  color: #222;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.analysis-category-detail small {
+  margin-top: 3px;
+  color: #858581;
+  font-size: 12px;
+}
+
+.analysis-empty {
+  padding: 18px 0;
+  color: #858581;
+  font-size: 14px;
+}
+
 @media (max-width: 540px) {
   .analysis-layer {
     display: block;
@@ -1012,6 +1055,15 @@ select:focus-visible {
 
 .dark .analysis-category strong {
   color: #8a8a8a;
+}
+
+.dark .analysis-category-detail strong {
+  color: #f0f0f0;
+}
+
+.dark .analysis-category-detail small,
+.dark .analysis-empty {
+  color: #858581;
 }
 
 .dark .analysis-bubble.investments.empty {
