@@ -62,6 +62,10 @@ const ProfileSwitcher = ({
   onInvestmentsVisibilityChange,
   profileName,
   onProfileNameChange,
+  pinEnabled,
+  onSetupPin,
+  onChangePin,
+  onRemovePin,
 }) => {
   const {
     activeProfile,
@@ -221,6 +225,30 @@ const ProfileSwitcher = ({
             <i />
           </button>
         </div>
+        <div className="setting-toggle">
+          <span>
+            <strong>PIN de acceso</strong>
+            <small>{pinEnabled ? 'Se pide al abrir la app' : 'Protege la app con un PIN de 4 dígitos'}</small>
+          </span>
+          <button
+            className={`switch ${pinEnabled ? "on" : ""}`}
+            onClick={pinEnabled ? onRemovePin : onSetupPin}
+            role="switch"
+            aria-checked={pinEnabled}
+            aria-label="PIN de acceso"
+          >
+            <i />
+          </button>
+        </div>
+        {pinEnabled && (
+          <button onClick={onChangePin}>
+            <span>
+              <strong>Cambiar PIN</strong>
+              <small>Elige un nuevo PIN de 4 dígitos</small>
+            </span>
+            <Icon name="chevron" size={15} />
+          </button>
+        )}
         <div className="setting-toggle">
           <span>
             <strong>Modo oscuro</strong>
