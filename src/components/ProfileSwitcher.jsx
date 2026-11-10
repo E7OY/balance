@@ -68,7 +68,9 @@ const ProfileSwitcher = ({
   onRemovePin,
 }) => {
   const {
+    profiles,
     activeProfile,
+    activeProfileId,
     transactions,
     isAmountsHidden,
     setIsAmountsHidden,
@@ -77,6 +79,9 @@ const ProfileSwitcher = ({
     loginToSyncAccount,
     logoutFromSyncAccount,
     exportData,
+    switchProfile,
+    addProfile,
+    joinProfile,
   } = useFinance();
 
   // Estados generales y de edición
@@ -84,16 +89,28 @@ const ProfileSwitcher = ({
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const customName = profileName || activeProfile?.name || 'Mi perfil';
   
+  // Estados para cuentas compartidas
+  const [isSharePanelOpen, setIsSharePanelOpen] = useState(false);
+  const [isJoinPanelOpen, setIsJoinPanelOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [joinName, setJoinName] = useState('');
+
   // Estados para la sincronización (Firebase)
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
   const [isCreatingSyncAccount, setIsCreatingSyncAccount] = useState(false);
   const [syncEmail, setSyncEmail] = useState('');
   const [syncPassword, setSyncPassword] = useState('');
   const [syncFormError, setSyncFormError] = useState('');
+  
   const settingsRef = useRef(null);
   const syncRef = useRef(null);
 
   const initials = customName.split(' ').filter(Boolean).map((word) => word[0]).slice(0, 2).join('').toUpperCase();
+
+  // Genera el código único. Si la cuenta ya es compartida, usa ese código. Si no, añade el UID.
+  const shareCode = activeProfileId.includes('___') 
+    ? activeProfileId 
+    : (syncUser ? `${syncUser.uid}___${activeProfileId}` : null);
 
   // Calcula el total ahorrado históricamente (Ingresos totales - Gastos totales de todos los meses)
   const totalWealth = transactions.reduce((acc, tx) => {
@@ -205,6 +222,53 @@ const ProfileSwitcher = ({
             <small>Descarga una copia de tu información</small>
           </span>
           <Icon name="chevron" size={16} />
+        </button>
+      </div>
+
+      <div className="settings-group">
+        <p>CUENTAS Y ESPACIOS COMPARTIDOS</p>
+        {profiles.map((profile) => (
+          <button key={profile.id} onClick={() => switchProfile(profile.id)}>
+            <span className="profile-service-icon">
+              <Icon name="user" size={18} />
+            </span>
+            <span className="profile-service-copy">
+              <strong>{profile.name}</strong>
+              <small>{profile.id === activeProfileId ? 'Cuenta actual (activa)' : 'Toca para cambiar de cuenta'}</small>
+            </span>
+            {profile.id === activeProfileId && <Icon name="chevron" size={16} />}
+          </button>
+        ))}
+        
+        <button onClick={() => setIsSharePanelOpen(true)}>
+          <span className="profile-service-icon">
+             <Icon name="arrow" size={18} style={{ transform: 'rotate(-45deg)' }}/>
+          </span>
+          <span className="profile-service-copy">
+            <strong>Invitar a esta cuenta</strong>
+            <small>Comparte gastos con tu pareja o amigos</small>
+          </span>
+        </button>
+        
+        <button onClick={() => setIsJoinPanelOpen(true)}>
+          <span className="profile-service-icon">
+             <Icon name="arrow" size={18} style={{ transform: 'rotate(135deg)' }}/>
+          </span>
+          <span className="profile-service-copy">
+            <strong>Vincular cuenta compartida</strong>
+            <small>Únete usando un código de invitación</small>
+          </span>
+        </button>
+        
+        <button onClick={() => {
+          const name = window.prompt('Nombre del nuevo espacio (ej. Gastos Personales):');
+          if (name) addProfile(name);
+        }}>
+          <span className="profile-service-icon"><strong style={{fontSize: '18px'}}>+</strong></span>
+          <span className="profile-service-copy">
+            <strong>Crear nuevo espacio</strong>
+            <small>Crea una cuenta separada desde cero</small>
+          </span>
         </button>
       </div>
 
@@ -379,6 +443,76 @@ const ProfileSwitcher = ({
               
               <button className="sheet-submit" type="submit">
                 Guardar
+                <Icon name="arrow" size={16} />
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {/* MODAL COMPARTIR CUENTA */}
+      {isSharePanelOpen && (
+        <div className="sheet-layer" style={{ zIndex: 70 }} onMouseDown={() => setIsSharePanelOpen(false)}>
+          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <button className="sheet-close" onClick={() => setIsSharePanelOpen(false)}>
+              <Icon name="close" size={18} />
+            </button>
+            <h2>Invitar a esta cuenta</h2>
+            {shareCode ? (
+              <>
+                <p>Pasa este código a tu pareja o compañero. Una vez lo introduzcan en "Vincular cuenta", ambos veréis los mismos gastos sincronizados en la nube.</p>
+                <div style={{ padding: '16px', background: 'rgba(0,0,0,0.05)', borderRadius: '12px', textAlign: 'center', margin: '20px 0', wordBreak: 'break-all', fontWeight: 'bold', fontSize: '18px' }} className="dark:bg-white/10">
+                  {shareCode}
+                </div>
+                <button className="sheet-submit" onClick={() => {
+                  navigator.clipboard.writeText(shareCode);
+                  window.alert('Código copiado al portapapeles');
+                }}>
+                  Copiar código
+                  <Icon name="arrow" size={16} />
+                </button>
+              </>
+            ) : (
+              <p style={{ color: '#df242b', marginTop: '10px', fontWeight: 'bold' }}>Debes iniciar sesión en la nube (Firebase) para poder compartir tus cuentas.</p>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* MODAL VINCULAR CUENTA */}
+      {isJoinPanelOpen && (
+        <div className="sheet-layer" style={{ zIndex: 70 }} onMouseDown={() => setIsJoinPanelOpen(false)}>
+          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <button className="sheet-close" onClick={() => setIsJoinPanelOpen(false)}>
+              <Icon name="close" size={18} />
+            </button>
+            <h2>Vincular cuenta</h2>
+            <p>Pega el código de invitación que te ha compartido tu pareja o compañero para unirte a su cuenta de gastos.</p>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              try {
+                joinProfile(joinCode, joinName);
+                setIsJoinPanelOpen(false);
+                setJoinCode('');
+                setJoinName('');
+              } catch(err) {
+                window.alert(err.message);
+              }
+            }}>
+              <label>
+                Código de invitación
+                <input required value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Ej: 12345678-abcd..." />
+              </label>
+              <label style={{ marginTop: '10px' }}>
+                Nombre para esta cuenta
+                <input required value={joinName} onChange={(e) => setJoinName(e.target.value)} placeholder="Ej: Gastos Casa" />
+              </label>
+              
+              <button type="submit" className="sheet-submit" style={{ marginTop: '20px' }}>
+                Unirme a la cuenta
                 <Icon name="arrow" size={16} />
               </button>
             </form>

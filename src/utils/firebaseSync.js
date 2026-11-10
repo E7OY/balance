@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   writeBatch,
@@ -12,11 +13,32 @@ const PROFILES_KEY = 'financeProfiles';
 const ACTIVE_PROFILE_KEY = 'financeActiveProfile';
 const SYNC_OWNER_KEY = 'balance-sync-owner';
 const profileKey = (profileId, key) => `finance:${profileId}:${key}`;
+
+// --- ENRUTADOR DE CUENTAS COMPARTIDAS ---
+const resolvePath = (uid, profileId) => {
+  if (profileId && profileId.includes('___')) {
+    const parts = profileId.split('___');
+    return { uid: parts[0], profileId: parts[1] };
+  }
+  return { uid, profileId };
+};
+
 const userProfiles = (uid) => collection(firestore, 'users', uid, 'profiles');
-const userProfile = (uid, profileId) => doc(firestore, 'users', uid, 'profiles', profileId);
-const userTransactions = (uid, profileId) => collection(userProfile(uid, profileId), 'transactions');
-const userTransaction = (uid, profileId, transactionId) =>
-  doc(userProfile(uid, profileId), 'transactions', transactionId);
+
+const userProfile = (uid, profileId) => {
+  const path = resolvePath(uid, profileId);
+  return doc(firestore, 'users', path.uid, 'profiles', path.profileId);
+};
+
+const userTransactions = (uid, profileId) => {
+  const path = resolvePath(uid, profileId);
+  return collection(userProfile(path.uid, path.profileId), 'transactions');
+};
+
+const userTransaction = (uid, profileId, transactionId) => {
+  const path = resolvePath(uid, profileId);
+  return doc(userProfile(path.uid, path.profileId), 'transactions', transactionId);
+};
 
 const cleanUndefined = (value) => {
   if (Array.isArray(value)) return value.map(cleanUndefined);
@@ -75,6 +97,18 @@ const writeLocalProfile = (profileId, data) => {
   saveToLocalStorage(profileKey(profileId, 'investments'), data.investmentRecords || []);
 };
 
+export const saveProfileBookmark = (uid, profile) =>
+  saveInBatches([{
+    reference: doc(firestore, 'users', uid, 'profiles', profile.id),
+    data: { id: profile.id, name: profile.name, isSharedBookmark: true },
+  }]);
+
+export const deleteProfileBookmark = (uid, profileId) =>
+  saveInBatches([{
+    reference: doc(firestore, 'users', uid, 'profiles', profileId),
+    remove: true,
+  }]);
+
 export const initializeAccountSync = async (user) => {
   const previousOwner = getFromLocalStorage(SYNC_OWNER_KEY);
   const mayMergeLocalData = !previousOwner || previousOwner === user.uid;
@@ -106,7 +140,16 @@ export const initializeAccountSync = async (user) => {
   if (profiles.length === 0) profiles.push({ id: 'default', name: 'Mi perfil' });
 
   for (const profile of profiles) {
-    const remoteMetadata = remoteProfiles.get(profile.id);
+    let remoteMetadata = remoteProfiles.get(profile.id);
+    
+    // Si es una cuenta compartida, buscamos los metadatos reales del propietario
+    if (profile.id.includes('___')) {
+      const ownerSnap = await getDoc(userProfile(user.uid, profile.id));
+      if (ownerSnap.exists()) {
+        remoteMetadata = ownerSnap.data();
+      }
+    }
+
     const local = localById.has(profile.id) ? readLocalProfile(profile.id) : emptyProfileData;
     const remoteTransactionSnapshots = remoteMetadata
       ? await getDocs(userTransactions(user.uid, profile.id))
@@ -136,7 +179,8 @@ export const initializeAccountSync = async (user) => {
       }
       : local;
 
-    if (!remoteMetadata) {
+    // Solo creamos perfiles vacíos si NO son compartidos
+    if (!remoteMetadata && !profile.id.includes('___')) {
       await saveInBatches([{
         reference: userProfile(user.uid, profile.id),
         data: profileMetadata(profile, data),

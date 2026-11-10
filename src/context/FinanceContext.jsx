@@ -19,6 +19,8 @@ import {
   deleteTransactionFromCloud,
   deleteTransactionsFromCloud,
   deleteProfileFromCloud,
+  deleteProfileBookmark,   // <--- Añadir esta
+  saveProfileBookmark,
   initializeAccountSync,
   loadCloudProfileLocally,
   saveProfileToCloud,
@@ -193,6 +195,36 @@ export const FinanceProvider = ({ children }) => {
     searchTerm: '',
   });
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || profiles[0];
+
+  const joinProfile = (code, name) => {
+    const cleanCode = code.trim();
+    const normalizedName = name.trim();
+    
+    if (!cleanCode) throw new Error('El código de invitación no puede estar vacío.');
+    if (!cleanCode.includes('___')) throw new Error('El código de invitación no es válido.');
+    if (!normalizedName) throw new Error('Escribe un nombre para la cuenta compartida.');
+    
+    if (profiles.some((profile) => profile.id === cleanCode)) {
+      throw new Error('Ya tienes vinculada esta cuenta.');
+    }
+    
+    const newProfile = { id: cleanCode, name: normalizedName };
+    setProfiles((previousProfiles) => [...previousProfiles, newProfile]);
+
+    saveToLocalStorage(profileStorageKey(cleanCode, 'transactions'), []);
+    saveToLocalStorage(profileStorageKey(cleanCode, 'customCategories'), { Ingreso: [], Gasto: [] });
+    saveToLocalStorage(profileStorageKey(cleanCode, 'monthlyGoals'), {});
+    saveToLocalStorage(profileStorageKey(cleanCode, 'monthlyCategoryCaps'), {});
+    saveToLocalStorage(profileStorageKey(cleanCode, 'investments'), []);
+    
+    // Guardamos un marcador en Firebase para no perder la cuenta compartida si cambias de móvil
+    if (syncUser && syncStatus === 'synced') {
+      runCloudOperation(saveProfileBookmark(syncUser.uid, newProfile));
+    }
+    
+    switchProfile(cleanCode);
+    return newProfile;
+  };
 
   syncErrorHandler.current = (error) => {
     syncFailureVersionRef.current += 1;
@@ -661,7 +693,11 @@ export const FinanceProvider = ({ children }) => {
     if (!nextProfile) throw new Error('No se encontró otro perfil al que cambiar.');
 
     if (syncUser) {
-      await deleteProfileFromCloud(syncUser.uid, profileId);
+          if (profileId.includes('___')) {
+            await deleteProfileBookmark(syncUser.uid, profileId); // Solo borra tu vínculo
+          } else {
+            await deleteProfileFromCloud(syncUser.uid, profileId); // Borra la cuenta real
+          }
     }
 
     await Promise.all(transactions
@@ -1149,6 +1185,7 @@ export const FinanceProvider = ({ children }) => {
         isAmountsHidden,
         setIsAmountsHidden,
         addProfile,
+        joinProfile,
         deleteActiveProfile,
         switchProfile,
         addTransaction,
