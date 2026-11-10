@@ -397,6 +397,8 @@ const App = () => {
     setEditingTransaction,
     activeProfile,
     activeProfileId,
+    profiles,         // <--- AÑADIR
+    switchProfile,     // <--- AÑADIR
     setFilters
   } = useFinance();
 
@@ -418,7 +420,28 @@ const App = () => {
   const [query, setQuery] = useState('');
   
   const monthSwipeStart = useRef(null);
+  const avatarLongPressTimer = useRef(null);
+    const hasLongPressed = useRef(false);
 
+    const handleAvatarPointerDown = () => {
+      hasLongPressed.current = false;
+      avatarLongPressTimer.current = setTimeout(() => {
+        hasLongPressed.current = true;
+        if (profiles.length > 1) {
+          triggerHaptic(); // Vibra para confirmar el cambio
+          const currentIndex = profiles.findIndex(p => p.id === activeProfileId);
+          const nextProfile = profiles[(currentIndex + 1) % profiles.length];
+          switchProfile(nextProfile.id); // Cambia a la siguiente cuenta
+        }
+      }, 500); // Medio segundo para que cuente como pulsación larga
+    };
+
+    const clearAvatarLongPress = () => {
+      if (avatarLongPressTimer.current) {
+        clearTimeout(avatarLongPressTimer.current);
+        avatarLongPressTimer.current = null;
+      }
+    };
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
@@ -585,9 +608,26 @@ const App = () => {
                 </button>
               )}
             </div>
-            <button
+<button
               className={`avatar-button ${isProfileOpen ? 'active' : ''}`}
-              onClick={() => setIsProfileOpen((isOpen) => !isOpen)}
+              onClick={(e) => {
+                clearAvatarLongPress();
+                // Si ha sido una pulsación larga, evitamos abrir el menú
+                if (hasLongPressed.current) {
+                  e.preventDefault();
+                  hasLongPressed.current = false;
+                  return;
+                }
+                setIsProfileOpen((isOpen) => !isOpen);
+              }}
+              onPointerDown={handleAvatarPointerDown}
+              onPointerUp={clearAvatarLongPress}
+              onPointerLeave={clearAvatarLongPress}
+              onPointerCancel={clearAvatarLongPress}
+              onContextMenu={(e) => {
+                // Evita que salga el menú contextual nativo del móvil al mantener el dedo
+                if (profiles.length > 1) e.preventDefault();
+              }}
               aria-label={isProfileOpen ? 'Cerrar perfil' : 'Abrir perfil'}
               aria-pressed={isProfileOpen}
             >

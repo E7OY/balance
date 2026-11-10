@@ -196,7 +196,7 @@ const ProfileSwitcher = ({
         <strong className="privacy-sensitive">{displayMoney(totalWealth)}</strong>
         <small>Total ahorrado de todos los meses</small>
       </div>
-
+    {/*}
       <div className="profile-services">
         <p>SERVICIOS</p>
         <button onClick={() => scrollTo(settingsRef)}>
@@ -224,7 +224,7 @@ const ProfileSwitcher = ({
           <Icon name="chevron" size={16} />
         </button>
       </div>
-
+    */}
       <div className="settings-group">
         <p>CUENTAS Y ESPACIOS COMPARTIDOS</p>
         {profiles.map((profile) => (
