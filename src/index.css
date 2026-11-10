@@ -1129,12 +1129,13 @@ select:focus-visible {
   place-items: center;
   border-radius: 50%;
   background: #f1f1ef;
-  color: rgb(43, 43, 43)
+  color: rgb(43, 43, 43);
 }
 
 .movement-info strong,
 .movement-info small {
   display: block;
+  margin: 0px 20px;
 }
 
 .movement-info strong,

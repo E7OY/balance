@@ -122,7 +122,6 @@ const getAssetLogoStyle = (name, symbol) => {
 const sampleImageColor = (source) => new Promise((resolve) => {
   if (!source) return resolve(null);
   const image = new Image();
-  // No usamos crossOrigin = 'anonymous' para evitar que CDNs externos sin cabecera CORS fallen bloqueados por el navegador
   image.onload = () => {
     try {
       const size = 24;
@@ -149,7 +148,6 @@ const sampleImageColor = (source) => new Promise((resolve) => {
       }
       resolve(weight > 0 ? rgbToHex(red / weight, green / weight, blue / weight) : null);
     } catch {
-      // Si el canvas está manchado (tainted) por CORS de CDN externo, silenciosamente devolvemos null y usará el fallback hash
       resolve(null);
     }
   };
@@ -173,6 +171,8 @@ const InvestmentDetail = ({
   const [isConfirmingSale, setIsConfirmingSale] = useState(false);
   const [saleError, setSaleError] = useState('');
   const [isSelling, setIsSelling] = useState(false);
+
+  const isSold = purchases.every(p => p.soldAt);
   const invested = purchases.reduce((sum, purchase) => sum + (Number(purchase.investedAmount) || 0), 0);
   const units = purchases.reduce((sum, purchase) => sum + (Number(purchase.units) || 0), 0);
   const assetKey = investment.asset?.provider && investment.asset?.id
@@ -182,16 +182,20 @@ const InvestmentDetail = ({
     .filter((purchase) => Number(purchase.currentPrice) > 0)
     .sort((a, b) => Date.parse(b.lastPriceUpdated || '') - Date.parse(a.lastPriceUpdated || ''))[0]?.currentPrice;
   const currentPrice = marketQuote?.priceEur || Number(lastRecordedPrice) || 0;
-  const currentValue = investment.asset && currentPrice > 0
-    ? currentPrice * units
-    : purchases.reduce((sum, purchase) => sum + (Number(purchase.currentValue) || 0), 0);
+  
+  const currentValue = isSold 
+    ? purchases.reduce((sum, p) => sum + (Number(p.soldValue) || 0), 0)
+    : (investment.asset && currentPrice > 0
+      ? currentPrice * units
+      : purchases.reduce((sum, purchase) => sum + (Number(purchase.currentValue) || 0), 0));
+      
   const averageCost = units > 0 ? invested / units : 0;
   const profit = currentValue - invested;
   const profitPercent = invested > 0 ? (profit / invested) * 100 : 0;
   const purchaseSignature = purchases.map((purchase) => purchase.id).join('|');
 
   useEffect(() => {
-    if (!investment.asset || !assetKey) return undefined;
+    if (!investment.asset || !assetKey || isSold) return undefined;
 
     const controller = new AbortController();
     setMarketQuote(null);
@@ -211,7 +215,7 @@ const InvestmentDetail = ({
       });
 
     return () => controller.abort();
-  }, [assetKey, investment.asset, onUpdatePrice, purchaseSignature]);
+  }, [assetKey, investment.asset, onUpdatePrice, purchaseSignature, isSold]);
 
   const historyPoints = (history[assetKey] || [])
     .filter((point) => Number.isFinite(Date.parse(point.timestamp)) && Number.isFinite(Number(point.price)))
@@ -432,7 +436,6 @@ const InvestmentDetail = ({
           onPointerCancel={finishDrag}
         >
           <div className="investment-sheet-handle" />
-          <span className="investment-sheet-title">Detalle de inversión</span>
         </div>
         <div
           className="investment-sheet-body"
@@ -456,13 +459,14 @@ const InvestmentDetail = ({
                 )}
               <span className="investment-detail-name">{investment.name}</span>
               {investment.asset?.symbol && <span className="investment-detail-symbol">{investment.asset.symbol}</span>}
+              {isSold && <span style={{fontSize: '11px', fontWeight: 600, background: '#eee', padding: '4px 10px', borderRadius: '12px', marginTop: '6px', color: '#666'}} className="dark:bg-white/10 dark:text-gray-300">VENDIDO</span>}
             </div>
 
             <section className="investment-detail-balance">
               <span>
                 {scrubPoint
                   ? formatScrubLabel(scrubPoint.timestamp, period)
-                  : investment.asset ? 'Precio actual del activo' : 'Valor actual de la posición'}
+                  : investment.asset ? (isSold ? 'Precio de venta del activo' : 'Precio actual del activo') : 'Valor actual de la posición'}
               </span>
               <div className="investment-detail-value-row">
                 <strong>
@@ -470,7 +474,7 @@ const InvestmentDetail = ({
                 </strong>
                 {investment.asset && <span>por unidad</span>}
               </div>
-              {investment.asset && shownPoint && detailPoints.length > 1 && (
+              {investment.asset && shownPoint && detailPoints.length > 1 && !isSold && (
                 <div className={`investment-detail-delta ${priceChangeAmount >= 0 ? 'up' : 'down'}`}>
                   <span>
                     {priceChangeAmount >= 0 ? '▲' : '▼'}{' '}
@@ -482,8 +486,8 @@ const InvestmentDetail = ({
                   </span>
                 </div>
               )}
-              {investment.asset && isLoadingQuote && <small role="status">Actualizando cotización…</small>}
-              {investment.asset && quoteError && (
+              {investment.asset && isLoadingQuote && !isSold && <small role="status">Actualizando cotización…</small>}
+              {investment.asset && quoteError && !isSold && (
                 <small className="investment-quote-error" role="alert">
                   No se pudo actualizar el precio. Se muestra la última cotización guardada.
                 </small>
@@ -492,7 +496,7 @@ const InvestmentDetail = ({
 
             <section className="summary-grid investment-detail-summary" aria-label="Resumen de la posición">
               <div>
-                <span>Valor de tu posición</span>
+                <span>{isSold ? 'Valor de venta' : 'Valor de tu posición'}</span>
                 <strong className="privacy-sensitive">{displayMoney(currentValue)}</strong>
               </div>
               <div>
@@ -615,11 +619,11 @@ const InvestmentDetail = ({
               <h2>Datos clave</h2>
               <dl className="investment-key-data">
                 <div><dt>Capital invertido</dt><dd>{displayMoney(invested)}</dd></div>
-                <div><dt>Valor de tu posición</dt><dd>{displayMoney(currentValue)}</dd></div>
+                <div><dt>{isSold ? 'Valor de venta' : 'Valor de tu posición'}</dt><dd>{displayMoney(currentValue)}</dd></div>
                 {units > 0 && (
                   <>
                     <div><dt>Unidades</dt><dd>{new Intl.NumberFormat('es-ES', { maximumFractionDigits: 8 }).format(units)}</dd></div>
-                    <div><dt>Precio actual por unidad</dt><dd>{displayMoney(currentPrice)}</dd></div>
+                    <div><dt>Precio {isSold ? 'de venta' : 'actual'} por unidad</dt><dd>{displayMoney(currentPrice)}</dd></div>
                     <div><dt>Precio medio de compra</dt><dd>{displayMoney(averageCost)}</dd></div>
                   </>
                 )}
@@ -668,38 +672,10 @@ const InvestmentDetail = ({
             </section>
           </div>
         </div>
-        <div className="investment-sheet-footer">
-          {isConfirmingSale ? (
-            <div className="investment-sell-confirmation" role="group" aria-label="Confirmar venta total">
-              <p>
-                Registrarás una venta total por {displayMoney(currentValue)}. Esto actualiza tu cartera,
-                pero no ejecuta una operación en un broker.
-              </p>
-              {saleError && <p className="investment-quote-error" role="alert">{saleError}</p>}
-              <div>
-                <button
-                  type="button"
-                  disabled={isSelling}
-                  style={{ background: accent, color: getReadableTextColor(accent) }}
-                  onClick={() => {
-                    setIsSelling(true);
-                    setSaleError('');
-                    try {
-                      onSell(purchases, currentPrice);
-                    } catch (error) {
-                      setSaleError(error.message);
-                      setIsSelling(false);
-                    }
-                  }}
-                >
-                  {isSelling ? 'Registrando…' : 'Confirmar venta'}
-                </button>
-                <button type="button" disabled={isSelling} onClick={() => setIsConfirmingSale(false)}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          ) : (
+        
+        {/* BOTÓN VENDER TODO */}
+        {!isSold && (
+          <div className="investment-sheet-footer">
             <button
               type="button"
               className="investment-sell-action"
@@ -713,9 +689,66 @@ const InvestmentDetail = ({
               Vender todo
               <ArrowRight size={16} aria-hidden="true" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </section>
+
+      {/* POPUP MODAL CONFIRMACIÓN VENTA NATIVA */}
+      {isConfirmingSale && createPortal(
+        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsConfirmingSale(false)}>
+          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <button className="sheet-close" onClick={() => setIsConfirmingSale(false)} type="button">
+              <X size={18} />
+            </button>
+            <h2 style={{ marginBottom: '4px' }}>Confirmar venta</h2>
+            <p style={{ color: '#858581', marginBottom: '20px' }}>
+              Registrarás una venta total por <strong>{displayMoney(currentValue)}</strong>. 
+              Esto actualizará tu cartera disponible, pero recuerda que no ejecuta una operación real en tu banco o broker.
+            </p>
+            
+            <div style={{ padding: '16px', background: 'rgba(0,0,0,0.04)', borderRadius: '12px', marginBottom: '24px' }} className="dark:bg-white/5">
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#858581' }}>Capital inicial</span>
+                <strong>{displayMoney(invested)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#858581' }}>Precio de venta</span>
+                <strong>{investment.asset ? `${displayMoney(currentPrice)} / ud` : 'Manual'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', marginTop: '4px' }} className="dark:border-white/10">
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>Beneficio total</span>
+                <strong className={profit >= 0 ? 'positive' : 'negative'}>
+                  {profit > 0 ? '+' : ''}{displayMoney(profit)}
+                </strong>
+              </div>
+            </div>
+
+            {saleError && <p className="investment-quote-error mb-4" role="alert">{saleError}</p>}
+            
+            <button
+              type="button"
+              className="sheet-submit"
+              disabled={isSelling}
+              style={{ background: accent, color: getReadableTextColor(accent) }}
+              onClick={() => {
+                setIsSelling(true);
+                setSaleError('');
+                try {
+                  onSell(purchases, currentPrice);
+                } catch (error) {
+                  setSaleError(error.message);
+                  setIsSelling(false);
+                }
+              }}
+            >
+              {isSelling ? 'Registrando...' : 'Confirmar venta'}
+              <ArrowRight size={16} />
+            </button>
+          </section>
+        </div>,
+        document.body
+      )}
     </div>,
     phoneNode,
   );
@@ -749,14 +782,47 @@ const InvestmentsOverview = ({ query = '' }) => {
     return result;
   }, { invested: 0, currentValue: 0 }), [investmentRecords]);
 
+  // Modificado: Ahora mostramos las vendidas agrupadas correctamente para que aparezcan en la lista.
   const visibleInvestments = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('es');
-    const activeRecords = investmentRecords.filter((record) => !record.soldAt);
-    if (!normalizedQuery) return activeRecords;
-    return activeRecords.filter((record) => (
-      (record.name || '').toLocaleLowerCase('es').includes(normalizedQuery)
-      || (record.asset?.symbol || '').toLocaleLowerCase('es').includes(normalizedQuery)
-    ));
+    let records = investmentRecords;
+    if (normalizedQuery) {
+      records = records.filter((record) =>
+        (record.name || '').toLocaleLowerCase('es').includes(normalizedQuery)
+        || (record.asset?.symbol || '').toLocaleLowerCase('es').includes(normalizedQuery)
+      );
+    }
+    
+    // Agrupamos las compras por holding key (ej: bitcoin) para tener solo 1 elemento por activo en la vista general
+    const holdingsMap = new Map();
+    records.forEach(record => {
+      const key = getHoldingKey(record);
+      // Evitar mezclar posiciones activas y vendidas del mismo activo (opcional, pero útil si compras y vendes varias veces)
+      const stateKey = `${key}-${Boolean(record.soldAt)}`; 
+      if (!holdingsMap.has(stateKey)) {
+        holdingsMap.set(stateKey, { ...record, _group: [] });
+      }
+      holdingsMap.get(stateKey)._group.push(record);
+    });
+
+    return Array.from(holdingsMap.values()).map(holding => {
+      const isSold = Boolean(holding.soldAt);
+      const totalInvested = holding._group.reduce((sum, p) => sum + (Number(p.investedAmount) || 0), 0);
+      const totalValue = holding._group.reduce((sum, p) => sum + (Number(isSold ? p.soldValue : p.currentValue) || 0), 0);
+      return {
+        ...holding,
+        investedAmount: totalInvested,
+        currentValue: totalValue
+      };
+    }).sort((a, b) => {
+      // Orden: Primero activas (por fecha), luego vendidas
+      const aSold = Boolean(a.soldAt);
+      const bSold = Boolean(b.soldAt);
+      if (aSold && !bSold) return 1;
+      if (!aSold && bSold) return -1;
+      if (aSold && bSold) return new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime();
+      return b.date.localeCompare(a.date);
+    });
   }, [investmentRecords, query]);
 
   useEffect(() => {
@@ -900,9 +966,12 @@ const InvestmentsOverview = ({ query = '' }) => {
   const isUp = activeScrubDelta >= 0;
 
   const hasManualInvestments = investmentRecords.some((record) => !record.asset && !record.soldAt);
-  const selectedInvestment = investmentRecords.find((record) => record.id === selectedInvestmentId && !record.soldAt);
+  const selectedInvestment = investmentRecords.find((record) => record.id === selectedInvestmentId);
   const selectedPurchases = selectedInvestment
-    ? investmentRecords.filter((record) => !record.soldAt && getHoldingKey(record) === getHoldingKey(selectedInvestment))
+    ? investmentRecords.filter((record) => 
+        getHoldingKey(record) === getHoldingKey(selectedInvestment) &&
+        Boolean(record.soldAt) === Boolean(selectedInvestment.soldAt)
+      )
     : [];
 
   return (
@@ -1039,7 +1108,7 @@ const InvestmentsOverview = ({ query = '' }) => {
         </p>
       )}
 
-      <section className="summary-grid">
+      <section className="summary-grid mt-12">
         <button>
           <span>Capital invertido</span>
           <strong className="privacy-sensitive">{displayMoney(totals.invested)}</strong>
@@ -1051,22 +1120,21 @@ const InvestmentsOverview = ({ query = '' }) => {
           </strong>
         </button>
         <button>
-          <span>Posiciones</span>
-          <strong>{visibleInvestments.length}</strong>
+          <span>Posiciones (Activas)</span>
+          <strong>{investmentRecords.filter(r => !r.soldAt).length}</strong>
         </button>
       </section>
 
       <section className="movements portfolio">
         <div className="section-title">
           <h2>Inversiones</h2>
-          <button>Ordenar por ⌄</button>
         </div>
         <div className="movement-list">
           {visibleInvestments.map((record) => {
-            const diff = Number(record.currentValue) - Number(record.investedAmount);
-            const diffPercent = Number(record.investedAmount) > 0
-              ? (diff / Number(record.investedAmount)) * 100
-              : 0;
+            const isSold = Boolean(record.soldAt);
+            const val = isSold ? Number(record.soldValue) : Number(record.currentValue);
+            const diff = val - Number(record.investedAmount);
+            const diffPercent = Number(record.investedAmount) > 0 ? (diff / Number(record.investedAmount)) * 100 : 0;
             const symbol = record.asset?.symbol || record.name || 'I';
 
             return (
@@ -1076,6 +1144,7 @@ const InvestmentsOverview = ({ query = '' }) => {
                 type="button"
                 onClick={() => setSelectedInvestmentId(record.id)}
                 aria-label={`Ver detalle de ${record.name}`}
+                style={{ opacity: isSold ? 0.6 : 1 }}
               >
                 {record.asset
                   ? <InvestmentAssetIcon asset={record.asset} className="size-12" />
@@ -1092,26 +1161,28 @@ const InvestmentsOverview = ({ query = '' }) => {
                   <small>{record.asset?.symbol || 'Activo manual'}</small>
                 </span>
                 <span className="holding-value">
-                  <strong className="privacy-sensitive">{displayMoney(Number(record.currentValue))}</strong>
-                  <small className={diff < 0 ? 'negative' : ''}>
-                    {diff > 0 ? '+' : ''}{diffPercent.toFixed(2)} %
-                  </small>
+                  <strong className="privacy-sensitive">{displayMoney(val)}</strong>
+                  {isSold ? (
+                    <small style={{ color: '#858581', fontWeight: 600 }}>Vendido</small>
+                  ) : (
+                    <small className={diff < 0 ? 'negative' : ''}>
+                      {diff > 0 ? '+' : ''}{diffPercent.toFixed(2)} %
+                    </small>
+                  )}
                 </span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="m9 7 5 5-5 5" />
-                </svg>
+                <ChevronRight size={16} aria-hidden="true" style={{ color: '#c9c9c6' }} />
               </button>
             );
           })}
           {visibleInvestments.length === 0 && (
-            <p className="investment-chart-message">No hay inversiones que coincidan con la búsqueda.</p>
+            <p className="investment-chart-message" style={{textAlign: 'left', paddingLeft: '16px'}}>No hay inversiones en tu cartera.</p>
           )}
         </div>
       </section>
 
       {selectedInvestment && (
         <InvestmentDetail
-          key={getHoldingKey(selectedInvestment)}
+          key={`${getHoldingKey(selectedInvestment)}-${Boolean(selectedInvestment.soldAt)}`}
           investment={selectedInvestment}
           purchases={selectedPurchases}
           history={historyByAsset}

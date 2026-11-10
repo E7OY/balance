@@ -149,6 +149,19 @@ function PinScreen({ title, subtitle, pin, error, isShaking, disabled, onDigit, 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action === 'add-expense') {
+      openForm('expense');
+      // Limpia la URL para que no se vuelva a abrir al recargar
+      window.history.replaceState(null, '', '/');
+    } else if (action === 'add-income') {
+      openForm('income');
+      window.history.replaceState(null, '', '/');
+    }
+  }, []);
+
   return (
     <div
       className={`pin-screen ${inSheet ? 'in-sheet' : ''}`}

@@ -2,12 +2,23 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import TransactionItem from './TransactionItem';
 import { useElasticScroll } from '../hooks/useElasticScroll';
+import { triggerHaptic } from '../utils/haptics';
 
 const HomeOverview = ({ query = '', onOpenLimits }) => {
   const { transactions, filters } = useFinance();
   
   const [period, setPeriod] = useState('1M');
   const [scrubIndex, setScrubIndex] = useState(null);
+  const lastScrubIndex = useRef(null);
+
+  useEffect(() => {
+    if (scrubIndex !== null && scrubIndex !== lastScrubIndex.current) {
+      triggerHaptic(); // Vibra cada vez que el dedo salta a un nuevo punto de datos
+      lastScrubIndex.current = scrubIndex;
+    } else if (scrubIndex === null) {
+      lastScrubIndex.current = null;
+    }
+  }, [scrubIndex]);
   const chartRef = useRef(null);
   const scrollContainerRef = useRef(null);
 

@@ -7,6 +7,21 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "shortcuts": [
+    {
+      "name": "Añadir gasto",
+      "short_name": "Gasto",
+      "description": "Registra un nuevo gasto rápidamente",
+      "url": "/?action=add-expense",
+      "icons": [{ "src": "/icon-expense.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Añadir ingreso",
+      "short_name": "Ingreso",
+      "url": "/?action=add-income",
+      "icons": [{ "src": "/icon-income.png", "sizes": "192x192" }]
+    }
+  ],
   "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#f8fafc",

@@ -7,7 +7,7 @@ const InvestmentAssetIcon = ({ asset, className = 'size-11' }) => {
   const symbol = asset?.symbol || asset?.name || '?';
 
   return (
-    <span className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-zinc-700 via-zinc-800 to-emerald-500/20 text-xs font-bold uppercase text-emerald-200 ring-1 ring-white/10 ${className}`}>
+    <span className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold uppercase text-emerald-200 ${className}`}>
       {image && !imageFailed ? (
         <img
           src={image}
