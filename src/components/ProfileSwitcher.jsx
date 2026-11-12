@@ -196,35 +196,7 @@ const ProfileSwitcher = ({
         <strong className="privacy-sensitive">{displayMoney(totalWealth)}</strong>
         <small>Total ahorrado de todos los meses</small>
       </div>
-    {/*}
-      <div className="profile-services">
-        <p>SERVICIOS</p>
-        <button onClick={() => scrollTo(settingsRef)}>
-          <span className="profile-service-icon"><Icon name="settings" size={18} /></span>
-          <span className="profile-service-copy">
-            <strong>Ajustes personales</strong>
-            <small>Preferencias y pantalla principal</small>
-          </span>
-          <Icon name="chevron" size={16} />
-        </button>
-        <button onClick={handleSyncShortcut}>
-          <span className="profile-service-icon"><Icon name="cloud" size={18} /></span>
-          <span className="profile-service-copy">
-            <strong>Sincronización</strong>
-            <small>{syncUser ? 'Gestionar tu cuenta en la nube' : 'Guarda tus datos en la nube'}</small>
-          </span>
-          <Icon name="chevron" size={16} />
-        </button>
-        <button onClick={exportData}>
-          <span className="profile-service-icon"><Icon name="download" size={18} /></span>
-          <span className="profile-service-copy">
-            <strong>Exportar datos</strong>
-            <small>Descarga una copia de tu información</small>
-          </span>
-          <Icon name="chevron" size={16} />
-        </button>
-      </div>
-    */}
+
       <div className="settings-group">
         <p>CUENTAS Y ESPACIOS COMPARTIDOS</p>
         {profiles.map((profile) => (
