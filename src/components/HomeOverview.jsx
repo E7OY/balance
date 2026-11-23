@@ -41,12 +41,12 @@ const HOME_TOKENS_CSS = `
   }
 
   /* CAPA DE FONDO INDEPENDIENTE CON DEGRADADO SUAVIZADO */
-  .nx-hero-bg-layer {
+.nx-hero-bg-layer {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 430px;
+    height: calc(430px + env(safe-area-inset-top, 0px));
     pointer-events: none;
     z-index: 0;
     overflow: hidden;
