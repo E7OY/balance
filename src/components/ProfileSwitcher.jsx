@@ -36,14 +36,46 @@ import { triggerHaptic } from '../utils/haptics';
 
 const PROFILE_REVOLUT_CSS = `
   .rev-profile-page {
+    min-height: 100dvh;
+    background-color: var(--surface-soft);
     padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 28px;
-    color: var(--text-main);
+    color: var(--ink);
+  }
+  .dark .rev-profile-page {
+    background-color: var(--canvas-dark);
+    color: var(--on-dark);
   }
   .rev-profile-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 10px;
+  }
+  .rev-invite-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 0;
+    background-color: var(--canvas-light);
+    color: var(--primary);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.24px;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+  .dark .rev-invite-pill {
+    background-color: var(--surface-elevated);
+    box-shadow: none;
+  }
+  .rev-invite-pill:active {
+    transform: scale(0.96);
   }
   .rev-profile-hero {
     display: flex;
@@ -79,12 +111,19 @@ const PROFILE_REVOLUT_CSS = `
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: var(--bg-card);
-    color: var(--text-main);
-    border: 2px solid var(--bg-page);
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    border: 2px solid var(--surface-soft);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  .dark .rev-profile-edit-badge {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    border-color: var(--canvas-dark);
+    box-shadow: none;
   }
   .rev-plan-pill {
     display: inline-flex;
@@ -93,11 +132,17 @@ const PROFILE_REVOLUT_CSS = `
     margin-top: 8px;
     padding: 5px 13px;
     border-radius: 999px;
-    background: var(--bg-card);
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.24px;
-    color: var(--text-main);
+  }
+  .dark .rev-plan-pill {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
   }
   .rev-quick-trio {
     display: grid;
@@ -106,16 +151,23 @@ const PROFILE_REVOLUT_CSS = `
     margin-bottom: 20px;
   }
   .rev-quick-tile {
-    background: var(--bg-card);
+    background-color: var(--canvas-light);
+    color: var(--ink);
     border: 0;
     border-radius: 20px;
     padding: 16px 10px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 7px;
     cursor: pointer;
     transition: transform 0.12s ease;
+  }
+  .dark .rev-quick-tile {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
   }
   .rev-quick-tile:active {
     transform: scale(0.96);
@@ -128,10 +180,24 @@ const PROFILE_REVOLUT_CSS = `
     margin: 0 0 8px 6px;
   }
   .rev-settings-card {
-    background: var(--bg-card);
+    background-color: var(--canvas-light);
+    color: var(--ink);
     border-radius: 20px;
     padding: 2px 18px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  }
+  .dark .rev-settings-card {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
+  }
+  .bottom-sheet .rev-settings-card {
+    background-color: var(--surface-soft);
+    box-shadow: none;
+  }
+  .dark .bottom-sheet .rev-settings-card {
+    background-color: var(--surface-elevated);
   }
   .rev-settings-row {
     display: flex;
@@ -158,6 +224,31 @@ const PROFILE_REVOLUT_CSS = `
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+  }
+  .rev-neutral-chip {
+    background-color: var(--surface-soft);
+    color: var(--text-mute);
+  }
+  .dark .rev-neutral-chip {
+    background-color: #242428;
+    color: var(--on-dark-mute);
+  }
+  .rev-home-select {
+    width: auto !important;
+    margin: 0 !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    border-radius: var(--rounded-full) !important;
+    background-color: var(--surface-soft) !important;
+    border: 0 !important;
+    color: var(--ink) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+  }
+  .dark .rev-home-select {
+    background-color: #242428 !important;
+    color: var(--on-dark) !important;
   }
   .rev-switch {
     width: 46px;
@@ -301,8 +392,7 @@ const ProfileSwitcher = ({
         </span>
         <button
           type="button"
-          className="nx-btn-pill-sm"
-          style={{ color: 'var(--primary)' }}
+          className="rev-invite-pill"
           onClick={() => {
             setCopiedCode(false);
             setIsSharePanelOpen(true);
@@ -416,11 +506,8 @@ const ProfileSwitcher = ({
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                 <span
-                  className="rev-settings-icon"
-                  style={{
-                    background: active ? 'var(--primary)' : 'var(--bg-card-alt)',
-                    color: active ? '#FFFFFF' : 'var(--text-mute)',
-                  }}
+                  className={`rev-settings-icon ${active ? '' : 'rev-neutral-chip'}`}
+                  style={active ? { background: 'var(--primary)', color: '#FFFFFF' } : undefined}
                 >
                   {shared ? <Users size={16} /> : <User size={16} />}
                 </span>
@@ -586,7 +673,7 @@ const ProfileSwitcher = ({
         {pinEnabled && (
           <button type="button" className="rev-settings-row" onClick={onChangePin}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span className="rev-settings-icon" style={{ background: 'var(--bg-card-alt)', color: 'var(--text-main)' }}>
+              <span className="rev-settings-icon rev-neutral-chip">
                 <KeyRound size={16} />
               </span>
               <div>
@@ -604,7 +691,6 @@ const ProfileSwitcher = ({
       {/* GRUPO 3: APARIENCIA Y PREFERENCIAS */}
       <p className="rev-section-label">Apariencia y preferencias</p>
       <div className="rev-settings-card">
-        {/* OPCIÓN PARA ALTERNAR CABECERA CON IMAGEN Y DEGRADADO EN CUENTAS */}
         <div className="rev-settings-row" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
@@ -698,19 +784,7 @@ const ProfileSwitcher = ({
           <select
             value={defaultHomeTab}
             onChange={(e) => onDefaultHomeTabChange(e.target.value)}
-            style={{
-              width: 'auto',
-              margin: 0,
-              height: '36px',
-              padding: '0 12px',
-              borderRadius: 'var(--rounded-full)',
-              backgroundColor: 'var(--bg-card-alt)',
-              border: 0,
-              color: 'var(--text-main)',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
+            className="rev-home-select"
           >
             <option value="expenses">Inicio</option>
             <option value="movements">Cuentas</option>
@@ -870,7 +944,7 @@ const ProfileSwitcher = ({
 
               <button type="button" className="rev-settings-row" onClick={() => importInputRef.current?.click()}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="rev-settings-icon" style={{ background: 'var(--bg-card-alt)', color: 'var(--text-main)' }}>
+                  <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
                     <Upload size={17} />
                   </span>
                   <div>
@@ -948,7 +1022,7 @@ const ProfileSwitcher = ({
                 <div style={{
                   padding: '14px',
                   borderRadius: '12px',
-                  background: 'var(--bg-card)',
+                  background: 'var(--surface-soft)',
                   fontFamily: 'monospace',
                   fontSize: '13px',
                   wordBreak: 'break-all',

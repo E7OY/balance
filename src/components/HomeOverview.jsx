@@ -4,8 +4,6 @@ import {
   ArrowUp,
   BarChart2,
   CreditCard,
-  Eye,
-  EyeOff,
   GitFork,
   ListChecks,
   MoreHorizontal,
@@ -14,13 +12,21 @@ import {
   X,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import TransactionItem from './TransactionItem';
+import TransactionItem, { getCategoryVisuals } from './TransactionItem';
 import NexoLogo from './NexoLogo';
 import { useElasticScroll } from '../hooks/useElasticScroll';
+import { getFromLocalStorage } from '../utils/localStorage';
 import { triggerHaptic } from '../utils/haptics';
 
 const HOME_TOKENS_CSS = `
-  /* HERO BAND DARK (#000000 por defecto o imagen /hero-bg.jpg cuando colorfulHero está activo) */
+  /* Fondo gris suave (#F3F4F6) en modo claro para que las tarjetas blancas (#FFFFFF) destaquen como en Revolut */
+  .stage:not(.dark),
+  .stage:not(.dark) .phone,
+  .stage:not(.dark) .screen-content {
+    background-color: var(--surface-soft);
+  }
+
+  /* HERO BAND DARK (#000000 por defecto o imagen /hero_bg.jpg cuando colorfulHero está activo) */
   .nx-hero-band {
     background-color: var(--canvas-dark);
     color: var(--on-dark);
@@ -30,7 +36,7 @@ const HOME_TOKENS_CSS = `
     overflow: hidden;
   }
   .nx-hero-band.colorful {
-    background: url('/hero_bg.jpg') center / cover no-repeat;
+    background: #3D17EE url('/hero_bg.jpg') center / cover no-repeat;
     padding-bottom: 54px;
   }
   .dark .nx-hero-band.colorful::before {
@@ -183,46 +189,46 @@ const HOME_TOKENS_CSS = `
     flex-wrap: wrap;
   }
 
-  /* CATALOGUE BAND */
+  /* CATALOGUE BAND: FONDO GRIS SUAVE (#F3F4F6) Y TARJETAS EN BLANCO PURO (#FFFFFF) */
   .nx-catalogue-band {
-    background-color: var(--bg-page);
+    background-color: var(--surface-soft);
     padding: var(--sp-xl) var(--sp-lg) var(--sp-xxl);
     position: relative;
     z-index: 2;
+  }
+  .dark .nx-catalogue-band {
+    background-color: var(--canvas-dark);
   }
   .nx-catalogue-band.colorful {
     background-color: transparent;
     margin-top: -32px;
     padding-top: 0;
   }
-  .nx-featured-banner {
-    background-color: var(--primary);
-    color: var(--on-primary);
-    border-radius: var(--rounded-lg);
-    padding: var(--sp-xl);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-md);
-    cursor: pointer;
-    position: relative;
-    margin-bottom: var(--sp-xl);
-  }
+
   .nx-tx-catalogue-card {
-    background-color: var(--bg-card);
+    background-color: var(--canvas-light);
+    color: var(--ink);
     border-radius: var(--rounded-lg);
     padding: var(--sp-xl);
     margin-bottom: var(--sp-xl);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
   }
+  .dark .nx-tx-catalogue-card {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
+  }
+
   .nx-widgets-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--sp-md);
   }
   .nx-widget-tile {
-    background-color: var(--bg-card);
+    background-color: var(--canvas-light);
+    color: var(--ink);
     border-radius: var(--rounded-lg);
-    padding: var(--sp-xl);
+    padding: 20px;
     border: 0;
     text-align: left;
     display: flex;
@@ -231,22 +237,26 @@ const HOME_TOKENS_CSS = `
     min-height: 172px;
     cursor: pointer;
     transition: transform 0.14s ease;
+    min-width: 0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  }
+  .dark .nx-widget-tile {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
   }
   .nx-widget-tile:active {
     transform: scale(0.98);
   }
-  .nx-mini-card {
-    width: 66px;
-    height: 42px;
-    border-radius: var(--rounded-md);
-    background-color: var(--canvas-dark);
-    color: var(--on-dark);
-    padding: 6px 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    margin: 0 auto;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+
+  .nx-cat-track {
+    height: 4px;
+    border-radius: var(--rounded-full);
+    background-color: var(--surface-soft);
+    overflow: hidden;
+  }
+  .dark .nx-cat-track {
+    background-color: #242428;
   }
 `;
 
@@ -266,12 +276,13 @@ const HomeOverview = ({
     investmentRecords = [],
     filters,
     activeProfile,
+    activeProfileId,
     profiles = [],
+    getTransactionsForProfile,
     isAmountsHidden,
     setIsAmountsHidden,
   } = useFinance();
 
-  const [promoDismissed, setPromoDismissed] = useState(false);
   const [showAllTx, setShowAllTx] = useState(false);
   const scrollContainerRef = useRef(null);
   const longPressRef = useRef(null);
@@ -307,16 +318,63 @@ const HomeOverview = ({
   const available = totals.income - totals.expenses;
   const expenseDiff = totals.expenses - previousMonthExpenses;
 
-  const totalWealth = useMemo(() => {
-    const cashTotal = transactions.reduce((acc, tx) => {
-      const amt = Number(tx.amount) || 0;
-      return tx.type === 'Ingreso' ? acc + amt : tx.type === 'Gasto' ? acc - amt : acc;
-    }, 0);
-    const investmentsTotal = (investmentRecords || []).reduce((acc, rec) => (
-      rec.soldAt ? acc : acc + (Number(rec.currentValue) || 0)
-    ), 0);
-    return cashTotal + investmentsTotal;
-  }, [transactions, investmentRecords]);
+  // Patrimonio total acumulado entre TODAS las cuentas (efectivo + inversiones activas)
+  const { totalWealth, allAccountsMonthlyDelta } = useMemo(() => {
+    const accountList = profiles.length > 0 ? profiles : (activeProfile ? [activeProfile] : []);
+    let wealth = 0;
+    let monthlyDelta = 0;
+
+    accountList.forEach((profile) => {
+      const pTxs = profile.id === activeProfileId
+        ? transactions
+        : (getTransactionsForProfile ? getTransactionsForProfile(profile.id) : []);
+
+      (Array.isArray(pTxs) ? pTxs : []).forEach((tx) => {
+        const amt = Number(tx.amount) || 0;
+        if (!Number.isFinite(amt) || amt <= 0) return;
+        if (tx.type === 'Ingreso') {
+          wealth += amt;
+          if (typeof tx.date === 'string' && tx.date.startsWith(monthPrefix)) monthlyDelta += amt;
+        } else if (tx.type === 'Gasto') {
+          wealth -= amt;
+          if (typeof tx.date === 'string' && tx.date.startsWith(monthPrefix)) monthlyDelta -= amt;
+        }
+      });
+
+      const pInvs = profile.id === activeProfileId
+        ? investmentRecords
+        : (getFromLocalStorage(`finance:${profile.id}:investments`) || []);
+
+      (Array.isArray(pInvs) ? pInvs : []).forEach((rec) => {
+        if (!rec?.soldAt) {
+          wealth += Number(rec?.currentValue) || 0;
+        }
+      });
+    });
+
+    return { totalWealth: wealth, allAccountsMonthlyDelta: monthlyDelta };
+  }, [profiles, activeProfile, activeProfileId, transactions, investmentRecords, getTransactionsForProfile, monthPrefix]);
+
+  // Top 3 categorías de gasto del mes para el widget de Gastos por categoría
+  const topCategories = useMemo(() => {
+    const map = {};
+    monthlyTransactions
+      .filter((tx) => tx.type === 'Gasto')
+      .forEach((tx) => {
+        const cat = tx.category || 'Otros';
+        map[cat] = (map[cat] || 0) + (Number(tx.amount) || 0);
+      });
+
+    return Object.entries(map)
+      .map(([name, amount]) => ({
+        name,
+        amount,
+        share: totals.expenses > 0 ? Math.min(100, Math.round((amount / totals.expenses) * 100)) : 0,
+        color: getCategoryVisuals(name, 'Gasto').bg,
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 3);
+  }, [monthlyTransactions, totals.expenses]);
 
   const spendWidgetChart = useMemo(() => {
     const daysInMonth = new Date(filters.year, filters.month + 1, 0).getDate();
@@ -516,9 +574,8 @@ const HomeOverview = ({
         </div>
       </section>
 
-      {/* BANDA 2: CATALOGUE BAND */}
+      {/* BANDA 2: CATALOGUE BAND (FONDO GRIS #F3F4F6 Y TARJETAS BLANCAS #FFFFFF) */}
       <div className={`nx-catalogue-band ${colorfulHero ? 'colorful' : ''}`}>
-
         <div className="nx-tx-catalogue-card">
           <div style={{
             display: 'flex',
@@ -536,12 +593,19 @@ const HomeOverview = ({
                 <TransactionItem key={tx.id} transaction={tx} />
               ))}
               {monthlyTransactions.length > 4 && (
-                <div style={{ textAlign: 'center', marginTop: 'var(--sp-md)' }}>
+                <div style={{ textAlign: 'center', marginTop: 'var(--sp-sm)' }}>
                   <button
                     type="button"
-                    className="nx-btn-pill-sm"
-                    style={{ color: 'var(--primary)' }}
                     onClick={() => setShowAllTx((prev) => !prev)}
+                    style={{
+                      background: 'transparent',
+                      border: 0,
+                      color: 'var(--primary)',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                    }}
                   >
                     {showAllTx ? 'Mostrar menos' : 'Ver todo'}
                   </button>
@@ -566,6 +630,7 @@ const HomeOverview = ({
         </h2>
 
         <div className="nx-widgets-grid">
+          {/* WIDGET 1: GASTO ESTE MES */}
           <button type="button" className="nx-widget-tile" onClick={onOpenMovements}>
             <div>
               <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block' }}>
@@ -614,7 +679,8 @@ const HomeOverview = ({
             </svg>
           </button>
 
-          <button type="button" className="nx-widget-tile" onClick={onOpenProfile}>
+          {/* WIDGET 2: PATRIMONIO TOTAL ENTRE TODAS LAS CUENTAS */}
+          <button type="button" className="nx-widget-tile" onClick={onOpenMovements}>
             <div>
               <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block' }}>
                 Patrimonio total
@@ -632,60 +698,96 @@ const HomeOverview = ({
                   alignItems: 'center',
                   gap: '4px',
                   marginTop: '6px',
-                  color: available >= 0 ? 'var(--primary)' : 'var(--danger-red)',
+                  color: allAccountsMonthlyDelta >= 0 ? 'var(--primary)' : 'var(--danger-red)',
                 }}
               >
-                <span style={{ fontSize: '9px' }}>{available >= 0 ? '▲' : '▼'}</span>
-                {displayCompactMoney(Math.abs(available))}
+                <span style={{ fontSize: '9px' }}>{allAccountsMonthlyDelta >= 0 ? '▲' : '▼'}</span>
+                {displayCompactMoney(Math.abs(allAccountsMonthlyDelta))}
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: '16px' }} aria-hidden="true">
-              <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--accent-light-blue)', border: '2.5px solid var(--bg-card)', zIndex: 3 }} />
-              <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--accent-brown)', border: '2.5px solid var(--bg-card)', marginLeft: '-8px', zIndex: 2 }} />
-              <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--accent-teal)', border: '2.5px solid var(--bg-card)', marginLeft: '-8px', zIndex: 1 }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">
+                <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-light-blue)', border: '2.5px solid var(--canvas-light)', zIndex: 3 }} />
+                <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-brown)', border: '2.5px solid var(--canvas-light)', marginLeft: '-8px', zIndex: 2 }} />
+                <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-teal)', border: '2.5px solid var(--canvas-light)', marginLeft: '-8px', zIndex: 1 }} />
+              </div>
+              {profiles.length > 1 && (
+                <span className="nx-label" style={{ color: 'var(--text-mute)', fontSize: '11px' }}>
+                  {profiles.length} cuentas
+                </span>
+              )}
             </div>
           </button>
 
-          <div
+          {/* WIDGET 3: GASTOS POR CATEGORÍA */}
+          <button
+            type="button"
             className="nx-widget-tile"
-            onClick={() => {
-              triggerHaptic();
-              setIsAmountsHidden?.((prev) => !prev);
-            }}
-            style={{ alignItems: 'center', textAlign: 'center' }}
+            onClick={onOpenLimits}
+            style={{ padding: '18px' }}
           >
-            <div className="nx-mini-card" aria-hidden="true">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '7px', fontWeight: 600, letterSpacing: '0.24px' }}>NEXO</span>
-                <span style={{ width: '9px', height: '7px', borderRadius: '2px', background: 'rgba(255,255,255,0.28)' }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-orange)', marginLeft: '-3px' }} />
-              </div>
+            <div style={{ width: '100%' }}>
+              <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block', marginBottom: '10px' }}>
+                Por categoría
+              </span>
+
+              {topCategories.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', width: '100%' }}>
+                  {topCategories.map((cat) => (
+                    <div key={cat.name} style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', fontSize: '12px', marginBottom: '4px' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          minWidth: 0,
+                          fontWeight: 500,
+                          color: 'var(--text-main)',
+                        }}>
+                          <i style={{
+                            width: '7px',
+                            height: '7px',
+                            borderRadius: '50%',
+                            backgroundColor: cat.color,
+                            flexShrink: 0,
+                          }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {cat.name}
+                          </span>
+                        </span>
+                        <span
+                          className="privacy-sensitive"
+                          style={{ fontSize: '11.5px', fontWeight: 500, color: 'var(--text-mute)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}
+                        >
+                          {displayCompactMoney(cat.amount)}
+                        </span>
+                      </div>
+                      <div className="nx-cat-track">
+                        <div style={{
+                          height: '100%',
+                          width: `${cat.share}%`,
+                          borderRadius: 'var(--rounded-full)',
+                          backgroundColor: cat.color,
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: '14px' }}>
+                  <span style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-main)' }}>
+                    Sin gastos
+                  </span>
+                  <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '4px' }}>
+                    Toca para ver topes
+                  </span>
+                </div>
+              )}
             </div>
+          </button>
 
-            <span className="nx-label" style={{ color: 'var(--text-main)', margin: '8px 0' }}>
-              {isAmountsHidden ? 'Saldos ocultos' : 'Privacidad'}
-            </span>
-
-            <span
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--rounded-full)',
-                backgroundColor: 'rgba(73, 79, 223, 0.14)',
-                color: 'var(--primary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {isAmountsHidden ? <EyeOff size={18} /> : <Eye size={18} />}
-            </span>
-          </div>
-
+          {/* WIDGET 4: ESPACIO RÁPIDO CON GLYPH NEXO */}
           <div className="nx-widget-tile" style={{ alignItems: 'center', textAlign: 'center' }}>
             <div
               onClick={() => {

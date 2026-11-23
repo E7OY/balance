@@ -22,11 +22,11 @@ import TransactionItem from './TransactionItem';
 import { triggerHaptic } from '../utils/haptics';
 
 const CARD_THEMES = [
-  { id: 'standard', label: 'Negro Estándar', bg: '#141416' },
-  { id: 'cobalt', label: 'Azul Cobalto', bg: '#494fdf' },
-  { id: 'teal', label: 'Verde Azulado', bg: '#00a87e' },
-  { id: 'pink', label: 'Rosa Intenso', bg: '#e61e49' },
-  { id: 'brown', label: 'Bronce', bg: '#936d62' },
+  { id: 'standard', label: 'Negro Estándar', bg: 'linear-gradient(145deg, #2D2E32 0%, #1C1D20 100%)' },
+  { id: 'cobalt', label: 'Azul Cobalto', bg: 'linear-gradient(145deg, #494fdf 0%, #2D32B8 100%)' },
+  { id: 'teal', label: 'Verde Azulado', bg: 'linear-gradient(145deg, #00a87e 0%, #007558 100%)' },
+  { id: 'pink', label: 'Rosa Intenso', bg: 'linear-gradient(145deg, #e61e49 0%, #A81032 100%)' },
+  { id: 'brown', label: 'Bronce', bg: 'linear-gradient(145deg, #936d62 0%, #63473F 100%)' },
 ];
 
 const getMaskedDigits = (id = '') => {
@@ -114,25 +114,32 @@ const NX_ACCOUNTS_CSS = `
     z-index: 35;
   }
 
-  /* VISTA DETALLE DE TARJETA */
+  /* DETALLE DE TARJETA: ESCENARIO GRIS OSCURO ARRIBA + HOJA CLARA REDONDEADA CON TARJETAS BLANCAS */
   .nx-card-hero-band {
-    background-color: var(--canvas-dark);
-    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) var(--sp-xxl);
+    background-color: #46474A;
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) 38px;
     color: var(--on-dark);
   }
   .nx-card-hero-band.colorful {
-    background: linear-gradient(180deg, #2B1378 0%, #2C2E31 100%);
+    background: linear-gradient(180deg, #2B1378 0%, #46474A 100%);
+  }
+  .dark .nx-card-hero-band {
+    background-color: #16171A;
+  }
+  .dark .nx-card-hero-band.colorful {
+    background: linear-gradient(180deg, #231063 0%, #16171A 100%);
   }
   .nx-physical-card {
     position: relative;
     width: 100%;
     aspect-ratio: 1.586 / 1;
-    border-radius: var(--rounded-lg);
+    border-radius: 18px;
     padding: var(--sp-xl);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     overflow: hidden;
   }
   .nx-frost-overlay {
@@ -144,13 +151,56 @@ const NX_ACCOUNTS_CSS = `
       linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(190, 225, 255, 0.16) 100%);
     backdrop-filter: blur(6px) saturate(130%);
     -webkit-backdrop-filter: blur(6px) saturate(130%);
-    border-radius: var(--rounded-lg);
+    border-radius: 18px;
     pointer-events: none;
     z-index: 2;
   }
-  .nx-card-catalogue-band {
-    background-color: var(--bg-page);
-    padding: var(--sp-xl) var(--sp-lg) var(--sp-xxl);
+
+  /* HOJA INFERIOR REDONDEADA: FONDO GRIS SUAVE (#F3F4F6) Y TARJETAS/BOTONES EN BLANCO PURO (#FFFFFF) */
+  .nx-card-detail-sheet {
+    position: relative;
+    z-index: 3;
+    margin-top: -20px;
+    border-radius: 26px 26px 0 0;
+    background-color: var(--surface-soft);
+    padding: 10px var(--sp-lg) var(--sp-xxl);
+    min-height: calc(100dvh - 300px);
+  }
+  .dark .nx-card-detail-sheet {
+    background-color: var(--canvas-dark);
+  }
+  .nx-detail-circle-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--rounded-full);
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s ease, background-color 0.15s ease;
+  }
+  .dark .nx-detail-circle-btn {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
+  }
+  .nx-detail-circle-btn.frozen {
+    background-color: var(--primary);
+    color: #FFFFFF;
+  }
+  .nx-detail-white-card {
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    border-radius: var(--rounded-lg);
+    padding: var(--sp-xl);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  }
+  .dark .nx-detail-white-card {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
   }
 `;
 
@@ -264,7 +314,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
     <>
       <style>{NX_ACCOUNTS_CSS}</style>
 
-      {/* PANTALLA 1: LISTA DE CUENTAS (DEGRADADO O NEGRO PURO SEGÚN OPCIÓN) */}
+      {/* PANTALLA 1: LISTA DE CUENTAS */}
       {viewMode === 'list' && (
         <div className={`nx-accounts-dark-screen ${colorfulHero ? 'colorful' : ''}`}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
@@ -293,6 +343,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
             Cuentas
           </h1>
 
+          {/* TARJETA CON TODAS LAS CUENTAS */}
           <div className="nx-elevated-group">
             {accountsData.map((acc, index) => {
               const isSelected = acc.id === activeProfileId;
@@ -309,7 +360,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                     setViewMode('detail');
                   }}
                 >
-                  <span className="nx-mini-thumb" style={{ backgroundColor: acc.theme.bg }}>
+                  <span className="nx-mini-thumb" style={{ background: acc.theme.bg }}>
                     <span style={{ fontSize: '6px', fontWeight: 500, letterSpacing: '0.24px' }}>NEXO</span>
                     <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
@@ -352,6 +403,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
             })}
           </div>
 
+          {/* TARJETA DE ANÁLISIS MENSUAL */}
           <div className="nx-elevated-group">
             <button
               type="button"
@@ -378,6 +430,69 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
             </button>
           </div>
 
+          {/* TARJETA DE PRIVACIDAD */}
+          <div
+            className="nx-elevated-group"
+            onClick={() => {
+              triggerHaptic();
+              setIsAmountsHidden?.((prev) => !prev);
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                triggerHaptic();
+                setIsAmountsHidden?.((prev) => !prev);
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="nx-account-row">
+              <span
+                className="nx-mini-thumb"
+                style={{
+                  backgroundColor: '#141416',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                }}
+                aria-hidden="true"
+              >
+                <span style={{ fontSize: '6px', fontWeight: 600, letterSpacing: '0.24px', color: '#FFFFFF' }}>NEXO</span>
+                <span style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
+                  <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-orange)', marginLeft: '-2px' }} />
+                </span>
+              </span>
+
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
+                  {isAmountsHidden ? 'Saldos ocultos' : 'Privacidad'}
+                </span>
+                <span className="nx-label" style={{ display: 'block', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>
+                  {isAmountsHidden ? 'Toca para mostrar tus importes' : 'Ocultar importes en todas las cuentas'}
+                </span>
+              </span>
+
+              <span
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: 'var(--rounded-full)',
+                  backgroundColor: isAmountsHidden ? 'var(--canvas-light)' : 'rgba(255, 255, 255, 0.18)',
+                  color: isAmountsHidden ? 'var(--canvas-dark)' : '#FFFFFF',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
+                }}
+                aria-label={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
+              >
+                {isAmountsHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+            </div>
+          </div>
+
           <button
             type="button"
             className="nx-btn-primary nx-add-account-float"
@@ -394,7 +509,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
         </div>
       )}
 
-      {/* PANTALLA 2: DETALLE DE CUENTA */}
+      {/* PANTALLA 2: DETALLE DE TARJETA CON HOJA INFERIOR REDONDEADA Y TARJETAS BLANCAS */}
       {viewMode === 'detail' && activeAccount && (
         <div>
           <div className={`nx-card-hero-band ${colorfulHero ? 'colorful' : ''}`}>
@@ -404,22 +519,22 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 onClick={() => setViewMode('list')}
                 aria-label="Volver a cuentas"
                 style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '34px',
+                  height: '34px',
                   borderRadius: 'var(--rounded-full)',
                   border: 0,
-                  backgroundColor: colorfulHero ? 'rgba(255,255,255,0.16)' : 'var(--surface-elevated)',
-                  color: 'var(--on-dark)',
+                  backgroundColor: 'transparent',
+                  color: '#FFFFFF',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
                 }}
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={20} strokeWidth={2.2} />
               </button>
 
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '75%' }}>
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '82%' }}>
                 {accountsData.map((acc) => (
                   <button
                     key={acc.id}
@@ -429,18 +544,18 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                       switchProfile(acc.id);
                     }}
                     style={{
-                      height: '36px',
-                      padding: '8px 16px',
+                      height: '34px',
+                      padding: '6px 14px',
                       borderRadius: 'var(--rounded-full)',
                       border: 0,
-                      fontSize: '13px',
+                      fontSize: '12.5px',
                       fontWeight: 500,
                       whiteSpace: 'nowrap',
                       cursor: 'pointer',
                       backgroundColor: acc.id === activeProfileId
-                        ? 'var(--canvas-light)'
-                        : (colorfulHero ? 'rgba(255,255,255,0.16)' : 'var(--surface-elevated)'),
-                      color: acc.id === activeProfileId ? 'var(--canvas-dark)' : 'var(--on-dark)',
+                        ? '#FFFFFF'
+                        : 'rgba(255, 255, 255, 0.14)',
+                      color: acc.id === activeProfileId ? '#0B0B0D' : '#FFFFFF',
                     }}
                   >
                     {acc.name}
@@ -449,11 +564,11 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
               </div>
             </div>
 
-            <div className="nx-physical-card" style={{ backgroundColor: activeAccount.theme.bg }}>
+            <div className="nx-physical-card" style={{ background: activeAccount.theme.bg }}>
               {activeAccount.isFrozen && <div className="nx-frost-overlay" />}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 3 }}>
-                <span className="nx-label" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                <span style={{ fontSize: '15px', fontWeight: 500, color: 'rgba(255,255,255,0.92)' }}>
                   {activeAccount.isShared ? 'Compartida' : 'Estándar'}
                 </span>
                 <span className="nx-display privacy-sensitive" style={{ fontSize: '20px' }}>
@@ -466,20 +581,23 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                   <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
                     {activeAccount.name}
                   </span>
-                  <span className="nx-label" style={{ opacity: 0.8, fontVariantNumeric: 'tabular-nums' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
                     •• {activeAccount.digits}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent-orange)', marginLeft: '-10px', opacity: 0.9 }} />
+                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.38)' }} />
+                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', marginLeft: '-10px' }} />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="nx-card-catalogue-band">
+          {/* HOJA REDONDEADA SUPERIOR (#F3F4F6) CON BOTONES Y TARJETAS EN BLANCO (#FFFFFF) */}
+          <div className="nx-card-detail-sheet">
+            <div className="sheet-handle" style={{ margin: '0 auto 16px' }} />
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
               <button
                 type="button"
@@ -489,7 +607,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 }}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text-main)' }}
               >
-                <span style={{ width: '48px', height: '48px', borderRadius: 'var(--rounded-full)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="nx-detail-circle-btn">
                   {isAmountsHidden ? <EyeOff size={20} /> : <Eye size={20} />}
                 </span>
                 <span className="nx-label">{isAmountsHidden ? 'Mostrar' : 'Ocultar'}</span>
@@ -500,16 +618,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 onClick={() => toggleFreeze(activeAccount.id)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: activeAccount.isFrozen ? 'var(--primary)' : 'var(--text-main)' }}
               >
-                <span style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: 'var(--rounded-full)',
-                  backgroundColor: activeAccount.isFrozen ? 'var(--primary)' : 'var(--bg-card)',
-                  color: activeAccount.isFrozen ? '#FFFFFF' : 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
+                <span className={`nx-detail-circle-btn ${activeAccount.isFrozen ? 'frozen' : ''}`}>
                   <Snowflake size={20} />
                 </span>
                 <span className="nx-label">{activeAccount.isFrozen ? 'Descongelar' : 'Congelar'}</span>
@@ -524,14 +633,14 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 }}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text-main)' }}
               >
-                <span style={{ width: '48px', height: '48px', borderRadius: 'var(--rounded-full)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="nx-detail-circle-btn">
                   <Settings size={20} />
                 </span>
                 <span className="nx-label">Ajustes</span>
               </button>
             </div>
 
-            <div className="nx-card" style={{ marginBottom: 'var(--sp-lg)' }}>
+            <div className="nx-detail-white-card" style={{ marginBottom: 'var(--sp-md)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--sp-sm)' }}>
                 <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Transacción</span>
                 <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Importe</span>
@@ -543,12 +652,19 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                     <TransactionItem key={tx.id} transaction={tx} />
                   ))}
                   {transactions.length > 4 && (
-                    <div style={{ textAlign: 'center', marginTop: 'var(--sp-md)' }}>
+                    <div style={{ textAlign: 'center', marginTop: 'var(--sp-sm)' }}>
                       <button
                         type="button"
-                        className="nx-btn-pill-sm"
-                        style={{ color: 'var(--primary)' }}
                         onClick={() => setShowAllCardTx((prev) => !prev)}
+                        style={{
+                          background: 'transparent',
+                          border: 0,
+                          color: 'var(--primary)',
+                          fontSize: '13.5px',
+                          fontWeight: 600,
+                          padding: '8px 16px',
+                          cursor: 'pointer',
+                        }}
                       >
                         {showAllCardTx ? 'Mostrar menos' : 'Ver todo'}
                       </button>
@@ -565,10 +681,11 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
             <button
               type="button"
               onClick={() => setIsAnalyticsOpen(true)}
-              className="nx-card"
+              className="nx-detail-white-card"
               style={{
                 width: '100%',
                 border: 0,
+                padding: '16px 20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -642,7 +759,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                         width: '38px',
                         height: '38px',
                         borderRadius: 'var(--rounded-full)',
-                        backgroundColor: t.bg,
+                        background: t.bg,
                         border: selectedCardTheme === t.id ? '3px solid var(--primary)' : '2px solid transparent',
                         cursor: 'pointer',
                       }}
@@ -733,7 +850,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                     width: '38px',
                     height: '38px',
                     borderRadius: 'var(--rounded-full)',
-                    backgroundColor: t.bg,
+                    background: t.bg,
                     border: activeAccount.theme.id === t.id ? '3px solid var(--primary)' : '2px solid transparent',
                     cursor: 'pointer',
                   }}
