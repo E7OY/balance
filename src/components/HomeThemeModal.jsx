@@ -364,7 +364,7 @@ const HomeThemeModal = ({
 
                       <div style={{ textAlign: 'center' }}>
                         <span style={{ display: 'block', fontSize: '10px', opacity: 0.85 }}>{accountLabel}</span>
-                        <strong style={{ display: 'block', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.03em', margin: '2px 0 8px' }}>
+                        <strong style={{ display: 'block', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.03em', margin: '2px 0 8px' }}>
                           {balanceDisplay}
                         </strong>
                         <span style={{
