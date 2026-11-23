@@ -62,12 +62,23 @@ const NX_ACCOUNTS_CSS = `
     flex-direction: column;
     position: relative;
   }
+  .nx-accounts-dark-screen.colorful {
+    background:
+      radial-gradient(95% 50% at 50% 8%, #4721E0 0%, #2B1378 50%, transparent 88%),
+      linear-gradient(180deg, #2B1378 0%, #434157 56%, #6C6B73 100%);
+  }
   .nx-elevated-group {
     background-color: var(--surface-elevated);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--rounded-lg);
     padding: var(--sp-xs) var(--sp-xl);
     margin-bottom: var(--sp-lg);
+  }
+  .nx-accounts-dark-screen.colorful .nx-elevated-group {
+    background: rgba(255, 255, 255, 0.13);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
   }
   .nx-account-row {
     display: flex;
@@ -109,6 +120,9 @@ const NX_ACCOUNTS_CSS = `
     padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) var(--sp-xxl);
     color: var(--on-dark);
   }
+  .nx-card-hero-band.colorful {
+    background: linear-gradient(180deg, #2B1378 0%, #2C2E31 100%);
+  }
   .nx-physical-card {
     position: relative;
     width: 100%;
@@ -140,7 +154,7 @@ const NX_ACCOUNTS_CSS = `
   }
 `;
 
-const MovementsView = ({ onClose, onOpenLimits }) => {
+const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   const {
     profiles,
     activeProfile,
@@ -250,9 +264,9 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
     <>
       <style>{NX_ACCOUNTS_CSS}</style>
 
-      {/* PANTALLA 1: LISTA DE CUENTAS SOBRE CANVAS DARK (#000000) */}
+      {/* PANTALLA 1: LISTA DE CUENTAS (DEGRADADO O NEGRO PURO SEGÚN OPCIÓN) */}
       {viewMode === 'list' && (
-        <div className="nx-accounts-dark-screen">
+        <div className={`nx-accounts-dark-screen ${colorfulHero ? 'colorful' : ''}`}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
             <button
               type="button"
@@ -263,7 +277,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                 height: '36px',
                 borderRadius: 'var(--rounded-full)',
                 border: 0,
-                backgroundColor: 'var(--surface-elevated)',
+                backgroundColor: colorfulHero ? 'rgba(255, 255, 255, 0.16)' : 'var(--surface-elevated)',
                 color: 'var(--on-dark)',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -287,7 +301,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   key={acc.id}
                   type="button"
                   className="nx-account-row"
-                  style={{ borderBottom: index === accountsData.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.08)' }}
+                  style={{ borderBottom: index === accountsData.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.1)' }}
                   onClick={() => {
                     triggerHaptic();
                     switchProfile(acc.id);
@@ -311,7 +325,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</span>
                       {acc.isFrozen && <span className="nx-badge-feature">Congelada</span>}
                     </span>
-                    <span className="nx-label privacy-sensitive" style={{ display: 'block', color: 'var(--on-dark-mute)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
+                    <span className="nx-label privacy-sensitive" style={{ display: 'block', color: 'rgba(255,255,255,0.75)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
                       ••• {acc.digits} · {displayMoney(acc.balance)}
                     </span>
                   </span>
@@ -331,7 +345,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                         <Check size={12} strokeWidth={2.5} />
                       </span>
                     )}
-                    <ChevronRight size={17} style={{ color: 'var(--on-dark-mute)' }} />
+                    <ChevronRight size={17} style={{ opacity: 0.7 }} />
                   </span>
                 </button>
               );
@@ -348,7 +362,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                 width: '36px',
                 height: '36px',
                 borderRadius: 'var(--rounded-full)',
-                backgroundColor: 'var(--primary)',
+                backgroundColor: colorfulHero ? 'rgba(255,255,255,0.18)' : 'var(--primary)',
                 color: '#FFFFFF',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -360,11 +374,10 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               <span style={{ flex: 1, fontSize: '14px', fontWeight: 500 }}>
                 Análisis mensual de {activeAccount?.name}
               </span>
-              <ChevronRight size={17} style={{ color: 'var(--on-dark-mute)' }} />
+              <ChevronRight size={17} style={{ opacity: 0.7 }} />
             </button>
           </div>
 
-          {/* PRIMARY CTA: WHITE PILL ON BLACK */}
           <button
             type="button"
             className="nx-btn-primary nx-add-account-float"
@@ -381,10 +394,10 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
         </div>
       )}
 
-      {/* PANTALLA 2: DETALLE DE CUENTA (BANDA NEGRA SUPERIOR + BANDA BLANCA INFERIOR) */}
+      {/* PANTALLA 2: DETALLE DE CUENTA */}
       {viewMode === 'detail' && activeAccount && (
         <div>
-          <div className="nx-card-hero-band">
+          <div className={`nx-card-hero-band ${colorfulHero ? 'colorful' : ''}`}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
               <button
                 type="button"
@@ -395,7 +408,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   height: '36px',
                   borderRadius: 'var(--rounded-full)',
                   border: 0,
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: colorfulHero ? 'rgba(255,255,255,0.16)' : 'var(--surface-elevated)',
                   color: 'var(--on-dark)',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -424,7 +437,9 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                       fontWeight: 500,
                       whiteSpace: 'nowrap',
                       cursor: 'pointer',
-                      backgroundColor: acc.id === activeProfileId ? 'var(--canvas-light)' : 'var(--surface-elevated)',
+                      backgroundColor: acc.id === activeProfileId
+                        ? 'var(--canvas-light)'
+                        : (colorfulHero ? 'rgba(255,255,255,0.16)' : 'var(--surface-elevated)'),
                       color: acc.id === activeProfileId ? 'var(--canvas-dark)' : 'var(--on-dark)',
                     }}
                   >

@@ -9,9 +9,9 @@ import InvestmentForm from './components/InvestmentForm';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CategoryLimitsForm from './components/CategoryLimitsForm';
 import SplashScreen from './components/SplashScreen';
+import NexoLogo from './components/NexoLogo';
 import { triggerHaptic } from './utils/haptics';
 import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage';
-import NexoLogo from './components/NexoLogo';
 
 const homeTabs = ['expenses', 'movements', 'investments'];
 const getPreferredHomeTab = (profileId) => {
@@ -81,22 +81,22 @@ const verifyPin = async (pin, pinData) => (await hashPin(pin, pinData.salt)) ===
 const PIN_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'];
 
 const PIN_STYLES = `
-.pin-screen{position:fixed;inset:0;z-index:5000;display:flex;flex-direction:column;box-sizing:border-box;padding:calc(30px + env(safe-area-inset-top,0px)) 26px calc(18px + env(safe-area-inset-bottom,0px));background:var(--rev-bg);color:var(--rev-text);font-family:inherit}
-.pin-header h1{margin:0;font-size:24px;line-height:1.2;font-weight:800;letter-spacing:-.02em}
-.pin-header p{margin:10px 0 0;color:var(--rev-muted);font-size:13px;line-height:1.45;font-weight:500}
+.pin-screen{position:fixed;inset:0;z-index:5000;display:flex;flex-direction:column;box-sizing:border-box;padding:calc(30px + env(safe-area-inset-top,0px)) 26px calc(18px + env(safe-area-inset-bottom,0px));background:var(--bg-page);color:var(--text-main);font-family:inherit}
+.pin-header h1{margin:0;font-size:24px;line-height:1.1;font-weight:500;letter-spacing:-.03em}
+.pin-header p{margin:10px 0 0;color:var(--text-mute);font-size:13px;line-height:1.45;font-weight:400}
 .pin-dots-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
 .pin-dots{display:flex;gap:28px}
-.pin-dots span{width:14px;height:14px;border-radius:50%;background:var(--rev-subtle);transition:background .12s ease,transform .12s ease}
-.pin-dots span.filled{background:var(--rev-blue);transform:scale(1.1)}
+.pin-dots span{width:14px;height:14px;border-radius:50%;background:var(--bg-card);transition:background .12s ease,transform .12s ease}
+.pin-dots span.filled{background:var(--primary);transform:scale(1.1)}
 .pin-dots.shake{animation:pin-shake .42s ease}
-.pin-error{min-height:34px;margin:22px 0 0;max-width:280px;color:var(--rev-red);font-size:12px;font-weight:600;text-align:center;line-height:1.4}
+.pin-error{min-height:34px;margin:22px 0 0;max-width:280px;color:var(--danger-red);font-size:12px;font-weight:500;text-align:center;line-height:1.4}
 .pin-keypad{width:100%;max-width:360px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);row-gap:6px}
-.pin-keypad button{height:64px;border:0;border-radius:18px;background:transparent;color:inherit;font-size:25px;font-weight:700;font-family:inherit;display:grid;place-items:center}
-.pin-keypad button:active:not(:disabled){background:var(--rev-subtle)}
+.pin-keypad button{height:64px;border:0;border-radius:18px;background:transparent;color:inherit;font-size:25px;font-weight:500;font-family:inherit;display:grid;place-items:center}
+.pin-keypad button:active:not(:disabled){background:var(--bg-card)}
 @keyframes pin-shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
-.pin-sheet-layer{position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)}
-.pin-sheet{position:relative;display:flex;flex-direction:column;width:100%;max-width:460px;height:min(680px,92dvh);border-radius:28px 28px 0 0;background:var(--rev-card);color:var(--rev-text);box-shadow:0 -8px 30px rgba(0,0,0,.25)}
-.pin-sheet-handle{flex:none;width:36px;height:4px;margin:10px auto 0;border-radius:4px;background:var(--rev-muted);opacity:.35}
+.pin-sheet-layer{position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.pin-sheet{position:relative;display:flex;flex-direction:column;width:100%;max-width:460px;height:min(680px,92dvh);border-radius:20px 20px 0 0;background:var(--bg-page);color:var(--text-main)}
+.pin-sheet-handle{flex:none;width:36px;height:4px;margin:10px auto 0;border-radius:99px;background:var(--text-mute);opacity:.35}
 .pin-screen.in-sheet{position:static;inset:auto;flex:1;min-height:0;z-index:auto;background:transparent;padding:18px 26px calc(18px + env(safe-area-inset-bottom,0px))}
 `;
 
@@ -245,7 +245,7 @@ function PinFlow({ mode, pinData, onUnlocked, onSaved, onRemoved, onClose }) {
     setPin((current) => current.slice(0, -1));
   };
 
-const copy = step === 'verify'
+  const copy = step === 'verify'
     ? { title: 'Introduce tu PIN', subtitle: 'Para desbloquear Nexo.' }
     : step === 'create'
       ? { title: 'Elige tu PIN', subtitle: 'Nunca compartas este PIN con nadie.' }
@@ -286,6 +286,7 @@ const App = () => {
   const [investmentsEnabled, setInvestmentsEnabled] = useState(() => getInvestmentsEnabled(activeProfileId));
   const [transactionType, setTransactionType] = useState('expense');
   const [theme, setTheme] = useState(() => localStorage.getItem('balance-theme') || 'light');
+  const [colorfulHero, setColorfulHero] = useState(() => localStorage.getItem('nexo-colorful-hero') !== 'false');
   const [profileName, setProfileName] = useState(() => getStoredProfileName(activeProfileId));
   const [pinData, setPinData] = useState(() => readStoredPin());
   const [isLocked, setIsLocked] = useState(() => Boolean(readStoredPin()));
@@ -322,6 +323,11 @@ const App = () => {
     root.style.colorScheme = theme;
     localStorage.setItem('balance-theme', theme);
   }, [theme]);
+
+  const handleColorfulHeroChange = (enabled) => {
+    setColorfulHero(enabled);
+    localStorage.setItem('nexo-colorful-hero', String(enabled));
+  };
 
   useEffect(() => {
     const showInvestments = getInvestmentsEnabled(activeProfileId);
@@ -442,6 +448,8 @@ const App = () => {
                 <ProfileSwitcher
                   theme={theme}
                   setTheme={setTheme}
+                  colorfulHero={colorfulHero}
+                  onColorfulHeroChange={handleColorfulHeroChange}
                   defaultHomeTab={defaultHomeTab}
                   onDefaultHomeTabChange={handleDefaultHomeTabChange}
                   investmentsEnabled={investmentsEnabled}
@@ -461,6 +469,7 @@ const App = () => {
                   {activeTab === 'expenses' && (
                     <HomeOverview
                       initials={initials}
+                      colorfulHero={colorfulHero}
                       query={query}
                       onQueryChange={setQuery}
                       onOpenLimits={() => setIsLimitsOpen(true)}
@@ -472,6 +481,7 @@ const App = () => {
                   )}
                   {activeTab === 'movements' && (
                     <MovementsView
+                      colorfulHero={colorfulHero}
                       onClose={() => selectTab('expenses')}
                       onOpenLimits={() => setIsLimitsOpen(true)}
                     />
@@ -499,7 +509,7 @@ const App = () => {
                 className={`rev-nav-item ${!isProfileOpen && activeTab === 'movements' ? 'active' : ''}`}
                 onClick={() => selectTab('movements')}
               >
-                <CreditCard size={20} strokeWidth={2.1} />
+                <CreditCard size={20} strokeWidth={2} />
                 <span>Cuentas</span>
               </button>
 
@@ -511,7 +521,7 @@ const App = () => {
                   else openForm('expense');
                 }}
               >
-                <ArrowLeftRight size={20} strokeWidth={2.1} />
+                <ArrowLeftRight size={20} strokeWidth={2} />
                 <span>{activeTab === 'investments' ? 'Invertir' : 'Mover'}</span>
               </button>
 
@@ -521,7 +531,7 @@ const App = () => {
                   className={`rev-nav-item ${!isProfileOpen && activeTab === 'investments' ? 'active' : ''}`}
                   onClick={() => selectTab('investments')}
                 >
-                  <TrendingUp size={20} strokeWidth={2.1} />
+                  <TrendingUp size={20} strokeWidth={2} />
                   <span>Cartera</span>
                 </button>
               )}
@@ -534,7 +544,7 @@ const App = () => {
                   setIsProfileOpen(true);
                 }}
               >
-                <LayoutGrid size={20} strokeWidth={2.1} />
+                <LayoutGrid size={20} strokeWidth={2} />
                 <span>Perfil</span>
               </button>
             </nav>

@@ -20,13 +20,29 @@ import { useElasticScroll } from '../hooks/useElasticScroll';
 import { triggerHaptic } from '../utils/haptics';
 
 const HOME_TOKENS_CSS = `
-  /* HERO BAND DARK (#000000 full-bleed) */
+  /* HERO BAND DARK (#000000 por defecto o imagen /hero-bg.jpg cuando colorfulHero está activo) */
   .nx-hero-band {
     background-color: var(--canvas-dark);
     color: var(--on-dark);
     padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) var(--sp-xxl);
     border-radius: var(--rounded-none);
     position: relative;
+    overflow: hidden;
+  }
+  .nx-hero-band.colorful {
+    background: url('/hero_bg.jpg') center / cover no-repeat;
+    padding-bottom: 54px;
+  }
+  .dark .nx-hero-band.colorful::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+  }
+  .nx-hero-inner {
+    position: relative;
+    z-index: 1;
   }
   .nx-top-bar {
     display: flex;
@@ -51,6 +67,12 @@ const HOME_TOKENS_CSS = `
     cursor: pointer;
     position: relative;
   }
+  .nx-hero-band.colorful .nx-avatar-pill {
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
   .nx-avatar-dot {
     position: absolute;
     bottom: 0;
@@ -73,6 +95,13 @@ const HOME_TOKENS_CSS = `
     padding: 0 var(--sp-lg);
     color: var(--on-dark-mute);
   }
+  .nx-hero-band.colorful .nx-search-pill {
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+  }
   .nx-search-pill input {
     flex: 1;
     background: transparent;
@@ -86,7 +115,7 @@ const HOME_TOKENS_CSS = `
     min-width: 0;
   }
   .nx-search-pill input::placeholder {
-    color: var(--on-dark-mute);
+    color: rgba(255, 255, 255, 0.78);
   }
   .nx-icon-circle {
     width: 36px;
@@ -100,6 +129,19 @@ const HOME_TOKENS_CSS = `
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
+  }
+  .nx-hero-band.colorful .nx-icon-circle,
+  .nx-hero-band.colorful .nx-sub-nav-pill {
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+  .nx-hero-band.colorful .nx-btn-outline-dark {
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-color: rgba(255, 255, 255, 0.28);
   }
   .nx-hero-balance {
     text-align: center;
@@ -123,7 +165,7 @@ const HOME_TOKENS_CSS = `
   }
   .nx-hero-dec {
     font-size: 28px;
-    color: var(--on-dark-mute);
+    color: rgba(255, 255, 255, 0.85);
     margin-left: 2px;
   }
   .nx-hero-cta-row {
@@ -141,10 +183,17 @@ const HOME_TOKENS_CSS = `
     flex-wrap: wrap;
   }
 
-  /* CATALOGUE BAND (#FFFFFF in light mode, full-bleed slam) */
+  /* CATALOGUE BAND */
   .nx-catalogue-band {
     background-color: var(--bg-page);
     padding: var(--sp-xl) var(--sp-lg) var(--sp-xxl);
+    position: relative;
+    z-index: 2;
+  }
+  .nx-catalogue-band.colorful {
+    background-color: transparent;
+    margin-top: -32px;
+    padding-top: 0;
   }
   .nx-featured-banner {
     background-color: var(--primary);
@@ -203,6 +252,7 @@ const HOME_TOKENS_CSS = `
 
 const HomeOverview = ({
   initials = 'MP',
+  colorfulHero = true,
   query = '',
   onQueryChange,
   onOpenLimits,
@@ -268,7 +318,6 @@ const HomeOverview = ({
     return cashTotal + investmentsTotal;
   }, [transactions, investmentRecords]);
 
-  // Gráfico mensual del widget con curva suave y proyección discontinua
   const spendWidgetChart = useMemo(() => {
     const daysInMonth = new Date(filters.year, filters.month + 1, 0).getDate();
     const today = new Date();
@@ -368,163 +417,108 @@ const HomeOverview = ({
     >
       <style>{HOME_TOKENS_CSS}</style>
 
-      {/* BANDA 1: HERO BAND DARK (#000000 FULL-BLEED) */}
-      <section className="nx-hero-band">
-        <div className="nx-top-bar">
-          <button
-            type="button"
-            className="nx-avatar-pill"
-            onPointerDown={() => {
-              didLongPressRef.current = false;
-              longPressRef.current = window.setTimeout(() => {
-                didLongPressRef.current = true;
-                onLongPressAvatar?.();
-              }, 500);
-            }}
-            onPointerUp={() => window.clearTimeout(longPressRef.current)}
-            onPointerLeave={() => window.clearTimeout(longPressRef.current)}
-            onClick={() => {
-              if (didLongPressRef.current) {
+      {/* BANDA 1: HERO BAND (IMAGEN DE FONDO O NEGRO PURO SEGÚN OPCIÓN) */}
+      <section className={`nx-hero-band ${colorfulHero ? 'colorful' : ''}`}>
+        <div className="nx-hero-inner">
+          <div className="nx-top-bar">
+            <button
+              type="button"
+              className="nx-avatar-pill"
+              onPointerDown={() => {
                 didLongPressRef.current = false;
-                return;
-              }
-              onOpenProfile?.();
-            }}
-            aria-label="Perfil y cuentas"
-          >
-            {initials}
-            {profiles.length > 1 && <span className="nx-avatar-dot" />}
-          </button>
+                longPressRef.current = window.setTimeout(() => {
+                  didLongPressRef.current = true;
+                  onLongPressAvatar?.();
+                }, 500);
+              }}
+              onPointerUp={() => window.clearTimeout(longPressRef.current)}
+              onPointerLeave={() => window.clearTimeout(longPressRef.current)}
+              onClick={() => {
+                if (didLongPressRef.current) {
+                  didLongPressRef.current = false;
+                  return;
+                }
+                onOpenProfile?.();
+              }}
+              aria-label="Perfil y cuentas"
+            >
+              {initials}
+              {profiles.length > 1 && <span className="nx-avatar-dot" />}
+            </button>
 
-          <div className="nx-search-pill">
-            <Search size={14} strokeWidth={2} />
-            <input
-              value={query}
-              onChange={(e) => onQueryChange?.(e.target.value)}
-              placeholder="Buscar movimientos"
-              aria-label="Buscar movimientos"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => onQueryChange?.('')}
-                style={{ background: 'transparent', border: 0, color: 'var(--on-dark)', display: 'flex', padding: 0, cursor: 'pointer' }}
-              >
-                <X size={13} />
-              </button>
-            )}
+            <div className="nx-search-pill">
+              <Search size={14} strokeWidth={2} />
+              <input
+                value={query}
+                onChange={(e) => onQueryChange?.(e.target.value)}
+                placeholder="Buscar movimientos"
+                aria-label="Buscar movimientos"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => onQueryChange?.('')}
+                  style={{ background: 'transparent', border: 0, color: 'var(--on-dark)', display: 'flex', padding: 0, cursor: 'pointer' }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            <button type="button" className="nx-icon-circle" onClick={onOpenMovements} aria-label="Cuentas">
+              <CreditCard size={15} strokeWidth={2} />
+            </button>
           </div>
 
-          <button type="button" className="nx-icon-circle" onClick={onOpenMovements} aria-label="Cuentas">
-            <CreditCard size={15} strokeWidth={2} />
-          </button>
-        </div>
+          <div className="nx-hero-balance">
+            <span className="nx-label" style={{ color: 'rgba(255, 255, 255, 0.85)', display: 'block' }}>
+              {activeProfile?.name || 'Personal'} · {capitalizedMonth} {filters.year}
+            </span>
 
-        {/* DISPLAY BALANCE (WEIGHT 500, TIGHT NEGATIVE LETTER-SPACING) */}
-        <div className="nx-hero-balance">
-          <span className="nx-label" style={{ color: 'var(--on-dark-mute)', display: 'block' }}>
-            {activeProfile?.name || 'Personal'} · {capitalizedMonth} {filters.year}
-          </span>
+            <div
+              className="nx-hero-display privacy-sensitive"
+              onDoubleClick={() => {
+                triggerHaptic();
+                setIsAmountsHidden?.((prev) => !prev);
+              }}
+            >
+              <span className="nx-hero-int">{intPart}</span>
+              <span className="nx-hero-dec">{decPart}</span>
+            </div>
 
-          <div
-            className="nx-hero-display privacy-sensitive"
-            onDoubleClick={() => {
-              triggerHaptic();
-              setIsAmountsHidden?.((prev) => !prev);
-            }}
-          >
-            <span className="nx-hero-int">{intPart}</span>
-            <span className="nx-hero-dec">{decPart}</span>
+            <button type="button" className="nx-sub-nav-pill" onClick={onOpenMovements}>
+              Cuentas
+            </button>
           </div>
 
-          <button type="button" className="nx-sub-nav-pill" onClick={onOpenMovements}>
-            Cuentas
-          </button>
-        </div>
+          <div className="nx-hero-cta-row">
+            <button type="button" className="nx-btn-primary" onClick={() => onQuickAction?.('expense')}>
+              <Plus size={16} strokeWidth={2.2} />
+              <span>Añadir gasto</span>
+            </button>
 
-        {/* PRIMARY CTA: WHITE PILL ON BLACK + SECONDARY OUTLINE PILL */}
-        <div className="nx-hero-cta-row">
-          <button type="button" className="nx-btn-primary" onClick={() => onQuickAction?.('expense')}>
-            <Plus size={16} strokeWidth={2.2} />
-            <span>Añadir gasto</span>
-          </button>
+            <button type="button" className="nx-btn-outline-dark" onClick={() => onQuickAction?.('income')}>
+              <span>+ Ingreso</span>
+            </button>
+          </div>
 
-          <button type="button" className="nx-btn-outline-dark" onClick={() => onQuickAction?.('income')}>
-            <span>+ Ingreso</span>
-          </button>
-        </div>
-
-        {/* SUB-NAV PILLS */}
-        <div className="nx-hero-sub-pills">
-          <button type="button" className="nx-sub-nav-pill" onClick={onOpenLimits}>
-            <ListChecks size={14} /> Topes
-          </button>
-          <button type="button" className="nx-sub-nav-pill" onClick={onOpenMovements}>
-            <BarChart2 size={14} /> Análisis
-          </button>
-          <button type="button" className="nx-sub-nav-pill" onClick={onOpenProfile}>
-            <MoreHorizontal size={14} /> Más
-          </button>
+          <div className="nx-hero-sub-pills">
+            <button type="button" className="nx-sub-nav-pill" onClick={onOpenLimits}>
+              <ListChecks size={14} /> Topes
+            </button>
+            <button type="button" className="nx-sub-nav-pill" onClick={onOpenMovements}>
+              <BarChart2 size={14} /> Análisis
+            </button>
+            <button type="button" className="nx-sub-nav-pill" onClick={onOpenProfile}>
+              <MoreHorizontal size={14} /> Más
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* BANDA 2: CATALOGUE BAND (#FFFFFF LIGHT / #000000 DARK, FULL-BLEED SLAM) */}
-      <div className="nx-catalogue-band">
-        {/* PLAN-CARD-FEATURED (#494fdf COBALT VIOLET) */}
-        {!promoDismissed && (
-          <div className="nx-featured-banner" onClick={onOpenProfile}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPromoDismissed(true);
-              }}
-              aria-label="Cerrar tarjeta"
-              style={{
-                position: 'absolute',
-                top: '12px',
-                right: '12px',
-                width: '24px',
-                height: '24px',
-                borderRadius: 'var(--rounded-full)',
-                border: 0,
-                background: 'rgba(255,255,255,0.16)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <X size={13} />
-            </button>
+      {/* BANDA 2: CATALOGUE BAND */}
+      <div className={`nx-catalogue-band ${colorfulHero ? 'colorful' : ''}`}>
 
-            <div style={{ flex: 1, minWidth: 0, paddingRight: '16px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  padding: '4px 12px',
-                  borderRadius: 'var(--rounded-full)',
-                  background: 'rgba(255, 255, 255, 0.18)',
-                  fontSize: '11px',
-                  fontWeight: 500,
-                  letterSpacing: '0.24px',
-                  marginBottom: '8px',
-                }}
-              >
-                Espacios compartidos
-              </span>
-              <strong style={{ display: 'block', fontSize: '16px', fontWeight: 500, letterSpacing: '-0.02em' }}>
-                Comparte gastos con tu pareja o piso
-              </strong>
-              <small style={{ display: 'block', fontSize: '13px', opacity: 0.85, marginTop: '4px', lineHeight: 1.4 }}>
-                Sincroniza movimientos en tiempo real entre cuentas.
-              </small>
-            </div>
-          </div>
-        )}
-
-        {/* TARJETA DE TRANSACCIONES (rounded-lg: 20px, padding: 24px) */}
         <div className="nx-tx-catalogue-card">
           <div style={{
             display: 'flex',
@@ -561,7 +555,6 @@ const HomeOverview = ({
           )}
         </div>
 
-        {/* SECCIÓN WIDGETS 2x2 */}
         <h2 style={{
           fontSize: '20px',
           fontWeight: 500,
@@ -573,7 +566,6 @@ const HomeOverview = ({
         </h2>
 
         <div className="nx-widgets-grid">
-          {/* WIDGET 1: GASTO ESTE MES */}
           <button type="button" className="nx-widget-tile" onClick={onOpenMovements}>
             <div>
               <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block' }}>
@@ -622,7 +614,6 @@ const HomeOverview = ({
             </svg>
           </button>
 
-          {/* WIDGET 2: PATRIMONIO TOTAL (3 CÍRCULOS CON COLORES DE PRODUCTO) */}
           <button type="button" className="nx-widget-tile" onClick={onOpenProfile}>
             <div>
               <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block' }}>
@@ -656,7 +647,6 @@ const HomeOverview = ({
             </div>
           </button>
 
-          {/* WIDGET 3: TARJETA / PRIVACIDAD */}
           <div
             className="nx-widget-tile"
             onClick={() => {
@@ -696,7 +686,6 @@ const HomeOverview = ({
             </span>
           </div>
 
-          {/* WIDGET 4: ESPACIO RÁPIDO CON GLYPH NEXO */}
           <div className="nx-widget-tile" style={{ alignItems: 'center', textAlign: 'center' }}>
             <div
               onClick={() => {

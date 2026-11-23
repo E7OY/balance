@@ -17,6 +17,7 @@ import {
   Lock,
   LogOut,
   Moon,
+  Palette,
   Pencil,
   Plus,
   Share2,
@@ -36,7 +37,7 @@ import { triggerHaptic } from '../utils/haptics';
 const PROFILE_REVOLUT_CSS = `
   .rev-profile-page {
     padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 28px;
-    color: var(--rev-text);
+    color: var(--text-main);
   }
   .rev-profile-top {
     display: flex;
@@ -62,15 +63,14 @@ const PROFILE_REVOLUT_CSS = `
     width: 78px;
     height: 78px;
     border-radius: 50%;
-    background: linear-gradient(145deg, #3D17EE 0%, #0075EB 100%);
+    background: linear-gradient(145deg, #3D17EE 0%, #494fdf 100%);
     color: #FFFFFF;
     font-size: 26px;
-    font-weight: 800;
+    font-weight: 500;
     letter-spacing: -0.03em;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 12px 28px rgba(0, 117, 235, 0.28);
   }
   .rev-profile-edit-badge {
     position: absolute;
@@ -79,10 +79,9 @@ const PROFILE_REVOLUT_CSS = `
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: var(--rev-card);
-    color: var(--rev-text);
-    border: 2px solid var(--rev-bg);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 2px solid var(--bg-page);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -94,12 +93,11 @@ const PROFILE_REVOLUT_CSS = `
     margin-top: 8px;
     padding: 5px 13px;
     border-radius: 999px;
-    background: var(--rev-card);
-    border: 1px solid var(--rev-border);
-    box-shadow: var(--rev-shadow);
+    background: var(--bg-card);
     font-size: 12px;
-    font-weight: 700;
-    color: var(--rev-text);
+    font-weight: 500;
+    letter-spacing: 0.24px;
+    color: var(--text-main);
   }
   .rev-quick-trio {
     display: grid;
@@ -108,11 +106,10 @@ const PROFILE_REVOLUT_CSS = `
     margin-bottom: 20px;
   }
   .rev-quick-tile {
-    background: var(--rev-card);
-    border: 1px solid var(--rev-border);
-    border-radius: 18px;
-    padding: 14px 10px;
-    box-shadow: var(--rev-shadow);
+    background: var(--bg-card);
+    border: 0;
+    border-radius: 20px;
+    padding: 16px 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -124,18 +121,16 @@ const PROFILE_REVOLUT_CSS = `
     transform: scale(0.96);
   }
   .rev-section-label {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: var(--rev-muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.24px;
+    color: var(--text-mute);
     margin: 0 0 8px 6px;
-    letter-spacing: -0.01em;
   }
   .rev-settings-card {
-    background: var(--rev-card);
-    border: 1px solid var(--rev-border);
-    border-radius: 18px;
-    padding: 2px 16px;
-    box-shadow: var(--rev-shadow);
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 2px 18px;
     margin-bottom: 20px;
   }
   .rev-settings-row {
@@ -144,16 +139,16 @@ const PROFILE_REVOLUT_CSS = `
     justify-content: space-between;
     gap: 12px;
     width: 100%;
-    padding: 13px 0;
+    padding: 14px 0;
     background: transparent;
     border: 0;
-    color: var(--rev-text);
+    color: var(--text-main);
     text-align: left;
     font-family: inherit;
     cursor: pointer;
   }
   .rev-settings-row + .rev-settings-row {
-    border-top: 1px solid var(--rev-border);
+    border-top: 1px solid var(--border-hairline);
   }
   .rev-settings-icon {
     width: 34px;
@@ -170,22 +165,24 @@ const PROFILE_REVOLUT_CSS = `
     border-radius: 999px;
     border: 0;
     padding: 3px;
-    background: var(--rev-subtle);
+    background: var(--faint);
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
     cursor: pointer;
     transition: background 0.2s ease;
   }
+  .dark .rev-switch {
+    background: #2C2C32;
+  }
   .rev-switch.on {
-    background: var(--rev-blue);
+    background: var(--primary);
   }
   .rev-switch-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
     background: #FFFFFF;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
     transform: translateX(0);
   }
@@ -197,6 +194,8 @@ const PROFILE_REVOLUT_CSS = `
 const ProfileSwitcher = ({
   theme,
   setTheme,
+  colorfulHero,
+  onColorfulHeroChange,
   defaultHomeTab,
   onDefaultHomeTabChange,
   investmentsEnabled,
@@ -296,37 +295,23 @@ const ProfileSwitcher = ({
     <section className="rev-profile-page" aria-label="Perfil y ajustes">
       <style>{PROFILE_REVOLUT_CSS}</style>
 
-      {/* BARRA SUPERIOR LIMPIA */}
       <div className="rev-profile-top">
-        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--rev-muted)' }}>
+        <span className="nx-label" style={{ color: 'var(--text-mute)' }}>
           Ajustes
         </span>
         <button
           type="button"
+          className="nx-btn-pill-sm"
+          style={{ color: 'var(--primary)' }}
           onClick={() => {
             setCopiedCode(false);
             setIsSharePanelOpen(true);
-          }}
-          style={{
-            height: '32px',
-            padding: '0 12px',
-            borderRadius: '999px',
-            border: '1px solid var(--rev-border)',
-            background: 'var(--rev-card)',
-            color: 'var(--rev-blue)',
-            fontSize: '12px',
-            fontWeight: 700,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px',
-            cursor: 'pointer',
           }}
         >
           <Share2 size={13} /> Invitar
         </button>
       </div>
 
-      {/* CABECERA DE PERFIL ESTILO REVOLUT */}
       <div className="rev-profile-hero">
         <div
           className="rev-profile-avatar-wrap"
@@ -341,10 +326,10 @@ const ProfileSwitcher = ({
           </span>
         </div>
 
-        <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.03em', margin: 0 }}>
+        <h1 className="nx-display" style={{ fontSize: '26px', margin: 0 }}>
           {customName}
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--rev-muted)', margin: '3px 0 0', fontWeight: 500 }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: '4px 0 0' }}>
           {syncUser ? syncUser.email : `@${customName.toLowerCase().replace(/\s+/g, '')}`}
         </p>
 
@@ -353,31 +338,30 @@ const ProfileSwitcher = ({
             width: '7px',
             height: '7px',
             borderRadius: '50%',
-            background: syncUser ? 'var(--rev-green)' : 'var(--rev-blue)',
+            background: syncUser ? 'var(--accent-teal)' : 'var(--primary)',
           }} />
           <span>{syncUser ? 'Personal · Nube activa' : 'Estándar · Local'}</span>
         </div>
       </div>
 
-      {/* 3 ACCESOS RÁPIDOS */}
       <div className="rev-quick-trio">
         <button type="button" className="rev-quick-tile" onClick={() => setProfileEditOpen(true)}>
-          <span className="rev-settings-icon" style={{ background: 'var(--rev-blue-soft)', color: 'var(--rev-blue)' }}>
+          <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
             <User size={18} />
           </span>
-          <strong style={{ fontSize: '12.5px', fontWeight: 700 }}>Perfil</strong>
+          <span style={{ fontSize: '13px', fontWeight: 500 }}>Perfil</span>
         </button>
 
         <button type="button" className="rev-quick-tile" onClick={() => setIsSyncPanelOpen(true)}>
           <span className="rev-settings-icon" style={{
-            background: syncUser ? 'rgba(0, 168, 89, 0.14)' : 'var(--rev-blue-soft)',
-            color: syncUser ? 'var(--rev-green)' : 'var(--rev-blue)',
+            background: syncUser ? 'rgba(0, 168, 126, 0.14)' : 'rgba(73, 79, 223, 0.14)',
+            color: syncUser ? 'var(--accent-teal)' : 'var(--primary)',
           }}>
             <Cloud size={18} />
           </span>
-          <strong style={{ fontSize: '12.5px', fontWeight: 700 }}>
+          <span style={{ fontSize: '13px', fontWeight: 500 }}>
             {syncUser ? 'Sincronizado' : 'Nube'}
-          </strong>
+          </span>
         </button>
 
         <button
@@ -388,35 +372,27 @@ const ProfileSwitcher = ({
             setIsExportOpen(true);
           }}
         >
-          <span className="rev-settings-icon" style={{ background: 'var(--rev-blue-soft)', color: 'var(--rev-blue)' }}>
+          <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
             <Download size={18} />
           </span>
-          <strong style={{ fontSize: '12.5px', fontWeight: 700 }}>Backup</strong>
+          <span style={{ fontSize: '13px', fontWeight: 500 }}>Backup</span>
         </button>
       </div>
 
-      {/* TARJETA DE PATRIMONIO DEL ESPACIO */}
-      <div className="rev-settings-card" style={{ padding: '16px 18px' }}>
+      <div className="rev-settings-card" style={{ padding: '18px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <span style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--rev-muted)' }}>
+            <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
               Patrimonio en {activeProfile?.name}
             </span>
-            <strong
-              className="privacy-sensitive"
-              style={{ display: 'block', fontSize: '26px', fontWeight: 800, marginTop: '4px', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}
+            <span
+              className="nx-display privacy-sensitive"
+              style={{ display: 'block', fontSize: '28px', marginTop: '6px' }}
             >
               {displayMoney(totalWealth)}
-            </strong>
+            </span>
           </div>
-          <span style={{
-            padding: '5px 11px',
-            borderRadius: '999px',
-            background: 'var(--rev-subtle)',
-            fontSize: '11.5px',
-            fontWeight: 700,
-            color: 'var(--rev-muted)',
-          }}>
+          <span className="nx-badge-tag">
             {profiles.length} {profiles.length === 1 ? 'cuenta' : 'cuentas'}
           </span>
         </div>
@@ -442,20 +418,20 @@ const ProfileSwitcher = ({
                 <span
                   className="rev-settings-icon"
                   style={{
-                    background: active ? 'var(--rev-blue)' : 'var(--rev-subtle)',
-                    color: active ? '#FFFFFF' : 'var(--rev-muted)',
+                    background: active ? 'var(--primary)' : 'var(--bg-card-alt)',
+                    color: active ? '#FFFFFF' : 'var(--text-mute)',
                   }}
                 >
                   {shared ? <Users size={16} /> : <User size={16} />}
                 </span>
                 <div style={{ minWidth: 0 }}>
-                  <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>{p.name}</strong>
-                  <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+                  <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>{p.name}</span>
+                  <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                     {active ? 'Cuenta seleccionada' : shared ? 'Espacio compartido' : 'Espacio personal'}
-                  </small>
+                  </span>
                 </div>
               </div>
-              {active && <Check size={18} style={{ color: 'var(--rev-blue)', flexShrink: 0 }} />}
+              {active && <Check size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />}
             </button>
           );
         })}
@@ -469,17 +445,17 @@ const ProfileSwitcher = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'var(--rev-blue-soft)', color: 'var(--rev-blue)' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(0, 123, 194, 0.14)', color: 'var(--accent-light-blue)' }}>
               <Share2 size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Invitar a este espacio</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Invitar a este espacio</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 Genera un código para compartir gastos
-              </small>
+              </span>
             </div>
           </div>
-          <ChevronRight size={17} style={{ color: 'var(--rev-muted)' }} />
+          <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
         </button>
 
         <button
@@ -491,17 +467,17 @@ const ProfileSwitcher = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(139, 92, 246, 0.14)', color: '#8B5CF6' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(230, 30, 73, 0.14)', color: 'var(--accent-deep-pink)' }}>
               <UserPlus size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Vincular cuenta compartida</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Vincular cuenta compartida</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 Únete con un código de invitación
-              </small>
+              </span>
             </div>
           </div>
-          <ChevronRight size={17} style={{ color: 'var(--rev-muted)' }} />
+          <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
         </button>
 
         <button
@@ -513,17 +489,17 @@ const ProfileSwitcher = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(0, 168, 89, 0.14)', color: 'var(--rev-green)' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(0, 168, 126, 0.14)', color: 'var(--accent-teal)' }}>
               <Plus size={17} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Crear nueva cuenta</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Crear nueva cuenta</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 Separa ahorro, viajes o gastos de trabajo
-              </small>
+              </span>
             </div>
           </div>
-          <ChevronRight size={17} style={{ color: 'var(--rev-muted)' }} />
+          <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
         </button>
 
         {profiles.length > 1 && (
@@ -535,35 +511,35 @@ const ProfileSwitcher = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span className="rev-settings-icon" style={{ background: 'rgba(244, 63, 94, 0.14)', color: 'var(--rev-red)' }}>
+              <span className="rev-settings-icon" style={{ background: 'rgba(226, 59, 74, 0.14)', color: 'var(--danger-red)' }}>
                 <Trash2 size={16} />
               </span>
               <div>
-                <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--rev-red)' }}>
+                <span style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: 'var(--danger-red)' }}>
                   {isSharedSpace ? 'Desvincular este espacio' : 'Eliminar esta cuenta'}
-                </strong>
-                <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+                </span>
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                   {isSharedSpace ? 'Dejarás de ver sus movimientos' : 'Borra este espacio de tu perfil'}
-                </small>
+                </span>
               </div>
             </div>
           </button>
         )}
       </div>
 
-      {/* GRUPO 2: SEGURIDAD Y PRIVACIDAD (REVOLUT SETTINGS) */}
+      {/* GRUPO 2: SEGURIDAD Y PRIVACIDAD */}
       <p className="rev-section-label">Seguridad y privacidad</p>
       <div className="rev-settings-card">
         <div className="rev-settings-row" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'var(--rev-blue-soft)', color: 'var(--rev-blue)' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
               <EyeOff size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Ocultar importes</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Ocultar importes</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 Difumina los saldos en pantalla
-              </small>
+              </span>
             </div>
           </div>
           <button
@@ -582,14 +558,14 @@ const ProfileSwitcher = ({
 
         <div className="rev-settings-row" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(79, 70, 229, 0.14)', color: '#4F46E5' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(147, 109, 98, 0.16)', color: 'var(--accent-brown)' }}>
               <Lock size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Bloqueo con PIN</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Bloqueo con PIN</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 {pinEnabled ? 'Activo con código de 4 dígitos' : 'Pide PIN al abrir la app'}
-              </small>
+              </span>
             </div>
           </div>
           <button
@@ -610,17 +586,17 @@ const ProfileSwitcher = ({
         {pinEnabled && (
           <button type="button" className="rev-settings-row" onClick={onChangePin}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span className="rev-settings-icon" style={{ background: 'var(--rev-subtle)', color: 'var(--rev-text)' }}>
+              <span className="rev-settings-icon" style={{ background: 'var(--bg-card-alt)', color: 'var(--text-main)' }}>
                 <KeyRound size={16} />
               </span>
               <div>
-                <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Cambiar código PIN</strong>
-                <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+                <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Cambiar código PIN</span>
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                   Elige una nueva clave de acceso
-                </small>
+                </span>
               </div>
             </div>
-            <ChevronRight size={17} style={{ color: 'var(--rev-muted)' }} />
+            <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
           </button>
         )}
       </div>
@@ -628,16 +604,43 @@ const ProfileSwitcher = ({
       {/* GRUPO 3: APARIENCIA Y PREFERENCIAS */}
       <p className="rev-section-label">Apariencia y preferencias</p>
       <div className="rev-settings-card">
+        {/* OPCIÓN PARA ALTERNAR CABECERA CON IMAGEN Y DEGRADADO EN CUENTAS */}
         <div className="rev-settings-row" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(99, 102, 241, 0.14)', color: '#6366F1' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
+              <Palette size={16} />
+            </span>
+            <div>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Fondo con color</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
+                Imagen en inicio y degradado en Cuentas
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={colorfulHero}
+            className={`rev-switch ${colorfulHero ? 'on' : ''}`}
+            onClick={() => {
+              triggerHaptic();
+              onColorfulHeroChange?.(!colorfulHero);
+            }}
+          >
+            <span className="rev-switch-thumb" />
+          </button>
+        </div>
+
+        <div className="rev-settings-row" style={{ cursor: 'default' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
               <Moon size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Modo oscuro</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
-                Tema oscuro OLED #0B0E14
-              </small>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Modo oscuro</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
+                Canvas oscuro #000000
+              </span>
             </div>
           </div>
           <button
@@ -656,14 +659,14 @@ const ProfileSwitcher = ({
 
         <div className="rev-settings-row" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(0, 168, 89, 0.14)', color: 'var(--rev-green)' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(0, 168, 126, 0.14)', color: 'var(--accent-teal)' }}>
               <TrendingUp size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Cartera de inversiones</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
-                Activa la pestaña de acciones y cripto
-              </small>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Cartera de inversiones</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
+                Activa la pestaña de cartera
+              </span>
             </div>
           </div>
           <button
@@ -682,14 +685,14 @@ const ProfileSwitcher = ({
 
         <div className="rev-settings-row" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(14, 165, 233, 0.14)', color: '#0EA5E9' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(0, 123, 194, 0.14)', color: 'var(--accent-light-blue)' }}>
               <Home size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Pantalla inicial</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Pantalla inicial</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 Vista por defecto al abrir
-              </small>
+              </span>
             </div>
           </div>
           <select
@@ -698,14 +701,14 @@ const ProfileSwitcher = ({
             style={{
               width: 'auto',
               margin: 0,
-              height: '34px',
-              padding: '0 10px',
-              borderRadius: '10px',
-              background: 'var(--rev-subtle)',
+              height: '36px',
+              padding: '0 12px',
+              borderRadius: 'var(--rounded-full)',
+              backgroundColor: 'var(--bg-card-alt)',
               border: 0,
-              color: 'var(--rev-text)',
-              fontSize: '12.5px',
-              fontWeight: 700,
+              color: 'var(--text-main)',
+              fontSize: '13px',
+              fontWeight: 500,
               cursor: 'pointer',
             }}
           >
@@ -717,14 +720,14 @@ const ProfileSwitcher = ({
 
         <div className="rev-settings-row" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(245, 158, 11, 0.14)', color: '#F59E0B' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(236, 126, 0, 0.14)', color: 'var(--accent-orange)' }}>
               <Bell size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Notificaciones</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Notificaciones</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 Alertas de topes y presupuesto
-              </small>
+              </span>
             </div>
           </div>
           <button
@@ -744,22 +747,22 @@ const ProfileSwitcher = ({
         </div>
       </div>
 
-      {/* GRUPO 4: NUBE Y COPIAS DE SEGURIDAD */}
+      {/* GRUPO 4: DATOS Y SINCRONIZACIÓN */}
       <p className="rev-section-label">Datos y sincronización</p>
       <div className="rev-settings-card">
         <button type="button" className="rev-settings-row" onClick={() => setIsSyncPanelOpen(true)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'var(--rev-blue-soft)', color: 'var(--rev-blue)' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
               <ShieldCheck size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Sincronización en la nube</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Sincronización en la nube</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 {syncUser ? `Conectado (${syncUser.email})` : 'Inicia sesión para respaldar tus datos'}
-              </small>
+              </span>
             </div>
           </div>
-          <ChevronRight size={17} style={{ color: 'var(--rev-muted)' }} />
+          <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
         </button>
 
         <button
@@ -771,36 +774,35 @@ const ProfileSwitcher = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="rev-settings-icon" style={{ background: 'rgba(13, 148, 136, 0.14)', color: '#0D9488' }}>
+            <span className="rev-settings-icon" style={{ background: 'rgba(66, 134, 25, 0.14)', color: 'var(--accent-light-green)' }}>
               <Download size={16} />
             </span>
             <div>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700 }}>Exportar e importar datos</strong>
-              <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)' }}>
+              <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Exportar e importar datos</span>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
                 CSV, informe PDF y copia completa JSON
-              </small>
+              </span>
             </div>
           </div>
-          <ChevronRight size={17} style={{ color: 'var(--rev-muted)' }} />
+          <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
         </button>
       </div>
 
-      {/* BOTÓN CERRAR SESIÓN ESTILO REVOLUT */}
       {syncUser && (
         <div className="rev-settings-card" style={{ marginBottom: '16px' }}>
           <button
             type="button"
             className="rev-settings-row"
             onClick={logoutFromSyncAccount}
-            style={{ justifyContent: 'center', color: 'var(--rev-red)', fontWeight: 700, fontSize: '14px' }}
+            style={{ justifyContent: 'center', color: 'var(--danger-red)', fontWeight: 500, fontSize: '14px' }}
           >
             <LogOut size={16} /> Cerrar sesión
           </button>
         </div>
       )}
 
-      <p style={{ textAlign: 'center', fontSize: '11.5px', color: 'var(--rev-muted)', marginTop: '8px' }}>
-        Axiom · Finanzas personales y compartidas
+      <p className="nx-label" style={{ textAlign: 'center', color: 'var(--text-mute)', marginTop: '8px' }}>
+        Nexo · Finanzas personales y compartidas
       </p>
 
       {/* MODAL EXPORTAR / IMPORTAR DATOS */}
@@ -809,12 +811,12 @@ const ProfileSwitcher = ({
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Exportar e importar</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Exportar e importar</h2>
               <button type="button" className="sheet-close" onClick={() => setIsExportOpen(false)}>
                 <X size={17} />
               </button>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--rev-muted)', margin: '0 0 16px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: '0 0 16px' }}>
               Descarga tus movimientos o restaura una copia de seguridad.
             </p>
 
@@ -829,64 +831,64 @@ const ProfileSwitcher = ({
             <div className="rev-settings-card" style={{ marginBottom: '16px' }}>
               <button type="button" className="rev-settings-row" onClick={exportCsv}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="rev-settings-icon" style={{ background: 'rgba(0, 168, 89, 0.14)', color: 'var(--rev-green)' }}>
+                  <span className="rev-settings-icon" style={{ background: 'rgba(0, 168, 126, 0.14)', color: 'var(--accent-teal)' }}>
                     <FileSpreadsheet size={17} />
                   </span>
                   <div>
-                    <strong style={{ display: 'block', fontSize: '14px' }}>Exportar CSV</strong>
-                    <small style={{ fontSize: '12px', color: 'var(--rev-muted)' }}>Excel o Google Sheets</small>
+                    <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Exportar CSV</span>
+                    <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>Excel o Google Sheets</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--rev-muted)' }} />
+                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
               </button>
 
               <button type="button" className="rev-settings-row" onClick={exportPdf}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="rev-settings-icon" style={{ background: 'rgba(244, 63, 94, 0.14)', color: 'var(--rev-red)' }}>
+                  <span className="rev-settings-icon" style={{ background: 'rgba(226, 59, 74, 0.14)', color: 'var(--danger-red)' }}>
                     <FileText size={17} />
                   </span>
                   <div>
-                    <strong style={{ display: 'block', fontSize: '14px' }}>Informe PDF</strong>
-                    <small style={{ fontSize: '12px', color: 'var(--rev-muted)' }}>Extracto listo para compartir</small>
+                    <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Informe PDF</span>
+                    <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>Extracto listo para compartir</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--rev-muted)' }} />
+                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
               </button>
 
               <button type="button" className="rev-settings-row" onClick={exportData}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="rev-settings-icon" style={{ background: 'var(--rev-blue-soft)', color: 'var(--rev-blue)' }}>
+                  <span className="rev-settings-icon" style={{ background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)' }}>
                     <FileJson size={17} />
                   </span>
                   <div>
-                    <strong style={{ display: 'block', fontSize: '14px' }}>Copia completa JSON</strong>
-                    <small style={{ fontSize: '12px', color: 'var(--rev-muted)' }}>Movimientos, categorías, topes y facturas</small>
+                    <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Copia completa JSON</span>
+                    <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>Movimientos, categorías, topes y facturas</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--rev-muted)' }} />
+                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
               </button>
 
               <button type="button" className="rev-settings-row" onClick={() => importInputRef.current?.click()}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="rev-settings-icon" style={{ background: 'var(--rev-subtle)', color: 'var(--rev-text)' }}>
+                  <span className="rev-settings-icon" style={{ background: 'var(--bg-card-alt)', color: 'var(--text-main)' }}>
                     <Upload size={17} />
                   </span>
                   <div>
-                    <strong style={{ display: 'block', fontSize: '14px' }}>Restaurar copia JSON</strong>
-                    <small style={{ fontSize: '12px', color: 'var(--rev-muted)' }}>Importar respaldo previo</small>
+                    <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }}>Restaurar copia JSON</span>
+                    <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>Importar respaldo previo</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--rev-muted)' }} />
+                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
               </button>
             </div>
 
             {backupMessage && (
-              <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rev-blue)', marginBottom: '12px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: 'var(--primary)', marginBottom: '12px' }}>
                 {backupMessage}
               </p>
             )}
 
-            <button type="button" className="sheet-submit" onClick={() => setIsExportOpen(false)}>
+            <button type="button" className="nx-btn-dark" style={{ width: '100%' }} onClick={() => setIsExportOpen(false)}>
               Listo
             </button>
           </section>
@@ -900,7 +902,7 @@ const ProfileSwitcher = ({
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Datos personales</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Datos personales</h2>
               <button type="button" className="sheet-close" onClick={() => setProfileEditOpen(false)}>
                 <X size={17} />
               </button>
@@ -914,11 +916,11 @@ const ProfileSwitcher = ({
                 setProfileEditOpen(false);
               }
             }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '16px' }}>
+              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '16px' }}>
                 Nombre visible
                 <input name="name" defaultValue={customName} required autoFocus />
               </label>
-              <button className="sheet-submit" type="submit">
+              <button className="nx-btn-dark" style={{ width: '100%' }} type="submit">
                 Guardar cambios <ArrowRight size={16} />
               </button>
             </form>
@@ -933,21 +935,20 @@ const ProfileSwitcher = ({
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Invitar a este espacio</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Invitar a este espacio</h2>
               <button type="button" className="sheet-close" onClick={() => setIsSharePanelOpen(false)}>
                 <X size={17} />
               </button>
             </div>
             {shareCode ? (
               <>
-                <p style={{ fontSize: '13px', color: 'var(--rev-muted)', margin: '0 0 16px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: '0 0 16px' }}>
                   Envía este código para que otra persona vincule <strong>{activeProfile?.name}</strong> en su móvil.
                 </p>
                 <div style={{
                   padding: '14px',
-                  borderRadius: '16px',
-                  background: 'var(--rev-card)',
-                  border: '1px solid var(--rev-border)',
+                  borderRadius: '12px',
+                  background: 'var(--bg-card)',
                   fontFamily: 'monospace',
                   fontSize: '13px',
                   wordBreak: 'break-all',
@@ -958,7 +959,8 @@ const ProfileSwitcher = ({
                 </div>
                 <button
                   type="button"
-                  className="sheet-submit"
+                  className="nx-btn-dark"
+                  style={{ width: '100%' }}
                   onClick={() => {
                     navigator.clipboard?.writeText(shareCode);
                     triggerHaptic();
@@ -970,12 +972,13 @@ const ProfileSwitcher = ({
               </>
             ) : (
               <>
-                <p style={{ fontSize: '13px', color: 'var(--rev-red)', fontWeight: 600, marginBottom: '16px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--danger-red)', fontWeight: 500, marginBottom: '16px' }}>
                   Activa la sincronización en la nube para generar un código de invitación.
                 </p>
                 <button
                   type="button"
-                  className="sheet-submit"
+                  className="nx-btn-dark"
+                  style={{ width: '100%' }}
                   onClick={() => {
                     setIsSharePanelOpen(false);
                     setIsSyncPanelOpen(true);
@@ -996,12 +999,12 @@ const ProfileSwitcher = ({
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Vincular cuenta</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Vincular cuenta</h2>
               <button type="button" className="sheet-close" onClick={() => setIsJoinPanelOpen(false)}>
                 <X size={17} />
               </button>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--rev-muted)', margin: '0 0 16px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: '0 0 16px' }}>
               Pega el código de invitación y elige un nombre para este espacio.
             </p>
             <form onSubmit={(e) => {
@@ -1017,16 +1020,16 @@ const ProfileSwitcher = ({
                 setJoinError(err.message);
               }
             }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '12px' }}>
+              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '12px' }}>
                 Código de invitación
                 <input required value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="uid___default" />
               </label>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '16px' }}>
+              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '16px' }}>
                 Nombre del espacio
                 <input required value={joinName} onChange={(e) => setJoinName(e.target.value)} placeholder="Ej. Gastos Piso" />
               </label>
-              {joinError && <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>{joinError}</p>}
-              <button type="submit" className="sheet-submit">
+              {joinError && <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: '10px' }}>{joinError}</p>}
+              <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
                 Unirme al espacio <ArrowRight size={16} />
               </button>
             </form>
@@ -1041,7 +1044,7 @@ const ProfileSwitcher = ({
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Crear nueva cuenta</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Crear nueva cuenta</h2>
               <button type="button" className="sheet-close" onClick={() => setIsNewSpaceOpen(false)}>
                 <X size={17} />
               </button>
@@ -1058,7 +1061,7 @@ const ProfileSwitcher = ({
                 setNewSpaceError(err.message);
               }
             }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '16px' }}>
+              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '16px' }}>
                 Nombre de la cuenta
                 <input
                   required
@@ -1068,8 +1071,8 @@ const ProfileSwitcher = ({
                   placeholder="Ej. Vacaciones, Ahorro, Trabajo..."
                 />
               </label>
-              {newSpaceError && <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>{newSpaceError}</p>}
-              <button type="submit" className="sheet-submit">
+              {newSpaceError && <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: '10px' }}>{newSpaceError}</p>}
+              <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
                 Crear cuenta <ArrowRight size={16} />
               </button>
             </form>
@@ -1084,7 +1087,7 @@ const ProfileSwitcher = ({
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Sincronización en la nube</h2>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Sincronización en la nube</h2>
               <button type="button" className="sheet-close" onClick={() => setIsSyncPanelOpen(false)}>
                 <X size={17} />
               </button>
@@ -1092,7 +1095,7 @@ const ProfileSwitcher = ({
 
             {syncUser ? (
               <>
-                <p style={{ fontSize: '13px', color: 'var(--rev-muted)', marginBottom: '18px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-mute)', marginBottom: '18px' }}>
                   Conectado como <strong>{syncUser.email}</strong>. Tus cuentas y movimientos se sincronizan en tiempo real.
                 </p>
                 <button
@@ -1101,17 +1104,8 @@ const ProfileSwitcher = ({
                     logoutFromSyncAccount();
                     setIsSyncPanelOpen(false);
                   }}
-                  style={{
-                    width: '100%',
-                    height: '50px',
-                    borderRadius: '999px',
-                    border: 0,
-                    background: 'rgba(244, 63, 94, 0.14)',
-                    color: 'var(--rev-red)',
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                  }}
+                  className="nx-btn-soft"
+                  style={{ width: '100%', color: 'var(--danger-red)' }}
                 >
                   Cerrar sesión en la nube
                 </button>
@@ -1148,16 +1142,16 @@ const ProfileSwitcher = ({
                     setSyncFormError(err.message || 'No se pudo autenticar.');
                   }
                 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '12px' }}>
+                  <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '12px' }}>
                     Correo electrónico
                     <input type="email" value={syncEmail} onChange={(e) => setSyncEmail(e.target.value)} required />
                   </label>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '16px' }}>
+                  <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '16px' }}>
                     Contraseña
                     <input type="password" value={syncPassword} onChange={(e) => setSyncPassword(e.target.value)} minLength={6} required />
                   </label>
-                  {syncFormError && <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>{syncFormError}</p>}
-                  <button type="submit" className="sheet-submit">
+                  {syncFormError && <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: '10px' }}>{syncFormError}</p>}
+                  <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
                     {isCreatingSyncAccount ? 'Registrarme' : 'Entrar'} <ArrowRight size={16} />
                   </button>
                 </form>
