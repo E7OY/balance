@@ -1,5 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { X, ChevronLeft, Paperclip, Camera, Plus, Trash2, CreditCard, Snowflake } from 'lucide-react';
+import {
+  Camera,
+  Check,
+  ChevronDown,
+  CreditCard,
+  Pencil,
+  Plus,
+  Snowflake,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { expenseCategories, incomeCategories } from '../utils/categories';
 import { getCategoryVisuals } from './TransactionItem';
@@ -8,6 +19,24 @@ import { triggerHaptic } from '../utils/haptics';
 const getToday = () => {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+};
+
+const formatReadableDate = (isoDate) => {
+  const ts = Date.parse(`${isoDate}T00:00:00`);
+  if (!Number.isFinite(ts)) return isoDate;
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(ts);
+};
+
+const getMaskedDigits = (id = '') => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash * 31 + id.charCodeAt(i)) % 9000;
+  }
+  return String(1000 + hash);
 };
 
 const PAYMENT_METHODS = ['Tarjeta', 'Efectivo', 'Bizum', 'Transferencia', 'Domiciliación', 'Otros'];
@@ -27,7 +56,7 @@ const KEYPAD_GRID = [
   { key: 'backspace', sub: '' },
 ];
 
-const REV_KEYPAD_CSS = `
+const REV_FORM_CSS = `
   .rev-kp-screen {
     position: fixed;
     inset: 0;
@@ -65,6 +94,7 @@ const REV_KEYPAD_CSS = `
     border: 0;
     background: var(--rev-blue);
     color: #FFFFFF;
+    font-family: inherit;
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -143,6 +173,112 @@ const REV_KEYPAD_CSS = `
     margin-top: 1px;
     height: 10px;
   }
+
+  /* PASO 2: ESTRUCTURA DE TARJETAS REVOLUT */
+  .rev-detail-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: var(--rev-bg);
+    color: var(--rev-text);
+    overflow-y: auto;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(32px + env(safe-area-inset-bottom, 0px));
+    animation: rev-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .rev-detail-inner {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .rev-group-card {
+    background: var(--rev-card);
+    border-radius: 16px;
+    padding: 2px 16px;
+    border: 1px solid var(--rev-border);
+    box-shadow: var(--rev-shadow);
+    margin-bottom: 12px;
+  }
+  .rev-group-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 48px;
+    padding: 11px 0;
+    font-size: 14px;
+  }
+  .rev-group-row + .rev-group-row {
+    border-top: 1px solid var(--rev-border);
+  }
+  .rev-row-label {
+    color: var(--rev-muted);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .rev-row-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--rev-blue);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: right;
+  }
+  .rev-soft-pill {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 0;
+    background: var(--rev-blue-soft);
+    color: var(--rev-blue);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+  .rev-soft-pill:active {
+    transform: scale(0.96);
+  }
+  .rev-inline-drawer {
+    padding: 10px 0 14px;
+    border-top: 1px solid var(--rev-border);
+  }
+  .rev-note-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--rev-blue);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    outline: none;
+  }
+  .rev-note-input::placeholder {
+    color: var(--rev-blue);
+    opacity: 0.85;
+  }
+  .rev-date-input {
+    border: 0;
+    background: transparent;
+    color: var(--rev-blue);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    outline: none;
+    cursor: pointer;
+  }
 `;
 
 const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
@@ -167,6 +303,9 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
 
   const [type, setType] = useState(initialType);
   const [selectedProfileId, setSelectedProfileId] = useState(activeProfileId);
+
+  // Control de secciones desplegables dentro de las tarjetas Revolut
+  const [openDrawer, setOpenDrawer] = useState(null); // 'account' | 'category' | 'method' | null
 
   const frozenAccounts = useMemo(() => {
     try {
@@ -200,6 +339,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
   const isValidAmount = !isNaN(numAmount) && numAmount > 0;
 
   const selectedAccountObj = profiles.find((p) => p.id === selectedProfileId) || profiles[0];
+  const selectedAccountDigits = getMaskedDigits(selectedAccountObj?.id || '');
   const selectedAccountBalance = useMemo(() => {
     const list = getTransactionsForProfile ? getTransactionsForProfile(selectedProfileId) : [];
     return list.reduce((acc, tx) => {
@@ -284,6 +424,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     if (!categoriesForType.includes(category)) {
       setCategory(categoriesForType[0] || '');
     }
+    setOpenDrawer(null);
     setStep(2);
   };
 
@@ -296,6 +437,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
       setCategory(created);
       setNewCatName('');
       setIsAddingCat(false);
+      setOpenDrawer(null);
       triggerHaptic();
     } catch (err) {
       setFormError(err.message);
@@ -340,12 +482,14 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
   }).format(selectedAccountBalance);
 
   const existingInvoiceName = !removeExistingInvoice ? transaction?.invoice?.name : null;
+  const categoryVisuals = getCategoryVisuals(category, type, 15);
+  const isInstallmentEnabled = !isIncome && Number(installments) > 1;
 
   return (
     <>
-      <style>{REV_KEYPAD_CSS}</style>
+      <style>{REV_FORM_CSS}</style>
 
-      {/* PASO 1: TECLADO REVOLUT CON SELECTOR DE CUENTA */}
+      {/* PASO 1: TECLADO NUMÉRICO REVOLUT */}
       {step === 1 && (
         <div className="rev-kp-screen">
           <div className="rev-kp-header">
@@ -378,7 +522,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               </span>
             </div>
 
-            {/* PÍLDORA PARA CAMBIAR DE CUENTA DIRECTAMENTE EN EL TECLADO */}
             <button
               type="button"
               onClick={cycleTargetAccount}
@@ -398,7 +541,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               }}
             >
               <CreditCard size={13} style={{ color: 'var(--rev-blue)' }} />
-              <span>{selectedAccountObj?.name}: {formattedAccountBalance}</span>
+              <span>{selectedAccountObj?.name} **{selectedAccountDigits} · {formattedAccountBalance}</span>
               {frozenAccounts[selectedProfileId] && <Snowflake size={12} style={{ color: 'var(--rev-blue)' }} />}
             </button>
           </div>
@@ -440,332 +583,492 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
         </div>
       )}
 
-      {/* PASO 2: DETALLES + SELECTOR DE CUENTA */}
+      {/* PASO 2: ESTRUCTURA DE TARJETAS AGRUPADAS ESTILO REVOLUT */}
       {step === 2 && (
-        <div className="sheet-layer" style={{ zIndex: 10000 }} onMouseDown={onClose}>
-          <section
-            className="bottom-sheet"
-            style={{ background: 'var(--rev-bg)' }}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <button type="button" className="sheet-close" onClick={() => setStep(1)} aria-label="Volver">
-                <ChevronLeft size={19} />
-              </button>
-
-              <div className="record-tabs">
-                <button type="button" className={type === 'Gasto' ? 'active' : ''} onClick={() => switchTransactionType('Gasto')}>
-                  Gasto
-                </button>
-                <button type="button" className={type === 'Ingreso' ? 'active' : ''} onClick={() => switchTransactionType('Ingreso')}>
-                  Ingreso
-                </button>
-              </div>
-
+        <div className="rev-detail-modal">
+          <div className="rev-detail-inner">
+            {/* BOTÓN X ARRIBA A LA IZQUIERDA */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <button type="button" className="sheet-close" onClick={onClose} aria-label="Cerrar">
                 <X size={18} />
               </button>
+
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  color: 'var(--rev-blue)',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Cambiar importe
+              </button>
             </div>
 
-            {/* IMPORTE DESTACADO */}
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              style={{
-                width: '100%',
-                border: '1px solid var(--rev-border)',
-                background: 'var(--rev-card)',
-                borderRadius: '18px',
-                padding: '14px',
-                marginBottom: '12px',
-                textAlign: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <strong style={{
-                display: 'block',
-                fontSize: '30px',
-                fontWeight: 800,
-                fontVariantNumeric: 'tabular-nums',
-                color: isIncome ? 'var(--rev-green)' : 'var(--rev-text)',
-              }}>
-                {isIncome ? '+' : '−'}{amount} €
-              </strong>
-              <small style={{ fontSize: '11px', color: 'var(--rev-blue)', fontWeight: 700 }}>
-                Toca para editar importe
+            {/* BLOQUE HERO IZQUIERDO: IMPORTE + TÍTULO AZUL + FECHA */}
+            <div style={{ marginBottom: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  padding: 0,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'block',
+                }}
+              >
+                <strong
+                  style={{
+                    display: 'block',
+                    fontSize: '36px',
+                    fontWeight: 800,
+                    letterSpacing: '-0.03em',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: isIncome ? 'var(--rev-green)' : 'var(--rev-text)',
+                  }}
+                >
+                  {isIncome ? '+' : '−'}€{amount}
+                </strong>
+              </button>
+
+              <span style={{ display: 'block', fontSize: '15px', fontWeight: 700, color: 'var(--rev-blue)', marginTop: '2px' }}>
+                {description.trim() || selectedAccountObj?.name || category}
+              </span>
+
+              <small style={{ display: 'block', fontSize: '12.5px', color: 'var(--rev-muted)', marginTop: '2px', fontWeight: 500 }}>
+                {formatReadableDate(date)}
               </small>
-            </button>
+            </div>
+
+            {/* DOS PÍLDORAS AZULES SUPERIORES (GASTO / INGRESO) */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '18px' }}>
+              <button
+                type="button"
+                className="rev-soft-pill"
+                onClick={() => switchTransactionType('Gasto')}
+                style={{
+                  flex: 1,
+                  background: !isIncome ? 'var(--rev-blue)' : 'var(--rev-blue-soft)',
+                  color: !isIncome ? '#FFFFFF' : 'var(--rev-blue)',
+                }}
+              >
+                − Gasto
+              </button>
+
+              <button
+                type="button"
+                className="rev-soft-pill"
+                onClick={() => switchTransactionType('Ingreso')}
+                style={{
+                  flex: 1,
+                  background: isIncome ? 'var(--rev-green)' : 'var(--rev-blue-soft)',
+                  color: isIncome ? '#FFFFFF' : 'var(--rev-blue)',
+                }}
+              >
+                + Ingreso
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit}>
-              {/* SELECTOR DE CUENTA DESTINO */}
-              <div style={{
-                background: 'var(--rev-card)',
-                borderRadius: '18px',
-                padding: '14px',
-                border: '1px solid var(--rev-border)',
-                marginBottom: '12px',
-              }}>
-                <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '8px' }}>
-                  {isIncome ? 'Cuenta donde entra el ingreso' : 'Cuenta desde la que pagas'}
-                </span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {profiles.map((p) => {
-                    const isSel = selectedProfileId === p.id;
-                    const isFrozen = Boolean(frozenAccounts[p.id]);
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          triggerHaptic();
-                          setSelectedProfileId(p.id);
-                        }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 13px',
-                          borderRadius: '999px',
-                          border: isSel ? '1.5px solid var(--rev-blue)' : '1px solid var(--rev-border)',
-                          background: isSel ? 'var(--rev-blue-soft)' : 'var(--rev-bg)',
-                          color: isSel ? 'var(--rev-blue)' : 'var(--rev-text)',
-                          fontSize: '12.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <CreditCard size={14} />
-                        <span>{p.name}</span>
-                        {isFrozen && <Snowflake size={12} style={{ color: 'var(--rev-blue)' }} />}
-                      </button>
-                    );
-                  })}
+              {/* TARJETA 1: ESTADO, TARJETA/CUENTA DESTINO Y FECHA */}
+              <div className="rev-group-card">
+                <div className="rev-group-row">
+                  <span className="rev-row-label">Estado</span>
+                  <strong style={{ fontSize: '14px', fontWeight: 600 }}>
+                    {transaction ? 'Editando' : 'Listo para guardar'}
+                  </strong>
                 </div>
-                {frozenAccounts[selectedProfileId] && (
-                  <p style={{ fontSize: '11px', color: 'var(--rev-blue)', fontWeight: 600, marginTop: '8px', marginBottom: 0 }}>
-                    Aviso: esta cuenta está congelada actualmente.
-                  </p>
-                )}
-              </div>
 
-              {/* CATEGORÍAS CON ICONOS DE COLORES REVOLUT */}
-              <div style={{
-                background: 'var(--rev-card)',
-                borderRadius: '18px',
-                padding: '14px',
-                border: '1px solid var(--rev-border)',
-                marginBottom: '12px',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)' }}>
-                    Categoría de {type.toLowerCase()}
-                  </span>
+                {/* FILA TARJETA / CUENTA DONDE SE GUARDA EL MOVIMIENTO */}
+                <div className="rev-group-row">
+                  <span className="rev-row-label">Tarjeta / Cuenta</span>
                   <button
                     type="button"
-                    onClick={() => setIsAddingCat((v) => !v)}
-                    style={{ background: 'transparent', border: 0, color: 'var(--rev-blue)', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px', cursor: 'pointer' }}
+                    className="rev-row-action"
+                    onClick={() => setOpenDrawer(openDrawer === 'account' ? null : 'account')}
                   >
-                    <Plus size={14} /> Nueva
+                    <CreditCard size={15} />
+                    <span>{selectedAccountObj?.name.toUpperCase()} **{selectedAccountDigits}</span>
+                    <ChevronDown size={14} />
                   </button>
                 </div>
 
-                {isAddingCat && (
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                    <input
-                      type="text"
-                      value={newCatName}
-                      onChange={(e) => setNewCatName(e.target.value)}
-                      placeholder="Nombre categoría..."
-                      style={{ margin: 0, height: '40px', flex: 1, background: 'var(--rev-bg)' }}
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCreateInlineCategory}
-                      style={{ height: '40px', padding: '0 14px', borderRadius: '12px', border: 0, background: 'var(--rev-blue)', color: '#fff', fontWeight: 700, fontSize: '12px' }}
-                    >
-                      Añadir
-                    </button>
+                {openDrawer === 'account' && (
+                  <div className="rev-inline-drawer">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {profiles.map((p) => {
+                        const isSel = selectedProfileId === p.id;
+                        const digits = getMaskedDigits(p.id);
+                        const isFrozen = Boolean(frozenAccounts[p.id]);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              triggerHaptic();
+                              setSelectedProfileId(p.id);
+                              setOpenDrawer(null);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '10px 12px',
+                              borderRadius: '12px',
+                              border: isSel ? '1.5px solid var(--rev-blue)' : '1px solid var(--rev-border)',
+                              background: isSel ? 'var(--rev-blue-soft)' : 'var(--rev-bg)',
+                              color: 'var(--rev-text)',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                              <CreditCard size={15} style={{ color: 'var(--rev-blue)' }} />
+                              <span>{p.name} · **{digits}</span>
+                              {isFrozen && <Snowflake size={12} style={{ color: 'var(--rev-blue)' }} />}
+                            </span>
+                            {isSel && <Check size={15} style={{ color: 'var(--rev-blue)' }} />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {categoriesForType.map((c) => {
-                    const selected = category === c;
-                    const vis = getCategoryVisuals(c, type, 13);
-                    return (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setCategory(c)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px 6px 6px',
-                          borderRadius: '999px',
-                          border: selected ? '1.5px solid var(--rev-blue)' : '1px solid var(--rev-border)',
-                          background: selected ? 'var(--rev-blue-soft)' : 'var(--rev-bg)',
-                          color: selected ? 'var(--rev-blue)' : 'var(--rev-text)',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <span style={{
-                          width: '22px',
-                          height: '22px',
-                          borderRadius: '50%',
-                          background: vis.bg,
-                          color: '#fff',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}>
-                          {vis.icon}
-                        </span>
-                        {c}
-                      </button>
-                    );
-                  })}
+                <div className="rev-group-row">
+                  <span className="rev-row-label">Fecha</span>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="rev-date-input"
+                    required
+                  />
                 </div>
               </div>
 
-              {/* CONCEPTO, MÉTODO DE PAGO, FECHA Y CUOTAS */}
-              <div style={{
-                background: 'var(--rev-card)',
-                borderRadius: '18px',
-                padding: '14px',
-                border: '1px solid var(--rev-border)',
-                marginBottom: '12px',
-              }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '12px' }}>
-                  {isIncome ? 'Origen / Concepto' : 'Comercio / Concepto'}
-                  <input
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={isIncome ? 'Ej. Nómina, Bizum, Reembolso...' : 'Ej. Eroski, Gasolina, Cena...'}
-                    style={{ background: 'var(--rev-bg)' }}
-                  />
-                </label>
+              {/* TARJETA 2: CATEGORÍA, MÉTODO DE PAGO E IMPORTE */}
+              <div className="rev-group-card">
+                <div className="rev-group-row">
+                  <span className="rev-row-label">Categoría</span>
+                  <button
+                    type="button"
+                    className="rev-row-action"
+                    onClick={() => setOpenDrawer(openDrawer === 'category' ? null : 'category')}
+                  >
+                    {categoryVisuals.icon}
+                    <span>{category}</span>
+                    <ChevronDown size={14} />
+                  </button>
+                </div>
 
-                <div style={{ marginBottom: '12px' }}>
-                  <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '6px' }}>
-                    {isIncome ? 'Método de recepción' : 'Método de pago'}
-                  </span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {PAYMENT_METHODS.map((m) => (
+                {openDrawer === 'category' && (
+                  <div className="rev-inline-drawer">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+                      {categoriesForType.map((c) => {
+                        const selected = category === c;
+                        const vis = getCategoryVisuals(c, type, 13);
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => {
+                              triggerHaptic();
+                              setCategory(c);
+                              setOpenDrawer(null);
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '6px 11px 6px 6px',
+                              borderRadius: '999px',
+                              border: selected ? '1.5px solid var(--rev-blue)' : '1px solid var(--rev-border)',
+                              background: selected ? 'var(--rev-blue-soft)' : 'var(--rev-bg)',
+                              color: selected ? 'var(--rev-blue)' : 'var(--rev-text)',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <span style={{
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              background: vis.bg,
+                              color: '#fff',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}>
+                              {vis.icon}
+                            </span>
+                            {c}
+                          </button>
+                        );
+                      })}
+
                       <button
-                        key={m}
                         type="button"
-                        onClick={() => setPaymentMethod(m)}
+                        onClick={() => setIsAddingCat((v) => !v)}
                         style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
                           padding: '6px 12px',
                           borderRadius: '999px',
-                          border: 0,
+                          border: '1px dashed var(--rev-blue)',
+                          background: 'transparent',
+                          color: 'var(--rev-blue)',
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          background: paymentMethod === m ? 'var(--rev-blue)' : 'var(--rev-bg)',
-                          color: paymentMethod === m ? '#fff' : 'var(--rev-muted)',
                         }}
                       >
-                        {m}
+                        <Plus size={13} /> Nueva
                       </button>
-                    ))}
+                    </div>
+
+                    {isAddingCat && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                        <input
+                          type="text"
+                          value={newCatName}
+                          onChange={(e) => setNewCatName(e.target.value)}
+                          placeholder="Nombre categoría..."
+                          style={{
+                            flex: 1,
+                            height: '38px',
+                            padding: '0 12px',
+                            borderRadius: '12px',
+                            border: '1px solid var(--rev-border)',
+                            background: 'var(--rev-bg)',
+                            color: 'var(--rev-text)',
+                            fontSize: '13px',
+                            outline: 'none',
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateInlineCategory}
+                          style={{
+                            height: '38px',
+                            padding: '0 14px',
+                            borderRadius: '12px',
+                            border: 0,
+                            background: 'var(--rev-blue)',
+                            color: '#fff',
+                            fontWeight: 700,
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Añadir
+                        </button>
+                      </div>
+                    )}
                   </div>
+                )}
+
+                <div className="rev-group-row">
+                  <span className="rev-row-label">{isIncome ? 'Recepción' : 'Método'}</span>
+                  <button
+                    type="button"
+                    className="rev-row-action"
+                    onClick={() => setOpenDrawer(openDrawer === 'method' ? null : 'method')}
+                  >
+                    <span>{paymentMethod}</span>
+                    <ChevronDown size={14} />
+                  </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: !isIncome && !transaction ? '1fr 1fr' : '1fr', gap: '10px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: 0 }}>
-                    Fecha
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ background: 'var(--rev-bg)' }} required />
-                  </label>
+                {openDrawer === 'method' && (
+                  <div className="rev-inline-drawer">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {PAYMENT_METHODS.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic();
+                            setPaymentMethod(m);
+                            setOpenDrawer(null);
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '999px',
+                            border: 0,
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: paymentMethod === m ? 'var(--rev-blue)' : 'var(--rev-bg)',
+                            color: paymentMethod === m ? '#fff' : 'var(--rev-text)',
+                          }}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                  {!isIncome && !transaction && (
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: 0 }}>
-                      Plazos
-                      <select value={installments} onChange={(e) => setInstallments(e.target.value)} style={{ background: 'var(--rev-bg)' }}>
-                        <option value={1}>Pago único</option>
-                        {[2, 3, 4, 6, 9, 12, 18, 24].map((n) => (
-                          <option key={n} value={n}>{n} cuotas</option>
-                        ))}
-                      </select>
-                    </label>
+                <div className="rev-group-row">
+                  <span className="rev-row-label">Importe en análisis</span>
+                  <button type="button" className="rev-row-action" onClick={() => setStep(1)}>
+                    <Pencil size={13} />
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>€{amount}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* TARJETA 3: JUSTIFICANTE / TICKET */}
+              <div className="rev-group-card">
+                <div className="rev-group-row">
+                  <span className="rev-row-label">Justificante</span>
+
+                  {invoiceFile || existingInvoiceName ? (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rev-blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+                        {invoiceFile ? invoiceFile.name : existingInvoiceName}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => (invoiceFile ? setInvoiceFile(null) : setRemoveExistingInvoice(true))}
+                        style={{ background: 'transparent', border: 0, color: 'var(--rev-red)', display: 'flex', padding: 0, cursor: 'pointer' }}
+                        aria-label="Quitar justificante"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '14px' }}>
+                      <label className="rev-row-action" style={{ margin: 0 }}>
+                        <Camera size={15} />
+                        <span>Foto</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) { setInvoiceFile(f); setRemoveExistingInvoice(false); }
+                          }}
+                        />
+                      </label>
+
+                      <label className="rev-row-action" style={{ margin: 0 }}>
+                        <Upload size={15} />
+                        <span>Subir</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) { setInvoiceFile(f); setRemoveExistingInvoice(false); }
+                          }}
+                        />
+                      </label>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* JUSTIFICANTE / RECIBO */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                <label style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                  padding: '11px', borderRadius: '14px', border: '1px solid var(--rev-border)',
-                  background: 'var(--rev-card)', color: 'var(--rev-blue)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', marginBottom: 0,
-                }}>
-                  <Camera size={15} /> Foto ticket
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) { setInvoiceFile(f); setRemoveExistingInvoice(false); }
-                    }}
-                  />
-                </label>
-
-                <label style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                  padding: '11px', borderRadius: '14px', border: '1px solid var(--rev-border)',
-                  background: 'var(--rev-card)', color: 'var(--rev-blue)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', marginBottom: 0,
-                }}>
-                  <Paperclip size={15} /> Adjuntar archivo
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) { setInvoiceFile(f); setRemoveExistingInvoice(false); }
-                    }}
-                  />
-                </label>
+              {/* TARJETA 4: NOTA / COMERCIO */}
+              <div className="rev-group-card">
+                <div className="rev-group-row">
+                  <span className="rev-row-label">Nota</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, justifyContent: 'flex-end' }}>
+                    <Pencil size={13} style={{ color: 'var(--rev-blue)', flexShrink: 0 }} />
+                    <input
+                      type="text"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Añadir nota"
+                      className="rev-note-input"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {(invoiceFile || existingInvoiceName) && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px', borderRadius: '14px', background: 'var(--rev-card)',
-                  border: '1px solid var(--rev-border)', fontSize: '12px', fontWeight: 700, marginBottom: '12px',
-                }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <Paperclip size={13} style={{ color: 'var(--rev-blue)' }} />
-                    {invoiceFile ? invoiceFile.name : existingInvoiceName}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => (invoiceFile ? setInvoiceFile(null) : setRemoveExistingInvoice(true))}
-                    style={{ background: 'transparent', border: 0, color: 'var(--rev-red)', cursor: 'pointer', display: 'flex' }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+              {/* TARJETA 5: PAGO FRACCIONADO (INTERRUPTOR ESTILO REVOLUT) */}
+              {!isIncome && !transaction && (
+                <div className="rev-group-card">
+                  <div className="rev-group-row">
+                    <span className="rev-row-label">Pago a plazos</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isInstallmentEnabled}
+                      className={`rev-switch ${isInstallmentEnabled ? 'on' : ''}`}
+                      onClick={() => {
+                        triggerHaptic();
+                        setInstallments(isInstallmentEnabled ? 1 : 3);
+                      }}
+                    >
+                      <span className="rev-switch-thumb" />
+                    </button>
+                  </div>
+
+                  {isInstallmentEnabled && (
+                    <div className="rev-inline-drawer">
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {[2, 3, 4, 6, 12, 24].map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setInstallments(n)}
+                            style={{
+                              flex: 1,
+                              padding: '7px 0',
+                              borderRadius: '10px',
+                              border: 0,
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              background: Number(installments) === n ? 'var(--rev-blue)' : 'var(--rev-bg)',
+                              color: Number(installments) === n ? '#fff' : 'var(--rev-text)',
+                            }}
+                          >
+                            {n}x
+                          </button>
+                        ))}
+                      </div>
+                      <small style={{ display: 'block', fontSize: '11px', color: 'var(--rev-muted)', marginTop: '8px' }}>
+                        {installments} cuotas de {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(numAmount / Number(installments))} / mes
+                      </small>
+                    </div>
+                  )}
                 </div>
               )}
 
               {formError && (
-                <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>
+                <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '12px' }}>
                   {formError}
                 </p>
               )}
 
-              <button type="submit" className="sheet-submit">
+              <button
+                type="submit"
+                className="sheet-submit"
+                style={{
+                  marginTop: '8px',
+                  background: isIncome ? 'var(--rev-green)' : 'var(--rev-blue)',
+                }}
+              >
                 {transaction ? 'Guardar cambios' : isIncome ? 'Guardar ingreso' : 'Guardar gasto'}
               </button>
             </form>
-          </section>
+          </div>
         </div>
       )}
     </>
