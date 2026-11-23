@@ -54,38 +54,23 @@ const writeMapStorage = (key, value) => {
 const NX_ACCOUNTS_CSS = `
   .nx-accounts-dark-screen {
     min-height: 100dvh;
-    margin-bottom: calc(-88px - env(safe-area-inset-bottom, 0px));
-    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) calc(150px + env(safe-area-inset-bottom, 0px));
+    margin-bottom: calc(-98px - env(safe-area-inset-bottom, 0px));
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) calc(164px + env(safe-area-inset-bottom, 0px));
     background-color: var(--canvas-dark);
     color: var(--on-dark);
     display: flex;
     flex-direction: column;
     position: relative;
   }
-.nx-accounts-dark-screen.colorful {
-  background:
-    radial-gradient(
-      100% 42% at 50% 0%,
-      rgba(105, 45, 255, 0.95) 0%,
-      rgba(76, 29, 180, 0.55) 48%,
-      transparent 100%
-    ),
-    radial-gradient(
-      75% 35% at 100% 12%,
-      rgba(42, 77, 210, 0.22) 0%,
-      transparent 100%
-    ),
-    linear-gradient(
-      180deg,
-      #351080 0%,
-      #29145D 20%,
-      #292735 48%,
-      #41404B 72%,
-      #686770 100%
-    );
-
-  background-color: #292735;
-}
+  .nx-accounts-dark-screen.colorful {
+    background-color: #16171F;
+    background-image:
+      radial-gradient(125% 62% at 82% 4%, rgba(92, 62, 242, 0.56) 0%, rgba(56, 32, 168, 0.24) 46%, transparent 76%),
+      radial-gradient(110% 58% at 14% 16%, rgba(64, 41, 186, 0.42) 0%, transparent 68%),
+      radial-gradient(85% 44% at 24% 88%, rgba(132, 102, 92, 0.16) 0%, transparent 66%),
+      radial-gradient(85% 44% at 78% 86%, rgba(88, 96, 134, 0.18) 0%, transparent 66%),
+      linear-gradient(180deg, #21115E 0%, #1A153B 34%, #171822 68%, #1D1E26 100%);
+  }
   .nx-elevated-group {
     background-color: var(--surface-elevated);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -93,11 +78,12 @@ const NX_ACCOUNTS_CSS = `
     padding: var(--sp-xs) var(--sp-xl);
     margin-bottom: var(--sp-lg);
   }
-  .nx-elevated-group {
-    background: rgba(255, 255, 255, 0.13);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+  .nx-accounts-dark-screen.colorful .nx-elevated-group {
+    background: rgba(255, 255, 255, 0.085);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
   .nx-account-row {
     display: flex;
@@ -128,32 +114,30 @@ const NX_ACCOUNTS_CSS = `
   .nx-add-account-float {
     position: fixed;
     left: 50%;
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     z-index: 35;
   }
 
   /* DETALLE DE TARJETA: ESCENARIO GRIS OSCURO ARRIBA + HOJA CLARA REDONDEADA CON TARJETAS BLANCAS */
-.nx-card-hero-band.colorful {
-  background:
-    radial-gradient(
-      110% 85% at 50% 0%,
-      rgba(105, 45, 255, 0.9) 0%,
-      rgba(65, 30, 145, 0.45) 55%,
-      transparent 100%
-    ),
-    linear-gradient(
-      180deg,
-      #351080 0%,
-      #292735 100%
-    );
-}
-
+  .nx-card-hero-band {
+    background-color: #34353D;
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) 38px;
+    color: var(--on-dark);
+    overflow: hidden;
+  }
+  .nx-card-hero-band.colorful {
+    background:
+      radial-gradient(120% 80% at 80% 0%, rgba(92, 62, 242, 0.48) 0%, transparent 65%),
+      linear-gradient(180deg, #21115E 0%, #262340 52%, #34353D 100%);
+  }
   .dark .nx-card-hero-band {
     background-color: #16171A;
   }
   .dark .nx-card-hero-band.colorful {
-    background: linear-gradient(180deg, #231063 0%, #16171A 100%);
+    background:
+      radial-gradient(120% 80% at 80% 0%, rgba(82, 54, 224, 0.4) 0%, transparent 65%),
+      linear-gradient(180deg, #1B0E4D 0%, #171820 100%);
   }
   .nx-pills-strip {
     display: flex;
@@ -262,7 +246,6 @@ const NX_ACCOUNTS_CSS = `
     box-shadow: none;
   }
 `;
-
 
 const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   const {
