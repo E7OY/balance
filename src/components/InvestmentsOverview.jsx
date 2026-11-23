@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { ArrowRight, ChevronRight, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import InvestmentAssetIcon from './InvestmentAssetIcon';
-import { getInvestmentHistory, getInvestmentQuote } from '../utils/investmentMarketData';
-import './investmentDetailSheet.css';
+import { getInvestmentHistory, getInvestmentQuote, getInvestmentQuotes } from '../utils/investmentMarketData';
 import { useElasticScroll } from '../hooks/useElasticScroll';
+import { triggerHaptic } from '../utils/haptics';
 
 const periods = ['1D', '1S', '1M', '1A', 'Máx'];
 const periodDurations = {
@@ -44,7 +44,6 @@ const getPriceAt = (points, timestamp) => {
   let low = 0;
   let high = points.length - 1;
   let match = -1;
-
   while (low <= high) {
     const middle = Math.floor((low + high) / 2);
     if (Date.parse(points[middle].timestamp) <= timestamp) {
@@ -54,7 +53,6 @@ const getPriceAt = (points, timestamp) => {
       high = middle - 1;
     }
   }
-
   return match >= 0 ? Number(points[match].price) : null;
 };
 
@@ -67,93 +65,25 @@ const downsample = (points, limit = 120) => {
 const KNOWN_ASSET_COLORS = {
   BTC: '#F7931A', ETH: '#627EEA', USDT: '#26A17B', USDC: '#2775CA', BNB: '#F3BA2F',
   SOL: '#9945FF', XRP: '#2B6CB0', ADA: '#2A5ADA', DOGE: '#C2A633', DOT: '#E6007A',
-  LTC: '#345D9D', AVAX: '#E84142', LINK: '#2A5ADA', MATIC: '#8247E5', TRX: '#EC0928',
 };
 
-const hexToRgb = (hex) => {
-  const value = hex.replace('#', '');
-  const full = value.length === 3 ? value.split('').map((character) => character + character).join('') : value;
-  return [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16));
-};
-
-const rgbToHex = (red, green, blue) => `#${[red, green, blue]
-  .map((channel) => Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, '0'))
-  .join('')}`;
-
-const getLuminance = (hex) => {
-  const [red, green, blue] = hexToRgb(hex).map((channel) => {
-    const normalized = channel / 255;
-    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-};
-
-const getReadableTextColor = (hex) => {
-  const luminance = getLuminance(hex);
-  const contrastWithWhite = 1.05 / (luminance + 0.05);
-  const contrastWithDark = (luminance + 0.05) / (getLuminance('#090909') + 0.05);
-  return contrastWithWhite >= contrastWithDark ? '#ffffff' : '#090909';
-};
-
-const getFallbackAccent = (investment) => {
-  const symbol = String(investment.asset?.symbol || '').toUpperCase();
-  if (KNOWN_ASSET_COLORS[symbol]) return KNOWN_ASSET_COLORS[symbol];
-  const seed = String(investment.asset?.id || investment.name || 'activo');
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) hash = (hash * 31 + seed.charCodeAt(index)) % 360;
-  const hue = hash / 60;
-  const chroma = 0.62 * 0.9;
-  const x = chroma * (1 - Math.abs((hue % 2) - 1));
-  const lightness = 0.62 - chroma / 2;
-  const [red, green, blue] = [[chroma, x, 0], [x, chroma, 0], [0, chroma, x], [0, x, chroma], [x, 0, chroma], [chroma, 0, x]][Math.floor(hue) % 6];
-  return rgbToHex((red + lightness) * 255, (green + lightness) * 255, (blue + lightness) * 255);
-};
-
-const getAssetLogoStyle = (name, symbol) => {
-  const bg = getFallbackAccent({ asset: { symbol }, name });
-  const color = getReadableTextColor(bg);
+const getAssetBadgeStyle = (name, symbol) => {
+  const key = String(symbol || '').toUpperCase();
+  const bg = KNOWN_ASSET_COLORS[key] || '#0075EB';
   return {
-    backgroundColor: bg,
-    color,
-    borderColor: 'transparent',
+    width: '42px',
+    height: '42px',
+    borderRadius: '50%',
+    background: bg,
+    color: '#fff',
+    fontWeight: 800,
+    fontSize: '14px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   };
 };
-
-const sampleImageColor = (source) => new Promise((resolve) => {
-  if (!source) return resolve(null);
-  const image = new Image();
-  image.onload = () => {
-    try {
-      const size = 24;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const context = canvas.getContext('2d', { willReadFrequently: true });
-      context.drawImage(image, 0, 0, size, size);
-      const { data } = context.getImageData(0, 0, size, size);
-      let red = 0;
-      let green = 0;
-      let blue = 0;
-      let weight = 0;
-      for (let index = 0; index < data.length; index += 4) {
-        if (data[index + 3] < 200) continue;
-        const max = Math.max(data[index], data[index + 1], data[index + 2]);
-        const min = Math.min(data[index], data[index + 1], data[index + 2]);
-        const saturation = max === 0 ? 0 : (max - min) / max;
-        const pixelWeight = saturation ** 2 + 0.01;
-        red += data[index] * pixelWeight;
-        green += data[index + 1] * pixelWeight;
-        blue += data[index + 2] * pixelWeight;
-        weight += pixelWeight;
-      }
-      resolve(weight > 0 ? rgbToHex(red / weight, green / weight, blue / weight) : null);
-    } catch {
-      resolve(null);
-    }
-  };
-  image.onerror = () => resolve(null);
-  image.src = source;
-});
 
 const InvestmentDetail = ({
   investment,
@@ -166,812 +96,429 @@ const InvestmentDetail = ({
   onUpdatePrice,
 }) => {
   const [marketQuote, setMarketQuote] = useState(null);
-  const [quoteError, setQuoteError] = useState('');
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [isConfirmingSale, setIsConfirmingSale] = useState(false);
   const [saleError, setSaleError] = useState('');
   const [isSelling, setIsSelling] = useState(false);
+  const [scrubIndex, setScrubIndex] = useState(null);
+  const chartRef = useRef(null);
 
-  const isSold = purchases.every(p => p.soldAt);
-  const invested = purchases.reduce((sum, purchase) => sum + (Number(purchase.investedAmount) || 0), 0);
-  const units = purchases.reduce((sum, purchase) => sum + (Number(purchase.units) || 0), 0);
+  const isSold = purchases.every((p) => p.soldAt);
+  const invested = purchases.reduce((sum, p) => sum + (Number(p.investedAmount) || 0), 0);
+  const units = purchases.reduce((sum, p) => sum + (Number(p.units) || 0), 0);
   const assetKey = investment.asset?.provider && investment.asset?.id
     ? `${investment.asset.provider}:${investment.asset.id}`
     : '';
   const lastRecordedPrice = purchases
-    .filter((purchase) => Number(purchase.currentPrice) > 0)
+    .filter((p) => Number(p.currentPrice) > 0)
     .sort((a, b) => Date.parse(b.lastPriceUpdated || '') - Date.parse(a.lastPriceUpdated || ''))[0]?.currentPrice;
   const currentPrice = marketQuote?.priceEur || Number(lastRecordedPrice) || 0;
-  
-  const currentValue = isSold 
+
+  const currentValue = isSold
     ? purchases.reduce((sum, p) => sum + (Number(p.soldValue) || 0), 0)
     : (investment.asset && currentPrice > 0
       ? currentPrice * units
-      : purchases.reduce((sum, purchase) => sum + (Number(purchase.currentValue) || 0), 0));
-      
-  const averageCost = units > 0 ? invested / units : 0;
+      : purchases.reduce((sum, p) => sum + (Number(p.currentValue) || 0), 0));
+
   const profit = currentValue - invested;
   const profitPercent = invested > 0 ? (profit / invested) * 100 : 0;
-  const purchaseSignature = purchases.map((purchase) => purchase.id).join('|');
+  const purchaseSignature = purchases.map((p) => p.id).join('|');
 
   useEffect(() => {
     if (!investment.asset || !assetKey || isSold) return undefined;
-
     const controller = new AbortController();
-    setMarketQuote(null);
-    setQuoteError('');
     setIsLoadingQuote(true);
-
     getInvestmentQuote(investment.asset, controller.signal)
       .then((quote) => {
-        setMarketQuote(quote);
-        purchases.forEach((purchase) => onUpdatePrice(purchase.id, quote));
+        if (quote.priceEur > 0) {
+          setMarketQuote(quote);
+          purchases.forEach((p) => onUpdatePrice(p.id, quote));
+        }
       })
-      .catch((error) => {
-        if (error.name !== 'AbortError') setQuoteError(error.message);
-      })
+      .catch(() => {})
       .finally(() => {
         if (!controller.signal.aborted) setIsLoadingQuote(false);
       });
-
     return () => controller.abort();
   }, [assetKey, investment.asset, onUpdatePrice, purchaseSignature, isSold]);
 
   const historyPoints = (history[assetKey] || [])
-    .filter((point) => Number.isFinite(Date.parse(point.timestamp)) && Number.isFinite(Number(point.price)))
+    .filter((pt) => Number.isFinite(Date.parse(pt.timestamp)) && Number.isFinite(Number(pt.price)))
     .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+
   const now = Date.now();
-  const earliestPurchase = Math.min(...purchases.map((purchase) => Date.parse(`${purchase.date}T00:00:00`)).filter(Number.isFinite), now);
+  const earliestPurchase = Math.min(
+    ...purchases.map((p) => Date.parse(`${p.date}T00:00:00`)).filter(Number.isFinite),
+    now,
+  );
   const periodStart = period === 'Máx' ? earliestPurchase : now - periodDurations[period];
-  const relevantHistory = historyPoints.filter((point) => {
-    const timestamp = Date.parse(point.timestamp);
-    return timestamp >= Math.max(periodStart, earliestPurchase) && timestamp <= now;
+  const relevantHistory = historyPoints.filter((pt) => {
+    const ts = Date.parse(pt.timestamp);
+    return ts >= Math.max(periodStart, earliestPurchase) && ts <= now;
   });
-  const chartTimestamps = [...new Set([
-    ...purchases
-      .map((purchase) => Date.parse(`${purchase.date}T00:00:00`))
-      .filter((timestamp) => timestamp >= periodStart && timestamp <= now),
-    ...relevantHistory.map((point) => Date.parse(point.timestamp)),
-  ])].sort((a, b) => a - b);
-  const detailPoints = relevantHistory.length && units > 0
-    ? downsample(chartTimestamps.flatMap((timestamp) => {
-      const price = getPriceAt(historyPoints, timestamp);
+
+  const detailPoints = useMemo(() => {
+    if (!relevantHistory.length || units <= 0) return [];
+    const timestamps = [...new Set([...relevantHistory.map((pt) => Date.parse(pt.timestamp)), now])].sort((a, b) => a - b);
+    return downsample(timestamps.flatMap((ts) => {
+      const price = ts === now && currentPrice > 0 ? currentPrice : getPriceAt(historyPoints, ts);
       if (price === null) return [];
-      const ownedUnits = purchases.reduce((sum, purchase) => (
-        Date.parse(`${purchase.date}T00:00:00`) <= timestamp
-          && (!purchase.soldAt || timestamp <= Date.parse(purchase.soldAt))
-          ? sum + (Number(purchase.units) || 0)
-          : sum
-      ), 0);
-      return [{ timestamp, value: price * ownedUnits, price }];
-    }))
-    : [];
-  const values = detailPoints.map((point) => point.value);
-  const minValue = values.length ? Math.min(...values) : 0;
-  const maxValue = values.length ? Math.max(...values) : 0;
-  const valueRange = maxValue - minValue;
-  const chartCoordinates = detailPoints.map((point, index) => ({
-    x: detailPoints.length > 1 ? (index / (detailPoints.length - 1)) * 390 : 195,
-    y: valueRange > 0 ? 164 - ((point.value - minValue) / valueRange) * 138 : 95,
+      return [{ timestamp: ts, price, value: price * units }];
+    }));
+  }, [relevantHistory, units, now, currentPrice, historyPoints]);
+
+  const vals = detailPoints.map((p) => p.value);
+  const minVal = vals.length ? Math.min(...vals) : 0;
+  const maxVal = vals.length ? Math.max(...vals) : 0;
+  const range = maxVal - minVal;
+  const coords = detailPoints.map((pt, idx) => ({
+    x: detailPoints.length > 1 ? (idx / (detailPoints.length - 1)) * 390 : 195,
+    y: range > 0 ? 115 - ((pt.value - minVal) / range) * 90 : 70,
+    ...pt,
   }));
-  const chartPath = chartCoordinates.map((coordinate, index) => (
-    `${index === 0 ? 'M' : 'L'}${coordinate.x.toFixed(1)} ${coordinate.y.toFixed(1)}`
-  )).join(' ');
-  const manualHistory = purchases.some((purchase) => Array.isArray(purchase.priceHistory) && purchase.priceHistory.length > 1);
-
-  const [phoneNode, setPhoneNode] = useState(null);
-  const [accent, setAccent] = useState(() => getFallbackAccent(investment));
-  const [topOffset, setTopOffset] = useState(0);
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const bodyRef = useRef(null);
-  const dragRef = useRef({ startY: 0, lastY: 0, startTime: 0, active: false, canDrag: false });
-  const closeTimerRef = useRef(null);
-  const isClosingRef = useRef(false);
-  const chartRef = useRef(null);
-  const [scrubIndex, setScrubIndex] = useState(null);
-
-  useEffect(() => {
-    setScrubIndex(null);
-  }, [period, detailPoints.length]);
-
-  const scrubChart = (clientX) => {
-    const element = chartRef.current;
-    const count = detailPoints.length;
-    if (!element || count === 0) return;
-    const { left, width } = element.getBoundingClientRect();
-    if (width <= 0) return;
-    const ratio = Math.min(1, Math.max(0, (clientX - left) / width));
-    setScrubIndex(count > 1 ? Math.round(ratio * (count - 1)) : 0);
-  };
-
-  const handleChartKeyDown = (event) => {
-    const count = detailPoints.length;
-    if (count === 0) return;
-    const current = scrubIndex ?? count - 1;
-    let next;
-    if (event.key === 'ArrowLeft') next = Math.max(0, current - 1);
-    else if (event.key === 'ArrowRight') next = Math.min(count - 1, current + 1);
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = count - 1;
-    else if (event.key === 'Escape') {
-      if (scrubIndex === null) return;
-      event.stopPropagation();
-      setScrubIndex(null);
-      return;
-    } else return;
-    event.preventDefault();
-    setScrubIndex(next);
-  };
-
-  const scrubPoint = scrubIndex !== null ? detailPoints[scrubIndex] ?? null : null;
-  const scrubCoordinate = scrubPoint ? chartCoordinates[scrubIndex] : null;
-  const shownPoint = scrubPoint ?? detailPoints[detailPoints.length - 1] ?? null;
-  const firstPrice = detailPoints[0]?.price ?? 0;
-  const priceChangeAmount = shownPoint ? shownPoint.price - firstPrice : 0;
-  const priceChangePercent = shownPoint && firstPrice > 0 ? (priceChangeAmount / firstPrice) * 100 : 0;
-  const chartTrend = profit < 0 ? 'negative' : 'positive';
-
-  useEffect(() => {
-    const phone = document.querySelector('.phone');
-    const header = phone?.querySelector('.app-header');
-    if (phone && header) {
-      const phoneRect = phone.getBoundingClientRect();
-      const headerBottom = header.getBoundingClientRect().bottom - phoneRect.top;
-      setTopOffset(Math.min(Math.max(0, Math.round(headerBottom + 10)), Math.round(phoneRect.height * 0.45)));
-    }
-    setPhoneNode(phone || document.body);
-    return () => window.clearTimeout(closeTimerRef.current);
-  }, []);
-
-  useEffect(() => {
-    if (!phoneNode) return undefined;
-    let cancelled = false;
-    const timers = [];
-    const tryToSample = () => {
-      const image = bodyRef.current?.querySelector('.investment-detail-identity img');
-      const source = image?.currentSrc || image?.src;
-      if (!source) return false;
-      sampleImageColor(source).then((color) => {
-        if (!cancelled && color) setAccent(color);
-      });
-      return true;
-    };
-    if (!tryToSample()) timers.push(window.setTimeout(tryToSample, 400));
-    return () => {
-      cancelled = true;
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [phoneNode, assetKey]);
-
-  const requestClose = () => {
-    if (isClosingRef.current) return;
-    isClosingRef.current = true;
-    setIsClosing(true);
-    closeTimerRef.current = window.setTimeout(onBack, 220);
-  };
-  const requestCloseRef = useRef(requestClose);
-  requestCloseRef.current = requestClose;
-
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') requestCloseRef.current();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const finishDrag = () => {
-    const drag = dragRef.current;
-    if (!drag.active) return;
-    drag.active = false;
-    setIsDragging(false);
-    const distance = drag.lastY - drag.startY;
-    const velocity = distance / Math.max(1, performance.now() - drag.startTime);
-    if (distance > 110 || (distance > 40 && velocity > 0.6)) requestClose();
-    else setDragY(0);
-  };
-
-  const handleGrabberPointerDown = (event) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    dragRef.current = { startY: event.clientY, lastY: event.clientY, startTime: performance.now(), active: true, canDrag: true };
-    setIsDragging(true);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
-
-  const handleGrabberPointerMove = (event) => {
-    const drag = dragRef.current;
-    if (!drag.active) return;
-    drag.lastY = event.clientY;
-    setDragY(Math.max(0, event.clientY - drag.startY));
-  };
-
-  const handleBodyTouchStart = (event) => {
-    const body = bodyRef.current;
-    if (!body || event.touches.length !== 1) return;
-    const y = event.touches[0].clientY;
-    const isOnChart = Boolean(event.target.closest?.('[data-chart-scrub]'));
-    dragRef.current = { startY: y, lastY: y, startTime: performance.now(), active: false, canDrag: body.scrollTop <= 0 && !isOnChart };
-  };
-
-  const handleBodyTouchMove = (event) => {
-    const drag = dragRef.current;
-    if (!drag.canDrag || event.touches.length !== 1) return;
-    const y = event.touches[0].clientY;
-    const distance = y - drag.startY;
-    if (!drag.active) {
-      if (distance < 6) return;
-      drag.active = true;
-      setIsDragging(true);
-    }
-    drag.lastY = y;
-    setDragY(Math.max(0, distance));
-  };
-
-  if (!phoneNode) return null;
+  const chartPath = coords.map((c, idx) => `${idx === 0 ? 'M' : 'L'}${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+  const activePt = scrubIndex !== null ? coords[scrubIndex] : null;
+  const trendColor = profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 
   return createPortal(
-    <div
-      className="investment-sheet-layer"
-      style={{ top: topOffset, opacity: isClosing ? 0 : 1, transition: 'opacity 0.22s ease-out' }}
-      onMouseDown={requestClose}
-    >
-      <section
-        className="investment-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Detalle de ${investment.name}`}
-        style={{
-          transform: isClosing ? 'translateY(100%)' : dragY > 0 ? `translateY(${dragY}px)` : undefined,
-          transition: isDragging ? 'none' : 'transform 0.22s ease-out',
-        }}
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <div
-          className="investment-sheet-grabber"
-          onPointerDown={handleGrabberPointerDown}
-          onPointerMove={handleGrabberPointerMove}
-          onPointerUp={finishDrag}
-          onPointerCancel={finishDrag}
-        >
-          <div className="investment-sheet-handle" />
-        </div>
-        <div
-          className="investment-sheet-body"
-          ref={bodyRef}
-          onTouchStart={handleBodyTouchStart}
-          onTouchMove={handleBodyTouchMove}
-          onTouchEnd={finishDrag}
-          onTouchCancel={finishDrag}
-        >
-          <div className="investment-detail-page">
-            <div className="investment-detail-identity">
-              {investment.asset
-                ? <InvestmentAssetIcon asset={investment.asset} className="size-14" />
-                : (
-                  <span
-                    className="asset-logo"
-                    style={getAssetLogoStyle(investment.name, investment.asset?.symbol)}
-                  >
-                    {investment.name.slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-              <span className="investment-detail-name">{investment.name}</span>
-              {investment.asset?.symbol && <span className="investment-detail-symbol">{investment.asset.symbol}</span>}
-              {isSold && <span style={{fontSize: '11px', fontWeight: 600, background: '#eee', padding: '4px 10px', borderRadius: '12px', marginTop: '6px', color: '#666'}} className="dark:bg-white/10 dark:text-gray-300">VENDIDO</span>}
-            </div>
+    <div className="sheet-layer" style={{ zIndex: 105 }} onMouseDown={onBack}>
+      <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
 
-            <section className="investment-detail-balance">
-              <span>
-                {scrubPoint
-                  ? formatScrubLabel(scrubPoint.timestamp, period)
-                  : investment.asset ? (isSold ? 'Precio de venta del activo' : 'Precio actual del activo') : 'Valor actual de la posición'}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {investment.asset
+              ? <InvestmentAssetIcon asset={investment.asset} className="size-11" />
+              : <span style={getAssetBadgeStyle(investment.name, investment.asset?.symbol)}>{investment.name.slice(0, 1).toUpperCase()}</span>}
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>{investment.name}</h2>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {investment.asset?.symbol || 'Posición manual'} {isSold ? '· Vendido' : ''}
               </span>
-              <div className="investment-detail-value-row">
-                <strong>
-                  {displayMoney(scrubPoint && investment.asset ? scrubPoint.price : investment.asset ? currentPrice : currentValue)}
-                </strong>
-                {investment.asset && <span>por unidad</span>}
-              </div>
-              {investment.asset && shownPoint && detailPoints.length > 1 && !isSold && (
-                <div className={`investment-detail-delta ${priceChangeAmount >= 0 ? 'up' : 'down'}`}>
-                  <span>
-                    {priceChangeAmount >= 0 ? '▲' : '▼'}{' '}
-                    {priceChangeAmount > 0 ? '+' : ''}{displayMoney(priceChangeAmount)}
-                    {' '}({priceChangePercent > 0 ? '+' : ''}{priceChangePercent.toFixed(2)} %)
-                  </span>
-                  <span className="investment-detail-delta-note">
-                    {scrubPoint ? `Tu posición ${displayMoney(scrubPoint.value)}` : period}
-                  </span>
-                </div>
-              )}
-              {investment.asset && isLoadingQuote && !isSold && <small role="status">Actualizando cotización…</small>}
-              {investment.asset && quoteError && !isSold && (
-                <small className="investment-quote-error" role="alert">
-                  No se pudo actualizar el precio. Se muestra la última cotización guardada.
-                </small>
-              )}
-            </section>
+            </div>
+          </div>
+          <button type="button" onClick={onBack} className="sheet-close" style={{ position: 'static' }}>
+            <X size={17} />
+          </button>
+        </div>
 
-            <section className="summary-grid investment-detail-summary" aria-label="Resumen de la posición">
-              <div>
-                <span>{isSold ? 'Valor de venta' : 'Valor de tu posición'}</span>
-                <strong className="privacy-sensitive">{displayMoney(currentValue)}</strong>
-              </div>
-              <div>
-                <span>Invertido</span>
-                <strong className="privacy-sensitive">{displayMoney(invested)}</strong>
-              </div>
-              <div>
-                <span>Rentabilidad</span>
-                <strong className={`privacy-sensitive ${profit >= 0 ? 'positive' : 'negative'}`}>
-                  {profit > 0 ? '+' : ''}{displayMoney(profit)} ({profitPercent.toFixed(2)} %)
-                </strong>
-              </div>
-              <div>
-                <span>{investment.asset ? 'Unidades' : 'Compras'}</span>
-                <strong>
-                  {investment.asset
-                    ? new Intl.NumberFormat('es-ES', { maximumFractionDigits: 8 }).format(units)
-                    : purchases.length}
-                </strong>
-              </div>
-            </section>
+        <div style={{ marginBottom: '14px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+            {activePt ? formatScrubLabel(activePt.timestamp, period) : isSold ? 'Valor de venta' : 'Valor de tu posición'}
+          </span>
+          <strong style={{ display: 'block', fontSize: '34px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em' }}>
+            {displayMoney(activePt ? activePt.value : currentValue)}
+          </strong>
+          {isLoadingQuote && <small style={{ color: 'var(--text-secondary)' }}>Actualizando cotización...</small>}
+        </div>
 
-            <div className="periods investment-detail-periods" role="tablist" aria-label="Periodo del activo">
-              {periods.map((item) => (
+        {coords.length > 1 && (
+          <div style={{ marginBottom: '16px' }}>
+            <div className="record-tabs" style={{ marginBottom: '10px' }}>
+              {periods.map((p) => (
                 <button
-                  key={item}
+                  key={p}
                   type="button"
-                  role="tab"
-                  aria-selected={period === item}
-                  className={period === item ? 'active' : ''}
-                  onClick={() => onPeriodChange(item)}
+                  className={period === p ? 'active' : ''}
+                  onClick={() => { onPeriodChange(p); setScrubIndex(null); }}
                 >
-                  {item}
+                  {p}
                 </button>
               ))}
             </div>
-
-            <section className="investment-detail-chart" aria-label={`Histórico de ${investment.name}: ${period}`}>
-              {detailPoints.length > 0 ? (
-                <div
-                  ref={chartRef}
-                  className="investment-chart-scrub"
-                  data-chart-scrub
-                  role="slider"
-                  tabIndex={0}
-                  aria-label={`Valor histórico de tu posición en ${investment.name}`}
-                  aria-orientation="horizontal"
-                  aria-valuemin={0}
-                  aria-valuemax={detailPoints.length - 1}
-                  aria-valuenow={scrubIndex ?? detailPoints.length - 1}
-                  aria-valuetext={shownPoint ? `${formatScrubLabel(shownPoint.timestamp, period)}: ${displayMoney(shownPoint.price)} por unidad, tu posición ${displayMoney(shownPoint.value)}` : undefined}
-                  onPointerDown={(event) => {
-                    if (event.pointerType !== 'mouse') event.currentTarget.setPointerCapture?.(event.pointerId);
-                    scrubChart(event.clientX);
-                  }}
-                  onPointerMove={(event) => scrubChart(event.clientX)}
-                  onPointerUp={(event) => {
-                    if (event.pointerType !== 'mouse') setScrubIndex(null);
-                  }}
-                  onPointerCancel={() => setScrubIndex(null)}
-                  onPointerLeave={() => setScrubIndex(null)}
-                  onKeyDown={handleChartKeyDown}
-                  onBlur={() => setScrubIndex(null)}
-                >
-                  <svg viewBox="0 0 390 190" preserveAspectRatio="none" aria-hidden="true">
-                    <defs>
-                      {scrubCoordinate && (
-                        <clipPath id="investment-detail-scrub-clip">
-                          <rect x="0" y="-20" width={scrubCoordinate.x} height="230" />
-                        </clipPath>
-                      )}
-                    </defs>
-                    <path className="baseline" d={`M0 ${(detailPoints.length > 1 ? chartCoordinates[0].y : 164).toFixed(1)}H390`} />
-                    {scrubCoordinate && <path className={`spend-line ${chartTrend}`} d={chartPath} style={{ opacity: 0.28 }} />}
-                    <path
-                      className={`spend-line ${chartTrend}`}
-                      d={chartPath}
-                      clipPath={scrubCoordinate ? 'url(#investment-detail-scrub-clip)' : undefined}
-                    />
-                  </svg>
-                  {scrubCoordinate && (
-                    <span
-                      aria-hidden="true"
-                      className="investment-chart-cursor"
-                      style={{ left: `${(scrubCoordinate.x / 390) * 100}%` }}
-                    />
-                  )}
-                  {(scrubCoordinate || chartCoordinates.length > 0) && (
-                    <span
-                      aria-hidden="true"
-                      className={`investment-chart-dot neutral ${scrubCoordinate ? 'active' : ''}`}
-                      style={{
-                        left: `${((scrubCoordinate ?? chartCoordinates[chartCoordinates.length - 1]).x / 390) * 100}%`,
-                        top: `${((scrubCoordinate ?? chartCoordinates[chartCoordinates.length - 1]).y / 190) * 100}%`,
-                      }}
-                    />
-                  )}
-                </div>
-              ) : (
-                <p>
-                  {investment.asset
-                    ? 'No hay histórico disponible para este periodo.'
-                    : manualHistory
-                      ? 'El histórico guardado no cubre este periodo.'
-                      : 'Las inversiones manuales no tienen histórico de mercado.'}
-                </p>
-              )}
-            </section>
-
-            <section className="investment-detail-section">
-              <h2>Información <ChevronRight size={20} aria-hidden="true" /></h2>
-              <p className="investment-detail-description">
-                {investment.asset
-                  ? `${investment.asset.name || investment.name}${investment.asset.type ? ` · ${investment.asset.type}` : ''}. Posición en cartera basada en tus compras registradas.`
-                  : 'Posición manual registrada en tu cartera.'}
-              </p>
-            </section>
-
-            <section className="investment-detail-section">
-              <h2>Datos clave</h2>
-              <dl className="investment-key-data">
-                <div><dt>Capital invertido</dt><dd>{displayMoney(invested)}</dd></div>
-                <div><dt>{isSold ? 'Valor de venta' : 'Valor de tu posición'}</dt><dd>{displayMoney(currentValue)}</dd></div>
-                {units > 0 && (
-                  <>
-                    <div><dt>Unidades</dt><dd>{new Intl.NumberFormat('es-ES', { maximumFractionDigits: 8 }).format(units)}</dd></div>
-                    <div><dt>Precio {isSold ? 'de venta' : 'actual'} por unidad</dt><dd>{displayMoney(currentPrice)}</dd></div>
-                    <div><dt>Precio medio de compra</dt><dd>{displayMoney(averageCost)}</dd></div>
-                  </>
-                )}
-                <div><dt>Compras</dt><dd>{purchases.length}</dd></div>
-                <div><dt>Primera compra</dt><dd>{formatPurchaseDate(purchases.reduce((first, purchase) => purchase.date < first ? purchase.date : first, purchases[0].date))}</dd></div>
-              </dl>
-            </section>
-
-            <section className="investment-detail-section investment-purchases">
-              <div className="investment-purchases-heading">
-                <h2>Tus compras de {investment.name}</h2>
-              </div>
-              <div className="investment-purchase-list">
-                {[...purchases].sort((a, b) => b.date.localeCompare(a.date)).map((purchase) => {
-                  const purchaseUnits = Number(purchase.units) || 0;
-                  const purchaseCost = purchaseUnits > 0
-                    ? Number(purchase.investedAmount) / purchaseUnits
-                    : 0;
-
-                  return (
-                    <article className="investment-purchase" key={purchase.id}>
-                      {investment.asset
-                        ? <InvestmentAssetIcon asset={investment.asset} className="size-11" />
-                        : (
-                          <span
-                            className="asset-logo"
-                            style={getAssetLogoStyle(investment.name, investment.asset?.symbol)}
-                          >
-                            {investment.name.slice(0, 1).toUpperCase()}
-                          </span>
-                        )}
-                      <div className="investment-purchase-info">
-                        <strong>Compra</strong>
-                        <small>{formatPurchaseDate(purchase.date)}</small>
-                        {purchaseUnits > 0 && (
-                          <small>
-                            {new Intl.NumberFormat('es-ES', { maximumFractionDigits: 8 }).format(purchaseUnits)} unidades · {displayMoney(purchaseCost)} / unidad
-                          </small>
-                        )}
-                      </div>
-                      <strong className="investment-purchase-amount">{displayMoney(Number(purchase.investedAmount) || 0)}</strong>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
-        </div>
-        
-        {/* BOTÓN VENDER TODO */}
-        {!isSold && (
-          <div className="investment-sheet-footer">
-            <button
-              type="button"
-              className="investment-sell-action"
-              disabled={investment.asset && !currentPrice}
-              style={{ background: accent, color: getReadableTextColor(accent) }}
-              onClick={() => {
-                setSaleError('');
-                setIsConfirmingSale(true);
+            <div
+              ref={chartRef}
+              data-chart-scrub
+              style={{ position: 'relative', height: '130px', touchAction: 'pan-y', cursor: 'crosshair' }}
+              onPointerMove={(e) => {
+                if (e.buttons <= 0 && e.pointerType === 'mouse') return;
+                const rect = chartRef.current?.getBoundingClientRect();
+                if (!rect) return;
+                const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                const idx = Math.round(ratio * (coords.length - 1));
+                if (idx !== scrubIndex) {
+                  setScrubIndex(idx);
+                  triggerHaptic();
+                }
               }}
+              onPointerUp={() => setScrubIndex(null)}
+              onPointerLeave={() => setScrubIndex(null)}
             >
-              Vender todo
-              <ArrowRight size={16} aria-hidden="true" />
-            </button>
+              <svg viewBox="0 0 390 130" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+                <path d={chartPath} fill="none" stroke={trendColor} strokeWidth="2.6" strokeLinecap="round" />
+              </svg>
+              {activePt && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: `${(activePt.x / 390) * 100}%`,
+                    top: `${(activePt.y / 130) * 100}%`,
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: '#fff',
+                    border: `3px solid ${trendColor}`,
+                    transform: 'translate(-50%, -50%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+            </div>
           </div>
         )}
-      </section>
 
-      {/* POPUP MODAL CONFIRMACIÓN VENTA NATIVA */}
-      {isConfirmingSale && createPortal(
-        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsConfirmingSale(false)}>
-          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="sheet-handle" />
-            <button className="sheet-close" onClick={() => setIsConfirmingSale(false)} type="button">
-              <X size={18} />
-            </button>
-            <h2 style={{ marginBottom: '4px' }}>Confirmar venta</h2>
-            <p style={{ color: '#858581', marginBottom: '20px' }}>
-              Registrarás una venta total por <strong>{displayMoney(currentValue)}</strong>. 
-              Esto actualizará tu cartera disponible, pero recuerda que no ejecuta una operación real en tu banco o broker.
-            </p>
-            
-            <div style={{ padding: '16px', background: 'rgba(0,0,0,0.04)', borderRadius: '12px', marginBottom: '24px' }} className="dark:bg-white/5">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', color: '#858581' }}>Capital inicial</span>
-                <strong>{displayMoney(invested)}</strong>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
+          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: '16px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 700 }}>Invertido</span>
+            <strong style={{ display: 'block', fontSize: '16px', fontWeight: 800, marginTop: '4px', fontVariantNumeric: 'tabular-nums' }}>
+              {displayMoney(invested)}
+            </strong>
+          </div>
+          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: '16px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 700 }}>Rentabilidad</span>
+            <strong style={{
+              display: 'block',
+              fontSize: '16px',
+              fontWeight: 800,
+              marginTop: '4px',
+              fontVariantNumeric: 'tabular-nums',
+              color: trendColor,
+            }}>
+              {profit > 0 ? '+' : ''}{displayMoney(profit)} ({profitPercent.toFixed(1)}%)
+            </strong>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '18px' }}>
+          <h3 style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
+            Compras registradas
+          </h3>
+          {purchases.map((p) => (
+            <div
+              key={p.id}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px 14px',
+                borderRadius: '14px',
+                background: 'var(--bg-subtle)',
+                marginBottom: '8px',
+                fontSize: '13px',
+              }}
+            >
+              <div>
+                <strong>{formatPurchaseDate(p.date)}</strong>
+                {Number(p.units) > 0 && (
+                  <small style={{ display: 'block', color: 'var(--text-secondary)' }}>
+                    {Number(p.units).toFixed(6)} uds
+                  </small>
+                )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', color: '#858581' }}>Precio de venta</span>
-                <strong>{investment.asset ? `${displayMoney(currentPrice)} / ud` : 'Manual'}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', marginTop: '4px' }} className="dark:border-white/10">
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>Beneficio total</span>
-                <strong className={profit >= 0 ? 'positive' : 'negative'}>
-                  {profit > 0 ? '+' : ''}{displayMoney(profit)}
-                </strong>
+              <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{displayMoney(Number(p.investedAmount) || 0)}</strong>
+            </div>
+          ))}
+        </div>
+
+        {!isSold && (
+          isConfirmingSale ? (
+            <div style={{ background: 'var(--bg-subtle)', padding: '14px', borderRadius: '18px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 12px' }}>
+                Confirmar venta total por <strong>{displayMoney(currentValue)}</strong>.
+              </p>
+              {saleError && <p style={{ color: 'var(--accent-red)', fontSize: '12px' }}>{saleError}</p>}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                  type="button"
+                  disabled={isSelling}
+                  className="sheet-submit"
+                  onClick={() => {
+                    setIsSelling(true);
+                    try {
+                      onSell(purchases, currentPrice);
+                    } catch (err) {
+                      setSaleError(err.message);
+                      setIsSelling(false);
+                    }
+                  }}
+                >
+                  Confirmar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingSale(false)}
+                  style={{
+                    height: '52px',
+                    borderRadius: '16px',
+                    border: 0,
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
-
-            {saleError && <p className="investment-quote-error mb-4" role="alert">{saleError}</p>}
-            
+          ) : (
             <button
               type="button"
               className="sheet-submit"
-              disabled={isSelling}
-              style={{ background: accent, color: getReadableTextColor(accent) }}
-              onClick={() => {
-                setIsSelling(true);
-                setSaleError('');
-                try {
-                  onSell(purchases, currentPrice);
-                } catch (error) {
-                  setSaleError(error.message);
-                  setIsSelling(false);
-                }
-              }}
+              disabled={investment.asset && !currentPrice}
+              onClick={() => setIsConfirmingSale(true)}
             >
-              {isSelling ? 'Registrando...' : 'Confirmar venta'}
-              <ArrowRight size={16} />
+              Vender posición <ArrowRight size={16} />
             </button>
-          </section>
-        </div>,
-        document.body
-      )}
+          )
+        )}
+      </section>
     </div>,
-    phoneNode,
+    document.body,
   );
 };
 
 const InvestmentsOverview = ({ query = '' }) => {
   const scrollContainerRef = useRef(null);
   const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } = useElasticScroll(75, 0.35);
-  const { investmentRecords, sellInvestmentRecords, updateInvestmentPrice } = useFinance();
+  const { investmentRecords, sellInvestmentRecords, updateInvestmentPrice, isAmountsHidden } = useFinance();
   const [period, setPeriod] = useState('1M');
   const [selectedInvestmentId, setSelectedInvestmentId] = useState(null);
   const [historyByAsset, setHistoryByAsset] = useState({});
-  const [historyError, setHistoryError] = useState('');
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-
-  // Estado para el scrub interactivo en el gráfico de cartera general
   const [portfolioScrubIndex, setPortfolioScrubIndex] = useState(null);
   const portfolioChartRef = useRef(null);
 
   const marketAssets = useMemo(() => [...new Map(
     investmentRecords
-      .filter((record) => record.asset?.provider && record.asset?.id)
-      .map((record) => [`${record.asset.provider}:${record.asset.id}`, record.asset]),
+      .filter((r) => r.asset?.provider && r.asset?.id)
+      .map((r) => [`${r.asset.provider}:${r.asset.id}`, r.asset]),
   ).values()], [investmentRecords]);
-  const assetSignature = marketAssets.map((asset) => `${asset.provider}:${asset.id}`).join('|');
+  const assetSignature = marketAssets.map((a) => `${a.provider}:${a.id}`).join('|');
 
-  const totals = useMemo(() => investmentRecords.reduce((result, record) => {
-    if (record.soldAt) return result;
-    result.invested += Number(record.investedAmount) || 0;
-    result.currentValue += Number(record.currentValue) || 0;
-    return result;
-  }, { invested: 0, currentValue: 0 }), [investmentRecords]);
-
-  // Modificado: Ahora mostramos las vendidas agrupadas correctamente para que aparezcan en la lista.
-  const visibleInvestments = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('es');
-    let records = investmentRecords;
-    if (normalizedQuery) {
-      records = records.filter((record) =>
-        (record.name || '').toLocaleLowerCase('es').includes(normalizedQuery)
-        || (record.asset?.symbol || '').toLocaleLowerCase('es').includes(normalizedQuery)
-      );
-    }
-    
-    // Agrupamos las compras por holding key (ej: bitcoin) para tener solo 1 elemento por activo en la vista general
-    const holdingsMap = new Map();
-    records.forEach(record => {
-      const key = getHoldingKey(record);
-      // Evitar mezclar posiciones activas y vendidas del mismo activo (opcional, pero útil si compras y vendes varias veces)
-      const stateKey = `${key}-${Boolean(record.soldAt)}`; 
-      if (!holdingsMap.has(stateKey)) {
-        holdingsMap.set(stateKey, { ...record, _group: [] });
-      }
-      holdingsMap.get(stateKey)._group.push(record);
+  useEffect(() => {
+    if (!marketAssets.length) return undefined;
+    let active = true;
+    getInvestmentQuotes(marketAssets).then(({ quotes }) => {
+      if (!active) return;
+      investmentRecords.forEach((rec) => {
+        if (!rec.soldAt && rec.asset) {
+          const quote = quotes.get(`${rec.asset.provider}:${rec.asset.id}`);
+          if (quote) updateInvestmentPrice(rec.id, quote);
+        }
+      });
     });
-
-    return Array.from(holdingsMap.values()).map(holding => {
-      const isSold = Boolean(holding.soldAt);
-      const totalInvested = holding._group.reduce((sum, p) => sum + (Number(p.investedAmount) || 0), 0);
-      const totalValue = holding._group.reduce((sum, p) => sum + (Number(isSold ? p.soldValue : p.currentValue) || 0), 0);
-      return {
-        ...holding,
-        investedAmount: totalInvested,
-        currentValue: totalValue
-      };
-    }).sort((a, b) => {
-      // Orden: Primero activas (por fecha), luego vendidas
-      const aSold = Boolean(a.soldAt);
-      const bSold = Boolean(b.soldAt);
-      if (aSold && !bSold) return 1;
-      if (!aSold && bSold) return -1;
-      if (aSold && bSold) return new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime();
-      return b.date.localeCompare(a.date);
-    });
-  }, [investmentRecords, query]);
+    return () => { active = false; };
+  }, [assetSignature, updateInvestmentPrice]);
 
   useEffect(() => {
     if (!marketAssets.length) {
       setHistoryByAsset({});
-      setHistoryError('');
-      setIsLoadingHistory(false);
       return undefined;
     }
-
     const controller = new AbortController();
     let active = true;
     const requestedPeriod = period === 'Máx' ? 'TODO' : period;
-    setHistoryByAsset({});
-    setHistoryError('');
-    setIsLoadingHistory(true);
-
     Promise.allSettled(marketAssets.map(async (asset) => {
-      const key = `${asset.provider}:${asset.id}`;
       const points = await getInvestmentHistory(asset, requestedPeriod, controller.signal);
-      return [key, points];
+      return [`${asset.provider}:${asset.id}`, points];
     })).then((entries) => {
       if (!active) return;
-      const succeeded = entries
-        .filter((entry) => entry.status === 'fulfilled')
-        .map((entry) => entry.value);
-      const failures = entries
-        .filter((entry) => entry.status === 'rejected' && entry.reason?.name !== 'AbortError')
-        .map((entry) => entry.reason?.message)
-        .filter(Boolean);
-      setHistoryByAsset(Object.fromEntries(succeeded));
-      if (failures.length) setHistoryError(failures.join(' '));
-    }).finally(() => {
-      if (active) setIsLoadingHistory(false);
+      const ok = entries.filter((e) => e.status === 'fulfilled').map((e) => e.value);
+      setHistoryByAsset(Object.fromEntries(ok));
     });
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
+    return () => { active = false; controller.abort(); };
   }, [assetSignature, period]);
 
-  const chartPoints = useMemo(() => {
-    const hasManualRecords = investmentRecords.some((record) => !record.asset && !record.soldAt);
-    const hasMarketPoints = Object.values(historyByAsset).some((points) => points.length > 0);
-    if (!hasManualRecords && !hasMarketPoints) return [];
+  const totals = useMemo(() => investmentRecords.reduce((res, rec) => {
+    if (rec.soldAt) return res;
+    res.invested += Number(rec.investedAmount) || 0;
+    res.currentValue += Number(rec.currentValue) || 0;
+    return res;
+  }, { invested: 0, currentValue: 0 }), [investmentRecords]);
 
-    const now = Date.now();
-    const start = period === 'Máx'
-      ? Math.min(...investmentRecords.map((record) => Date.parse(`${record.date}T00:00:00`)).filter(Number.isFinite), now)
-      : now - periodDurations[period];
-    const marketTimestamps = Object.values(historyByAsset)
-      .flat()
-      .map((point) => Date.parse(point.timestamp))
-      .filter((timestamp) => Number.isFinite(timestamp) && timestamp >= start && timestamp <= now);
-    const manualTimestamps = investmentRecords
-      .filter((record) => !record.asset)
-      .flatMap((record) => [
-        Date.parse(`${record.date}T00:00:00`),
-        ...(record.soldAt ? [Date.parse(record.soldAt)] : []),
-      ])
-      .filter((timestamp) => Number.isFinite(timestamp) && timestamp >= start && timestamp <= now);
-    const saleTimestamps = investmentRecords
-      .map((record) => record.soldAt ? Date.parse(record.soldAt) : NaN)
-      .filter((timestamp) => Number.isFinite(timestamp) && timestamp >= start && timestamp <= now);
-    const chartStart = marketTimestamps.length ? Math.min(...marketTimestamps) : start;
-    const timestamps = [...new Set([chartStart, ...marketTimestamps, ...manualTimestamps, ...saleTimestamps, now])]
-      .sort((a, b) => a - b);
+  const visibleInvestments = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? investmentRecords.filter((r) => (r.name || '').toLowerCase().includes(q) || (r.asset?.symbol || '').toLowerCase().includes(q))
+      : investmentRecords;
 
-    const points = timestamps.map((timestamp) => {
-      const value = investmentRecords.reduce((total, record) => {
-        const purchaseDate = Date.parse(`${record.date}T00:00:00`);
-        if (!Number.isFinite(purchaseDate) || timestamp < purchaseDate) return total;
-        if (record.soldAt && timestamp > Date.parse(record.soldAt)) return total;
-
-        if (!record.asset) return total + (Number(record.currentValue) || 0);
-
-        const key = `${record.asset.provider}:${record.asset.id}`;
-        const price = getPriceAt(historyByAsset[key] || [], timestamp);
-        if (price === null || !Number.isFinite(Number(record.units))) return total;
-        return total + price * Number(record.units);
-      }, 0);
-      return { timestamp, value };
+    const map = new Map();
+    filtered.forEach((rec) => {
+      const key = `${getHoldingKey(rec)}-${Boolean(rec.soldAt)}`;
+      if (!map.has(key)) map.set(key, { ...rec, _group: [] });
+      map.get(key)._group.push(rec);
     });
 
-    return downsample(points);
+    return Array.from(map.values()).map((h) => {
+      const isSold = Boolean(h.soldAt);
+      return {
+        ...h,
+        investedAmount: h._group.reduce((s, p) => s + (Number(p.investedAmount) || 0), 0),
+        currentValue: h._group.reduce((s, p) => s + (Number(isSold ? p.soldValue : p.currentValue) || 0), 0),
+      };
+    }).sort((a, b) => Number(Boolean(a.soldAt)) - Number(Boolean(b.soldAt)));
+  }, [investmentRecords, query]);
+
+  const chartPoints = useMemo(() => {
+    const now = Date.now();
+    const start = period === 'Máx'
+      ? Math.min(...investmentRecords.map((r) => Date.parse(`${r.date}T00:00:00`)).filter(Number.isFinite), now)
+      : now - periodDurations[period];
+    const marketTs = Object.values(historyByAsset).flat()
+      .map((p) => Date.parse(p.timestamp))
+      .filter((t) => Number.isFinite(t) && t >= start && t <= now);
+    const timestamps = [...new Set([start, ...marketTs, now])].sort((a, b) => a - b);
+
+    return downsample(timestamps.map((ts) => {
+      const value = investmentRecords.reduce((sum, rec) => {
+        const buyTs = Date.parse(`${rec.date}T00:00:00`);
+        if (!Number.isFinite(buyTs) || ts < buyTs) return sum;
+        if (rec.soldAt && ts > Date.parse(rec.soldAt)) return sum;
+        if (!rec.asset || ts === now) return sum + (Number(rec.currentValue) || 0);
+        const price = getPriceAt(historyByAsset[`${rec.asset.provider}:${rec.asset.id}`] || [], ts);
+        return price !== null ? sum + price * Number(rec.units || 0) : sum;
+      }, 0);
+      return { timestamp: ts, value };
+    }));
   }, [historyByAsset, investmentRecords, period]);
 
   const performance = totals.currentValue - totals.invested;
   const performancePercent = totals.invested > 0 ? (performance / totals.invested) * 100 : 0;
-  const chartValues = chartPoints.map((point) => point.value);
-  const minValue = chartValues.length ? Math.min(...chartValues) : 0;
-  const maxValue = chartValues.length ? Math.max(...chartValues) : 0;
-  const valueRange = maxValue - minValue;
-  const chartCoordinates = chartPoints.map((point, index) => {
-    const x = chartPoints.length > 1 ? (index / (chartPoints.length - 1)) * 390 : 195;
-    const y = valueRange > 0 ? 164 - ((point.value - minValue) / valueRange) * 138 : 95;
-    return { x, y, ...point };
-  });
-  const chartPath = chartCoordinates.map((point, index) => (
-    `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`
-  )).join(' ');
+  const chartValues = chartPoints.map((p) => p.value);
+  const minVal = chartValues.length ? Math.min(...chartValues) : 0;
+  const maxVal = chartValues.length ? Math.max(...chartValues) : 0;
+  const range = maxVal - minVal;
 
-  // Reiniciar el cursor interactivo al cambiar de periodo
-  useEffect(() => {
-    setPortfolioScrubIndex(null);
-  }, [period]);
+  const coords = chartPoints.map((p, idx) => ({
+    x: chartPoints.length > 1 ? (idx / (chartPoints.length - 1)) * 390 : 195,
+    y: range > 0 ? 135 - ((p.value - minVal) / range) * 105 : 95,
+    ...p,
+  }));
+  const chartPath = coords.map((c, idx) => `${idx === 0 ? 'M' : 'L'}${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
 
   const scrubPortfolioChart = (clientX) => {
-    const element = portfolioChartRef.current;
-    const count = chartPoints.length;
-    if (!element || count === 0) return;
-    const { left, width } = element.getBoundingClientRect();
-    if (width <= 0) return;
-    const ratio = Math.min(1, Math.max(0, (clientX - left) / width));
-    setPortfolioScrubIndex(count > 1 ? Math.round(ratio * (count - 1)) : 0);
+    const rect = portfolioChartRef.current?.getBoundingClientRect();
+    if (!rect || coords.length === 0) return;
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const idx = Math.round(ratio * (coords.length - 1));
+    if (idx !== portfolioScrubIndex) {
+      setPortfolioScrubIndex(idx);
+      triggerHaptic();
+    }
   };
 
-  const handlePortfolioKeyDown = (event) => {
-    const count = chartPoints.length;
-    if (count === 0) return;
-    const current = portfolioScrubIndex ?? count - 1;
-    let next;
-    if (event.key === 'ArrowLeft') next = Math.max(0, current - 1);
-    else if (event.key === 'ArrowRight') next = Math.min(count - 1, current + 1);
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = count - 1;
-    else if (event.key === 'Escape') {
-      event.stopPropagation();
-      setPortfolioScrubIndex(null);
-      return;
-    } else return;
-    event.preventDefault();
-    setPortfolioScrubIndex(next);
-  };
+  const activeScrub = portfolioScrubIndex !== null ? coords[portfolioScrubIndex] : null;
+  const shownVal = activeScrub ? activeScrub.value : totals.currentValue;
+  const formatted = isAmountsHidden ? '•••• €' : displayMoney(shownVal);
+  const commaIdx = formatted.indexOf(',');
+  const intPart = commaIdx === -1 ? formatted : formatted.slice(0, commaIdx);
+  const decPart = commaIdx === -1 ? '' : formatted.slice(commaIdx);
+  const isUp = performance >= 0;
+  const strokeColor = isUp ? 'var(--accent-green)' : 'var(--accent-red)';
 
-  const activeScrubPoint = portfolioScrubIndex !== null ? chartCoordinates[portfolioScrubIndex] : null;
-  const firstValue = chartPoints[0]?.value ?? 0;
-  const activeScrubDelta = activeScrubPoint ? activeScrubPoint.value - firstValue : performance;
-  const activeScrubDeltaPercent = activeScrubPoint && firstValue > 0 ? (activeScrubDelta / firstValue) * 100 : performancePercent;
-  const isUp = activeScrubDelta >= 0;
-
-  const hasManualInvestments = investmentRecords.some((record) => !record.asset && !record.soldAt);
-  const selectedInvestment = investmentRecords.find((record) => record.id === selectedInvestmentId);
+  const selectedInvestment = investmentRecords.find((r) => r.id === selectedInvestmentId);
   const selectedPurchases = selectedInvestment
-    ? investmentRecords.filter((record) => 
-        getHoldingKey(record) === getHoldingKey(selectedInvestment) &&
-        Boolean(record.soldAt) === Boolean(selectedInvestment.soldAt)
-      )
+    ? investmentRecords.filter((r) => getHoldingKey(r) === getHoldingKey(selectedInvestment) && Boolean(r.soldAt) === Boolean(selectedInvestment.soldAt))
     : [];
 
   return (
@@ -984,205 +531,245 @@ const InvestmentsOverview = ({ query = '' }) => {
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
     >
-      <section className="overview investments">
-        <div className="overview-label">
-          <span>{activeScrubPoint ? formatScrubLabel(activeScrubPoint.timestamp, period) : 'Valor de la cartera'}</span>
-        </div>
-        <div className="amount-line">
-          <h1 className="privacy-sensitive">
-            {displayMoney(activeScrubPoint ? activeScrubPoint.value : totals.currentValue)}
-          </h1>
-          {(activeScrubPoint ? firstValue > 0 : totals.invested > 0) && (
-            <span className={`change ${!isUp ? 'negative' : ''}`}>
-              {isUp ? '+' : ''}{activeScrubDeltaPercent.toFixed(2)} %
+      <div style={{ padding: '6px 16px 0' }}>
+        <section style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '26px',
+          padding: '24px 0 0',
+          boxShadow: 'var(--shadow-card)',
+          overflow: 'hidden',
+        }}>
+          <div style={{ textAlign: 'center', padding: '0 20px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
+              {activeScrub ? formatScrubLabel(activeScrub.timestamp, period) : 'Valor de la cartera'}
             </span>
-          )}
-        </div>
-        <p>{activeScrubPoint ? (isUp ? `+${displayMoney(activeScrubDelta)} en el periodo` : `${displayMoney(activeScrubDelta)} en el periodo`) : 'Rentabilidad desde el inicio'}</p>
-      </section>
 
-      <div className="periods" role="tablist" aria-label="Periodo de la gráfica">
-        {periods.map((item) => (
-          <button
-            key={item}
-            type="button"
-            role="tab"
-            aria-selected={period === item}
-            className={period === item ? 'active' : ''}
-            onClick={() => setPeriod(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+            <div className="privacy-sensitive" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.04em', margin: '6px 0 12px' }}>
+              <span style={{ fontSize: '46px', fontWeight: 800, lineHeight: 1 }}>{intPart}</span>
+              <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-secondary)', marginLeft: '2px' }}>{decPart}</span>
+            </div>
 
-      <section className="graph investment-graph" aria-label={`Evolución de la cartera: ${period}`}>
-        {chartPoints.length > 0 ? (
+            {totals.invested > 0 && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '5px 12px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 700,
+                background: isUp ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)',
+                color: strokeColor,
+              }}>
+                {isUp ? '+' : ''}{performancePercent.toFixed(2)}% ({isUp ? '+' : ''}{displayMoney(performance)})
+              </span>
+            )}
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '4px',
+              padding: '4px',
+              margin: '18px auto 0',
+              background: 'var(--bg-subtle)',
+              borderRadius: '999px',
+              width: 'max-content',
+            }}>
+              {periods.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => { setPeriod(item); setPortfolioScrubIndex(null); }}
+                  style={{
+                    border: 0,
+                    background: period === item ? 'var(--bg-card)' : 'transparent',
+                    color: period === item ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    padding: '5px 12px',
+                    borderRadius: '999px',
+                    cursor: 'pointer',
+                    boxShadow: period === item ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                  }}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div
             ref={portfolioChartRef}
-            className="investment-chart-scrub"
             data-chart-scrub
-            role="slider"
-            tabIndex={0}
-            aria-label="Gráfico interactivo de evolución de cartera"
-            aria-valuemin={0}
-            aria-valuemax={chartPoints.length - 1}
-            aria-valuenow={portfolioScrubIndex ?? chartPoints.length - 1}
-            onPointerDown={(event) => {
-              if (event.pointerType !== 'mouse') event.currentTarget.setPointerCapture?.(event.pointerId);
-              scrubPortfolioChart(event.clientX);
+            style={{ position: 'relative', height: '155px', marginTop: '14px', touchAction: 'pan-y', cursor: 'crosshair' }}
+            onPointerDown={(e) => {
+              if (e.pointerType !== 'mouse') e.currentTarget.setPointerCapture?.(e.pointerId);
+              scrubPortfolioChart(e.clientX);
             }}
-            onPointerMove={(event) => {
-              if (portfolioScrubIndex !== null || event.buttons > 0) scrubPortfolioChart(event.clientX);
+            onPointerMove={(e) => {
+              if (portfolioScrubIndex !== null || e.buttons > 0) scrubPortfolioChart(e.clientX);
             }}
-            onPointerUp={(event) => {
-              if (event.pointerType !== 'mouse') setPortfolioScrubIndex(null);
+            onPointerUp={(e) => {
+              if (e.pointerType !== 'mouse') setPortfolioScrubIndex(null);
             }}
             onPointerCancel={() => setPortfolioScrubIndex(null)}
             onPointerLeave={() => setPortfolioScrubIndex(null)}
-            onKeyDown={handlePortfolioKeyDown}
-            onBlur={() => setPortfolioScrubIndex(null)}
           >
-            <svg viewBox="0 0 390 190" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                {activeScrubPoint && (
-                  <clipPath id="portfolio-scrub-clip">
-                    <rect x="0" y="-20" width={activeScrubPoint.x} height="230" />
-                  </clipPath>
-                )}
-              </defs>
-              <path className="baseline" d="M0 164H390" />
-              {activeScrubPoint && (
+            {coords.length > 0 && (
+              <svg viewBox="0 0 390 155" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
+                <defs>
+                  <linearGradient id="inv-area-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={isUp ? '#10B981' : '#F43F5E'} stopOpacity="0.22" />
+                    <stop offset="100%" stopColor={isUp ? '#10B981' : '#F43F5E'} stopOpacity="0" />
+                  </linearGradient>
+                  {activeScrub && (
+                    <clipPath id="inv-scrub-clip">
+                      <rect x="0" y="-20" width={activeScrub.x} height="195" />
+                    </clipPath>
+                  )}
+                </defs>
                 <path
-                  className={`spend-line ${isUp ? 'positive' : 'negative'}`}
-                  d={chartPath}
-                  style={{ opacity: 0.28 }}
+                  d={`${chartPath} L390 155 L0 155 Z`}
+                  fill="url(#inv-area-fill)"
+                  style={{ opacity: activeScrub ? 0.35 : 1 }}
                 />
-              )}
-              <path
-                className={`spend-line ${isUp ? 'positive' : 'negative'}`}
-                d={chartPath}
-                clipPath={activeScrubPoint ? 'url(#portfolio-scrub-clip)' : undefined}
-              />
-            </svg>
-
-            {activeScrubPoint && (
-              <span
-                aria-hidden="true"
-                className="investment-chart-cursor"
-                style={{ left: `${(activeScrubPoint.x / 390) * 100}%` }}
-              />
+                {activeScrub && (
+                  <path d={chartPath} fill="none" stroke={strokeColor} strokeWidth="2.5" style={{ opacity: 0.25 }} />
+                )}
+                <path
+                  d={chartPath}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  clipPath={activeScrub ? 'url(#inv-scrub-clip)' : undefined}
+                />
+              </svg>
             )}
 
-            {activeScrubPoint && (
-              <span
-                aria-hidden="true"
-                className="investment-chart-dot neutral active"
-                style={{
-                  left: `${(activeScrubPoint.x / 390) * 100}%`,
-                  top: `${(activeScrubPoint.y / 190) * 100}%`,
-                }}
-              />
+            {activeScrub && (
+              <>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    width: '1px',
+                    left: `${(activeScrub.x / 390) * 100}%`,
+                    background: 'var(--border-subtle)',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: `${(activeScrub.x / 390) * 100}%`,
+                    top: `${(activeScrub.y / 155) * 100}%`,
+                    width: '13px',
+                    height: '13px',
+                    borderRadius: '50%',
+                    background: '#FFFFFF',
+                    border: `3px solid ${strokeColor}`,
+                    transform: 'translate(-50%, -50%)',
+                    boxShadow: '0 0 0 5px rgba(16, 185, 129, 0.2)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </>
             )}
           </div>
-        ) : null}
+        </section>
+      </div>
 
-        {isLoadingHistory && <p className="investment-chart-message" role="status">Cargando histórico del mercado…</p>}
-        {!isLoadingHistory && historyError && !chartPoints.length && (
-          <p className="investment-chart-message investment-chart-error" role="alert">{historyError}</p>
-        )}
-        {!isLoadingHistory && !historyError && investmentRecords.length === 0 && (
-          <p className="investment-chart-message">Añade una inversión para ver su evolución.</p>
-        )}
-        {!isLoadingHistory && !historyError && investmentRecords.length > 0 && !chartPoints.length && (
-          <p className="investment-chart-message">No hay histórico disponible para este periodo.</p>
-        )}
-      </section>
-
-      {hasManualInvestments && (
-        <p className="investment-chart-note">Las inversiones manuales se muestran con el último valor registrado.</p>
-      )}
-      {historyError && chartPoints.length > 0 && (
-        <p className="investment-chart-note investment-chart-error" role="alert">
-          No se pudo consultar el histórico de algunas inversiones. El gráfico incluye los datos disponibles.
-        </p>
-      )}
-
-      <section className="summary-grid mt-12">
-        <button>
-          <span>Capital invertido</span>
-          <strong className="privacy-sensitive">{displayMoney(totals.invested)}</strong>
-        </button>
-        <button>
-          <span>Rentabilidad</span>
-          <strong className={`privacy-sensitive ${performance >= 0 ? 'positive' : 'negative'}`}>
-            {performance > 0 ? '+' : ''}{displayMoney(performance)}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '14px 16px' }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '22px', padding: '16px 18px', boxShadow: 'var(--shadow-card)' }}>
+          <span style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Capital invertido</span>
+          <strong className="privacy-sensitive" style={{ display: 'block', fontSize: '18px', fontWeight: 800, marginTop: '6px', fontVariantNumeric: 'tabular-nums' }}>
+            {isAmountsHidden ? '•••• €' : displayMoney(totals.invested)}
           </strong>
-        </button>
-        <button>
-          <span>Posiciones (Activas)</span>
-          <strong>{investmentRecords.filter(r => !r.soldAt).length}</strong>
-        </button>
-      </section>
-
-      <section className="movements portfolio">
-        <div className="section-title">
-          <h2>Inversiones</h2>
         </div>
-        <div className="movement-list">
-          {visibleInvestments.map((record) => {
-            const isSold = Boolean(record.soldAt);
-            const val = isSold ? Number(record.soldValue) : Number(record.currentValue);
-            const diff = val - Number(record.investedAmount);
-            const diffPercent = Number(record.investedAmount) > 0 ? (diff / Number(record.investedAmount)) * 100 : 0;
-            const symbol = record.asset?.symbol || record.name || 'I';
-
-            return (
-              <button
-                className="movement"
-                key={record.id}
-                type="button"
-                onClick={() => setSelectedInvestmentId(record.id)}
-                aria-label={`Ver detalle de ${record.name}`}
-                style={{ opacity: isSold ? 0.6 : 1 }}
-              >
-                {record.asset
-                  ? <InvestmentAssetIcon asset={record.asset} className="size-12" />
-                  : (
-                    <span
-                      className="asset-logo"
-                      style={getAssetLogoStyle(record.name, record.asset?.symbol)}
-                    >
-                      {symbol.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                <span className="movement-info">
-                  <strong>{record.name}</strong>
-                  <small>{record.asset?.symbol || 'Activo manual'}</small>
-                </span>
-                <span className="holding-value">
-                  <strong className="privacy-sensitive">{displayMoney(val)}</strong>
-                  {isSold ? (
-                    <small style={{ color: '#858581', fontWeight: 600 }}>Vendido</small>
-                  ) : (
-                    <small className={diff < 0 ? 'negative' : ''}>
-                      {diff > 0 ? '+' : ''}{diffPercent.toFixed(2)} %
-                    </small>
-                  )}
-                </span>
-                <ChevronRight size={16} aria-hidden="true" style={{ color: '#c9c9c6' }} />
-              </button>
-            );
-          })}
-          {visibleInvestments.length === 0 && (
-            <p className="investment-chart-message" style={{textAlign: 'left', paddingLeft: '16px'}}>No hay inversiones en tu cartera.</p>
-          )}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '22px', padding: '16px 18px', boxShadow: 'var(--shadow-card)' }}>
+          <span style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Posiciones activas</span>
+          <strong style={{ display: 'block', fontSize: '18px', fontWeight: 800, marginTop: '6px', fontVariantNumeric: 'tabular-nums' }}>
+            {investmentRecords.filter((r) => !r.soldAt).length}
+          </strong>
         </div>
+      </div>
+
+      <section style={{ padding: '6px 16px 0' }}>
+        <h2 style={{ fontSize: '17px', fontWeight: 800, margin: '8px 0 12px' }}>Cartera</h2>
+        {visibleInvestments.length > 0 ? visibleInvestments.map((rec) => {
+          const isSold = Boolean(rec.soldAt);
+          const val = isSold ? Number(rec.soldValue) : Number(rec.currentValue);
+          const diff = val - Number(rec.investedAmount);
+          const diffPct = Number(rec.investedAmount) > 0 ? (diff / Number(rec.investedAmount)) * 100 : 0;
+
+          return (
+            <button
+              key={`${rec.id}-${isSold}`}
+              type="button"
+              onClick={() => setSelectedInvestmentId(rec.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                padding: '14px 16px',
+                marginBottom: '8px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '20px',
+                textAlign: 'left',
+                cursor: 'pointer',
+                opacity: isSold ? 0.6 : 1,
+              }}
+            >
+              {rec.asset
+                ? <InvestmentAssetIcon asset={rec.asset} className="size-11" />
+                : <span style={getAssetBadgeStyle(rec.name, rec.asset?.symbol)}>{(rec.name || 'I').slice(0, 1).toUpperCase()}</span>}
+
+              <span style={{ flex: 1, minWidth: 0, marginLeft: '13px' }}>
+                <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {rec.name}
+                </strong>
+                <small style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {rec.asset?.symbol || 'Manual'}
+                </small>
+              </span>
+
+              <span style={{ textAlign: 'right', marginRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
+                <strong className="privacy-sensitive" style={{ display: 'block', fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {isAmountsHidden ? '•••• €' : displayMoney(val)}
+                </strong>
+                {isSold ? (
+                  <small style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>Vendido</small>
+                ) : (
+                  <small style={{ fontSize: '12px', fontWeight: 700, color: diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                    {diff > 0 ? '+' : ''}{diffPct.toFixed(2)}%
+                  </small>
+                )}
+              </span>
+              <ChevronRight size={16} style={{ color: 'var(--text-secondary)' }} />
+            </button>
+          );
+        }) : (
+          <div style={{
+            padding: '24px',
+            borderRadius: '22px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            textAlign: 'center',
+            color: 'var(--text-secondary)',
+            fontSize: '13px',
+            fontWeight: 600,
+          }}>
+            Aún no tienes inversiones registradas.
+          </div>
+        )}
       </section>
 
       {selectedInvestment && (
         <InvestmentDetail
-          key={`${getHoldingKey(selectedInvestment)}-${Boolean(selectedInvestment.soldAt)}`}
           investment={selectedInvestment}
           purchases={selectedPurchases}
           history={historyByAsset}
@@ -1190,7 +777,7 @@ const InvestmentsOverview = ({ query = '' }) => {
           onPeriodChange={setPeriod}
           onBack={() => setSelectedInvestmentId(null)}
           onSell={(purchases, price) => {
-            sellInvestmentRecords(purchases.map((purchase) => purchase.id), price);
+            sellInvestmentRecords(purchases.map((p) => p.id), price);
             setSelectedInvestmentId(null);
           }}
           onUpdatePrice={updateInvestmentPrice}

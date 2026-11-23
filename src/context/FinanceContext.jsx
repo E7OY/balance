@@ -19,7 +19,7 @@ import {
   deleteTransactionFromCloud,
   deleteTransactionsFromCloud,
   deleteProfileFromCloud,
-  deleteProfileBookmark,   // <--- Añadir esta
+  deleteProfileBookmark,
   saveProfileBookmark,
   initializeAccountSync,
   loadCloudProfileLocally,
@@ -55,7 +55,7 @@ const loadProfileSetup = () => {
     : [];
   const profiles = validProfiles.length > 0
     ? validProfiles
-    : [{ id: 'default', name: 'Axion de Mi perfil' }];
+    : [{ id: 'default', name: 'Personal' }];
   const storedActiveId = getFromLocalStorage(ACTIVE_PROFILE_KEY);
   const activeProfileId = profiles.some((profile) => profile.id === storedActiveId)
     ? storedActiveId
@@ -167,9 +167,7 @@ export const FinanceProvider = ({ children }) => {
   const [initialProfileSetup] = useState(loadProfileSetup);
   const [profiles, setProfiles] = useState(initialProfileSetup.profiles);
   const [activeProfileId, setActiveProfileId] = useState(initialProfileSetup.activeProfileId);
-  const [transactions, setTransactions] = useState(() => {
-    return initialProfileSetup.transactions;
-  });
+  const [transactions, setTransactions] = useState(initialProfileSetup.transactions);
   const [investmentRecords, setInvestmentRecords] = useState(initialProfileSetup.investmentRecords);
   const [customCategories, setCustomCategories] = useState(initialProfileSetup.customCategories);
   const [monthlyGoalsByMonth, setMonthlyGoalsByMonth] = useState(initialProfileSetup.monthlyGoalsByMonth);
@@ -196,18 +194,30 @@ export const FinanceProvider = ({ children }) => {
   });
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || profiles[0];
 
+  const getTransactionsForProfile = useCallback((profileId) => {
+    if (profileId === activeProfileId) return transactions;
+    const stored = getFromLocalStorage(profileStorageKey(profileId, 'transactions'));
+    return Array.isArray(stored) ? stored : [];
+  }, [activeProfileId, transactions]);
+
+  const renameProfile = (profileId, newName) => {
+    const normalized = newName.trim();
+    if (!normalized) throw new Error('Escribe un nombre para la cuenta.');
+    setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, name: normalized } : p)));
+  };
+
   const joinProfile = (code, name) => {
     const cleanCode = code.trim();
     const normalizedName = name.trim();
-    
+
     if (!cleanCode) throw new Error('El código de invitación no puede estar vacío.');
     if (!cleanCode.includes('___')) throw new Error('El código de invitación no es válido.');
     if (!normalizedName) throw new Error('Escribe un nombre para la cuenta compartida.');
-    
+
     if (profiles.some((profile) => profile.id === cleanCode)) {
       throw new Error('Ya tienes vinculada esta cuenta.');
     }
-    
+
     const newProfile = { id: cleanCode, name: normalizedName };
     setProfiles((previousProfiles) => [...previousProfiles, newProfile]);
 
@@ -216,12 +226,11 @@ export const FinanceProvider = ({ children }) => {
     saveToLocalStorage(profileStorageKey(cleanCode, 'monthlyGoals'), {});
     saveToLocalStorage(profileStorageKey(cleanCode, 'monthlyCategoryCaps'), {});
     saveToLocalStorage(profileStorageKey(cleanCode, 'investments'), []);
-    
-    // Guardamos un marcador en Firebase para no perder la cuenta compartida si cambias de móvil
+
     if (syncUser && syncStatus === 'synced') {
       runCloudOperation(saveProfileBookmark(syncUser.uid, newProfile));
     }
-    
+
     switchProfile(cleanCode);
     return newProfile;
   };
@@ -486,10 +495,10 @@ export const FinanceProvider = ({ children }) => {
 
   const addProfile = (name) => {
     const normalizedName = name.trim();
-    if (!normalizedName) throw new Error('Escribe un nombre para el perfil.');
-    if (normalizedName.length > 40) throw new Error('El nombre del perfil no puede superar los 40 caracteres.');
+    if (!normalizedName) throw new Error('Escribe un nombre para la cuenta.');
+    if (normalizedName.length > 40) throw new Error('El nombre no puede superar los 40 caracteres.');
     if (profiles.some((profile) => profile.name.toLocaleLowerCase('es') === normalizedName.toLocaleLowerCase('es'))) {
-      throw new Error('Ya existe un perfil con ese nombre.');
+      throw new Error('Ya existe una cuenta con ese nombre.');
     }
     const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const newProfile = { id, name: normalizedName };
@@ -681,23 +690,23 @@ export const FinanceProvider = ({ children }) => {
 
   const deleteActiveProfile = async () => {
     if (profiles.length <= 1) {
-      throw new Error('No puedes eliminar el único perfil que queda.');
+      throw new Error('No puedes eliminar la única cuenta que queda.');
     }
     if (syncUser && syncStatus !== 'synced') {
-      throw new Error('Espera a que termine la sincronización antes de eliminar este perfil.');
+      throw new Error('Espera a que termine la sincronización antes de eliminar esta cuenta.');
     }
 
     const profileId = activeProfileId;
     const remainingProfiles = profiles.filter((profile) => profile.id !== profileId);
     const nextProfile = remainingProfiles[0];
-    if (!nextProfile) throw new Error('No se encontró otro perfil al que cambiar.');
+    if (!nextProfile) throw new Error('No se encontró otra cuenta a la que cambiar.');
 
     if (syncUser) {
-          if (profileId.includes('___')) {
-            await deleteProfileBookmark(syncUser.uid, profileId); // Solo borra tu vínculo
-          } else {
-            await deleteProfileFromCloud(syncUser.uid, profileId); // Borra la cuenta real
-          }
+      if (profileId.includes('___')) {
+        await deleteProfileBookmark(syncUser.uid, profileId);
+      } else {
+        await deleteProfileFromCloud(syncUser.uid, profileId);
+      }
     }
 
     await Promise.all(transactions
@@ -758,7 +767,11 @@ export const FinanceProvider = ({ children }) => {
     ));
   };
 
-  const addTransaction = async ({ invoiceFile, ...transaction }) => {
+  const addTransaction = async ({ invoiceFile, targetProfileId, ...transaction }) => {
+    const destinationProfileId = targetProfileId && profiles.some((p) => p.id === targetProfileId)
+      ? targetProfileId
+      : activeProfileId;
+
     const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const installmentTotal = Number(transaction.installmentTotal);
     const isInstallment = Boolean(transaction.isInstallment) && Number.isFinite(installmentTotal) && installmentTotal > 1;
@@ -773,13 +786,22 @@ export const FinanceProvider = ({ children }) => {
     const entriesToAdd = isInstallment ? buildInstallmentRecords(baseTransaction, installmentTotal) : [baseTransaction];
 
     if (invoiceFile && entriesToAdd[0]) {
-      await saveInvoice(entriesToAdd[0].id, invoiceFile, activeProfileId);
+      await saveInvoice(entriesToAdd[0].id, invoiceFile, destinationProfileId);
     }
 
-    setTransactions((prevTransactions) => [...entriesToAdd, ...prevTransactions]);
+    if (destinationProfileId === activeProfileId) {
+      setTransactions((prevTransactions) => [...entriesToAdd, ...prevTransactions]);
+    } else {
+      const targetCurrent = getFromLocalStorage(profileStorageKey(destinationProfileId, 'transactions')) || [];
+      saveToLocalStorage(
+        profileStorageKey(destinationProfileId, 'transactions'),
+        [...entriesToAdd, ...(Array.isArray(targetCurrent) ? targetCurrent : [])],
+      );
+    }
+
     if (syncUser && syncStatus === 'synced') {
       runCloudOperation(Promise.all(entriesToAdd.map((entry) => (
-        saveTransactionToCloud(syncUser.uid, activeProfileId, entry)
+        saveTransactionToCloud(syncUser.uid, destinationProfileId, entry)
       ))));
     }
   };
@@ -788,46 +810,55 @@ export const FinanceProvider = ({ children }) => {
     const existingTransaction = transactions.find((transaction) => transaction.id === id);
     if (!existingTransaction) throw new Error('No se encontró el movimiento que quieres editar.');
 
+    const destinationProfileId = updates.targetProfileId && profiles.some((p) => p.id === updates.targetProfileId)
+      ? updates.targetProfileId
+      : activeProfileId;
+
     if (updates.invoiceFile) {
-      await saveInvoice(id, updates.invoiceFile, activeProfileId);
+      await saveInvoice(id, updates.invoiceFile, destinationProfileId);
     } else if (updates.removeInvoice && existingTransaction.invoice) {
       await deleteInvoice(id, activeProfileId);
     }
 
-    setTransactions((previousTransactions) => previousTransactions.map((transaction) => {
-      if (transaction.id !== id) return transaction;
+    const { invoiceFile, removeInvoice, targetProfileId, ...fields } = updates;
+    const nextTransaction = {
+      ...existingTransaction,
+      ...fields,
+      ...(invoiceFile && {
+        invoice: {
+          name: invoiceFile.name,
+          type: invoiceFile.type,
+          size: invoiceFile.size,
+        },
+      }),
+      ...(removeInvoice && !invoiceFile && { invoice: undefined }),
+    };
 
-      const { invoiceFile, removeInvoice, ...fields } = updates;
-      return {
-        ...transaction,
-        ...fields,
-        ...(invoiceFile && {
-          invoice: {
-            name: invoiceFile.name,
-            type: invoiceFile.type,
-            size: invoiceFile.size,
-          },
-        }),
-        ...(removeInvoice && !invoiceFile && { invoice: undefined }),
-      };
-    }));
-    if (syncUser && syncStatus === 'synced') {
-      const nextTransaction = {
-        ...existingTransaction,
-        ...Object.fromEntries(Object.entries(updates).filter(([key]) => (
-          !['invoiceFile', 'removeInvoice'].includes(key)
-        ))),
-      };
-      if (updates.invoiceFile) {
-        nextTransaction.invoice = {
-          name: updates.invoiceFile.name,
-          type: updates.invoiceFile.type,
-          size: updates.invoiceFile.size,
-        };
-      } else if (updates.removeInvoice) {
-        delete nextTransaction.invoice;
+    if (destinationProfileId === activeProfileId) {
+      setTransactions((previousTransactions) => previousTransactions.map((transaction) => (
+        transaction.id === id ? nextTransaction : transaction
+      )));
+      if (syncUser && syncStatus === 'synced') {
+        const cleanForCloud = { ...nextTransaction };
+        if (!cleanForCloud.invoice) delete cleanForCloud.invoice;
+        runCloudOperation(saveTransactionToCloud(syncUser.uid, activeProfileId, cleanForCloud));
       }
-      runCloudOperation(saveTransactionToCloud(syncUser.uid, activeProfileId, nextTransaction));
+    } else {
+      // Mover el movimiento de la cuenta actual a la cuenta seleccionada
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      const targetCurrent = getFromLocalStorage(profileStorageKey(destinationProfileId, 'transactions')) || [];
+      saveToLocalStorage(
+        profileStorageKey(destinationProfileId, 'transactions'),
+        [nextTransaction, ...(Array.isArray(targetCurrent) ? targetCurrent : [])],
+      );
+      if (syncUser && syncStatus === 'synced') {
+        const cleanForCloud = { ...nextTransaction };
+        if (!cleanForCloud.invoice) delete cleanForCloud.invoice;
+        runCloudOperation((async () => {
+          await deleteTransactionFromCloud(syncUser.uid, activeProfileId, id);
+          await saveTransactionToCloud(syncUser.uid, destinationProfileId, cleanForCloud);
+        })());
+      }
     }
   };
 
@@ -871,15 +902,11 @@ export const FinanceProvider = ({ children }) => {
     const removedTransactions = targetTransaction?.installment?.seriesId
       ? transactions.filter((transaction) => transaction.installment?.seriesId === seriesId)
       : [targetTransaction];
-    const nextTransactions = targetTransaction?.installment?.seriesId
-      ? transactions.filter((transaction) => transaction.installment?.seriesId !== seriesId)
-      : transactions.filter((transaction) => transaction.id !== id);
 
     setTransactions((prevTransactions) => {
       if (!seriesId) {
         return prevTransactions.filter((transaction) => transaction.id !== id);
       }
-
       return prevTransactions.filter((transaction) => transaction.installment?.seriesId !== seriesId);
     });
     if (syncUser && syncStatus === 'synced') {
@@ -898,7 +925,6 @@ export const FinanceProvider = ({ children }) => {
     if (!invoice?.blob) {
       throw new Error('La factura solo está disponible en el dispositivo donde se adjuntó.');
     }
-
     return URL.createObjectURL(invoice.blob);
   };
 
@@ -907,7 +933,6 @@ export const FinanceProvider = ({ children }) => {
     if (!invoice?.blob) {
       throw new Error('La factura solo está disponible en el dispositivo donde se adjuntó.');
     }
-
     const objectUrl = URL.createObjectURL(invoice.blob);
     const link = document.createElement('a');
     link.href = objectUrl;
@@ -927,12 +952,8 @@ export const FinanceProvider = ({ children }) => {
 
   const filteredTransactions = useMemo(() => {
     return monthlyTransactions.filter((transaction) => {
-      const matchesType = 
-        filters.type === 'Todos' || transaction.type === filters.type;
-
-      const matchesCategory = 
-        filters.category === 'Todas' || transaction.category === filters.category;
-
+      const matchesType = filters.type === 'Todos' || transaction.type === filters.type;
+      const matchesCategory = filters.category === 'Todas' || transaction.category === filters.category;
       const searchTerm = filters.searchTerm.toLocaleLowerCase('es');
       const matchesSearchTerm = [
         transaction.description || '',
@@ -1006,8 +1027,8 @@ export const FinanceProvider = ({ children }) => {
   const expenseBreakdown = useMemo(() => {
     const breakdown = {};
     monthlyTransactions
-      .filter(t => t.type === 'Gasto')
-      .forEach(t => {
+      .filter((t) => t.type === 'Gasto')
+      .forEach((t) => {
         const category = t.category;
         breakdown[category] = (breakdown[category] || 0) + parseFloat(t.amount);
       });
@@ -1018,8 +1039,7 @@ export const FinanceProvider = ({ children }) => {
       category,
       amount,
       percentage: total > 0 ? (amount / total) * 100 : 0,
-    })).sort((a,b) => b.amount - a.amount);
-
+    })).sort((a, b) => b.amount - a.amount);
   }, [monthlyTransactions]);
 
   const exportData = async () => {
@@ -1040,17 +1060,16 @@ export const FinanceProvider = ({ children }) => {
         invoice: { ...transaction.invoice, dataUrl },
       };
     }));
-    
-    // AQUÍ ESTÁ EL CAMBIO: Se añaden las metas y topes mensuales al JSON de exportación
-    const dataStr = JSON.stringify({ 
-      version: 2, 
-      transactions: exportTransactions, 
+
+    const dataStr = JSON.stringify({
+      version: 2,
+      transactions: exportTransactions,
       customCategories,
-      monthlyGoalsByMonth,         // Nuevo
-      monthlyCategoryCapsByMonth,  // Nuevo
+      monthlyGoalsByMonth,
+      monthlyCategoryCapsByMonth,
       investmentRecords,
     }, null, 2);
-    
+
     const fileUrl = URL.createObjectURL(new Blob([dataStr], { type: 'application/json' }));
     const downloadLink = document.createElement('a');
     downloadLink.href = fileUrl;
@@ -1082,23 +1101,6 @@ export const FinanceProvider = ({ children }) => {
     if (!Array.isArray(importedTransactions)) {
       throw new Error('La copia no contiene una lista válida de movimientos.');
     }
-    if (
-      !Array.isArray(backup)
-      && backup.investmentRecords !== undefined
-      && (!Array.isArray(backup.investmentRecords) || backup.investmentRecords.some((record) => (
-        !record?.id
-        || typeof record.name !== 'string'
-        || !record.name.trim()
-        || typeof record.date !== 'string'
-        || !Number.isFinite(Date.parse(`${record.date}T00:00:00`))
-        || !Number.isFinite(Number(record.investedAmount))
-        || Number(record.investedAmount) <= 0
-        || !Number.isFinite(Number(record.currentValue))
-        || Number(record.currentValue) < 0
-      )))
-    ) {
-      throw new Error('La copia contiene inversiones con datos no válidos.');
-    }
 
     const restoredTransactions = await Promise.all(importedTransactions.map(async (transaction) => {
       if (!transaction || typeof transaction !== 'object' || !transaction.id) {
@@ -1125,8 +1127,6 @@ export const FinanceProvider = ({ children }) => {
           Gasto: Array.isArray(importedCategories.Gasto) ? importedCategories.Gasto.filter((name) => typeof name === 'string') : [],
         });
       }
-      
-      // AQUÍ ESTÁ EL CAMBIO: Restaurar metas y topes desde el backup
       if (backup.monthlyGoalsByMonth && typeof backup.monthlyGoalsByMonth === 'object') {
         setMonthlyGoalsByMonth(backup.monthlyGoalsByMonth);
       }
@@ -1137,7 +1137,7 @@ export const FinanceProvider = ({ children }) => {
         setInvestmentRecords(backup.investmentRecords);
       }
     }
-    
+
     setTransactions(restoredTransactions);
     if (syncUser && syncStatus === 'synced') {
       runCloudOperation((async () => {
@@ -1159,6 +1159,8 @@ export const FinanceProvider = ({ children }) => {
         profiles,
         activeProfile,
         activeProfileId,
+        getTransactionsForProfile,
+        renameProfile,
         syncUser,
         syncStatus,
         syncError,

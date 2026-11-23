@@ -1,266 +1,527 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  Trash2, 
-  Pencil, 
-  Paperclip, 
-  ShoppingBag, 
-  Utensils, 
-  Home, 
-  Car, 
-  Film, 
-  HeartPulse, 
-  Tv, 
-  Briefcase, 
-  ArrowLeftRight, 
-  TrendingUp, 
-  Tag, 
-  HelpCircle,
-  Receipt
+import {
+  ArrowDownLeft,
+  ArrowLeftRight,
+  ArrowUpRight,
+  Briefcase,
+  Car,
+  CreditCard,
+  Download,
+  Eye,
+  Film,
+  HeartPulse,
+  Home,
+  Pencil,
+  Receipt,
+  Scissors,
+  ShoppingBag,
+  Tag,
+  Trash2,
+  TrendingUp,
+  Tv,
+  Upload,
+  Utensils,
+  X,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { triggerHaptic } from '../utils/haptics';
 
-function Icon({ name, size = 16 }) {
-  const paths = {
-    receipt: (
-      <>
-        <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
-        <path d="M9 8h6M9 12h6" />
-      </>
-    ),
-    chevron: <path d="m9 7 5 5-5 5" />,
-    close: <path d="m6 6 12 12M18 6 6 18" />,
-    arrow: <path d="M5 12h14M14 7l5 5-5 5" />
-  };
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  );
-}
-
-// Mapeo dinámico de iconos por categoría
-const getCategoryIcon = (category = '', type = 'Gasto', size = 16) => {
-  const normalized = category.toLowerCase().trim();
-
-  // Gastos
-  if (normalized.includes('alimentación') || normalized.includes('supermercado') || normalized.includes('comida')) {
-    return <ShoppingBag size={size} />;
+export const getCategoryVisuals = (category = '', type = 'Gasto', size = 18) => {
+  const norm = category.toLowerCase().trim();
+  if (norm.includes('comida') || norm.includes('supermercado')) {
+    return { icon: <ShoppingBag size={size} />, bg: '#F59E0B', softBg: 'rgba(245, 158, 11, 0.16)', fg: '#D97706' };
   }
-  if (normalized.includes('restaurante') || normalized.includes('bar') || normalized.includes('cena')) {
-    return <Utensils size={size} />;
+  if (norm.includes('restaurante') || norm.includes('bar')) {
+    return { icon: <Utensils size={size} />, bg: '#F97316', softBg: 'rgba(249, 115, 22, 0.16)', fg: '#EA580C' };
   }
-  if (normalized.includes('hogar') || normalized.includes('casa') || normalized.includes('alquiler')) {
-    return <Home size={size} />;
+  if (norm.includes('hogar') || norm.includes('alquiler') || norm.includes('hipoteca')) {
+    return { icon: <Home size={size} />, bg: '#8B5CF6', softBg: 'rgba(139, 92, 246, 0.16)', fg: '#7C3AED' };
   }
-  if (normalized.includes('transporte') || normalized.includes('gasolina') || normalized.includes('coche') || normalized.includes('metro')) {
-    return <Car size={size} />;
+  if (norm.includes('transporte') || norm.includes('coche') || norm.includes('gasolina')) {
+    return { icon: <Car size={size} />, bg: '#0075EB', softBg: 'rgba(0, 117, 235, 0.15)', fg: '#0075EB' };
   }
-  if (normalized.includes('ocio') || normalized.includes('entretenimiento') || normalized.includes('cine')) {
-    return <Film size={size} />;
+  if (norm.includes('ocio') || norm.includes('cine') || norm.includes('viajes')) {
+    return { icon: <Film size={size} />, bg: '#EC4899', softBg: 'rgba(236, 72, 153, 0.16)', fg: '#DB2777' };
   }
-  if (normalized.includes('salud') || normalized.includes('farmacia') || normalized.includes('médico')) {
-    return <HeartPulse size={size} />;
+  if (norm.includes('salud')) {
+    return { icon: <HeartPulse size={size} />, bg: '#F43F5E', softBg: 'rgba(244, 63, 94, 0.16)', fg: '#E11D48' };
   }
-  if (normalized.includes('suscripcion') || normalized.includes('streaming') || normalized.includes('netflix') || normalized.includes('spotify')) {
-    return <Tv size={size} />;
+  if (norm.includes('suscripcion') || norm.includes('netflix') || norm.includes('spotify')) {
+    return { icon: <Tv size={size} />, bg: '#6366F1', softBg: 'rgba(99, 102, 241, 0.16)', fg: '#4F46E5' };
   }
-
-  // Ingresos
-  if (normalized.includes('nómina') || normalized.includes('nomina') || normalized.includes('sueldo') || normalized.includes('salario')) {
-    return <Briefcase size={size} />;
+  if (norm.includes('nómina') || norm.includes('nomina') || norm.includes('sueldo') || norm.includes('salario')) {
+    return { icon: <Briefcase size={size} />, bg: '#4F46E5', softBg: 'rgba(79, 70, 229, 0.16)', fg: '#4338CA' };
   }
-  if (normalized.includes('transferencia') || normalized.includes('bizum')) {
-    return <ArrowLeftRight size={size} />;
+  if (norm.includes('transferencia') || norm.includes('bizum')) {
+    return { icon: <ArrowLeftRight size={size} />, bg: '#0EA5E9', softBg: 'rgba(14, 165, 233, 0.16)', fg: '#0284C7' };
   }
-  if (normalized.includes('inversion') || normalized.includes('dividendo')) {
-    return <TrendingUp size={size} />;
+  if (norm.includes('inversion')) {
+    return { icon: <TrendingUp size={size} />, bg: '#10B981', softBg: 'rgba(16, 185, 129, 0.16)', fg: '#059669' };
   }
-  if (normalized.includes('venta')) {
-    return <Tag size={size} />;
+  if (norm.includes('venta') || norm.includes('ropa')) {
+    return { icon: <Tag size={size} />, bg: '#A855F7', softBg: 'rgba(168, 85, 247, 0.16)', fg: '#9333EA' };
   }
-
-  // Por defecto según tipo
-  return type === 'Ingreso' ? <TrendingUp size={size} /> : <Receipt size={size} />;
+  return type === 'Ingreso'
+    ? { icon: <TrendingUp size={size} />, bg: '#00A859', softBg: 'rgba(0, 168, 89, 0.16)', fg: '#00A859' }
+    : { icon: <Receipt size={size} />, bg: '#64748B', softBg: 'rgba(100, 116, 139, 0.15)', fg: '#475569' };
 };
 
-const TransactionItem = ({ transaction, layout = 'list' }) => {
-  const { deleteTransaction, setEditingTransaction, downloadInvoice } = useFinance();
-  
-  const [swipeActions, setSwipeActions] = useState(null);
+const TransactionItem = ({ transaction }) => {
+  const {
+    deleteTransaction,
+    setEditingTransaction,
+    updateTransaction,
+    splitTransaction,
+    previewInvoice,
+    downloadInvoice,
+    isAmountsHidden,
+  } = useFinance();
+
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isSplitting, setIsSplitting] = useState(false);
+  const [splitCount, setSplitCount] = useState(2);
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteText, setNoteText] = useState(transaction.description || '');
+  const [detailError, setDetailError] = useState('');
   const [phoneNode, setPhoneNode] = useState(null);
-  
-  const touchStartRef = useRef(null);
+
   const isExpense = transaction.type === 'Gasto';
-  
+  const visuals = getCategoryVisuals(transaction.category, transaction.type, 17);
+
   useEffect(() => {
     setPhoneNode(document.querySelector('.phone') || document.body);
   }, []);
 
-  const handleTouchStart = (e) => {
-    if (e.touches.length !== 1) return;
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
+  const formatted = isAmountsHidden
+    ? '•••• €'
+    : new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(transaction.amount) || 0);
 
-  const handleTouchEnd = (e) => {
-    const start = touchStartRef.current;
-    if (!start || e.changedTouches.length !== 1) return;
-    const deltaX = e.changedTouches[0].clientX - start.x;
-    const deltaY = e.changedTouches[0].clientY - start.y;
-    
-    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
-    
-    setSwipeActions(deltaX < 0 ? 'delete' : 'edit');
-  };
-
-  const handleItemClick = () => {
-    if (swipeActions) {
-      setSwipeActions(null);
-    } else {
-      setIsDetailOpen(true);
+  const handleSaveNote = async () => {
+    try {
+      await updateTransaction(transaction.id, { description: noteText.trim() });
+      setIsEditingNote(false);
+      triggerHaptic();
+    } catch (err) {
+      setDetailError(err.message);
     }
   };
 
-  const swipeOffset = swipeActions === 'delete' ? '-70px' : swipeActions === 'edit' ? '70px' : '0px';
-  const displayMoney = (val) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(val);
+  const handleUploadReceipt = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDetailError('');
+    try {
+      await updateTransaction(transaction.id, { invoiceFile: file });
+      triggerHaptic();
+    } catch (err) {
+      setDetailError(err.message);
+    }
+  };
+
+  const detailCardStyle = {
+    background: 'var(--rev-card)',
+    borderRadius: '16px',
+    padding: '4px 16px',
+    border: '1px solid var(--rev-border)',
+    boxShadow: 'var(--rev-shadow)',
+    marginBottom: '12px',
+  };
+
+  const detailRowStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '13px 0',
+    fontSize: '14px',
+  };
 
   return (
     <>
-      <div className="relative overflow-hidden" data-month-swipe-ignore>
-        
-        {/* Acciones al deslizar */}
-        {swipeActions === 'edit' && (
-          <div className="absolute inset-y-0 left-0 flex w-[70px] items-center justify-center bg-[#f1f1ef] dark:bg-[#242422]">
-            <button onClick={() => setEditingTransaction(transaction)} className="flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#090909] dark:text-[#f5f5f2]">
-              <Pencil size={15} /> Editar
-            </button>
-          </div>
-        )}
-        
-        {swipeActions === 'delete' && (
-          <div className="absolute inset-y-0 right-0 flex w-[70px] items-center justify-center bg-[#df242b]">
-            <button 
-              onClick={() => { triggerHaptic(); deleteTransaction(transaction.id); }} 
-              className="flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-bold text-white"
-            >
-              <Trash2 size={15} /> Borrar
-            </button>
-          </div>
-        )}
+      {/* FILA DE TRANSACCIÓN ESTILO REVOLUT CON MINI-BADGE EN EL ICONO */}
+      <button
+        type="button"
+        onClick={() => {
+          setDetailError('');
+          setIsSplitting(false);
+          setIsEditingNote(false);
+          setNoteText(transaction.description || '');
+          setIsDetailOpen(true);
+        }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          width: '100%',
+          padding: '11px 0',
+          background: 'transparent',
+          border: 0,
+          textAlign: 'left',
+          cursor: 'pointer',
+          gap: '12px',
+        }}
+      >
+        {/* AVATAR CIRCULAR CON BADGE INFERIOR DERECHO */}
+        <span style={{ position: 'relative', width: '40px', height: '40px', flexShrink: 0 }}>
+          <span style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: visuals.softBg,
+            color: visuals.fg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {visuals.icon}
+          </span>
+          <span style={{
+            position: 'absolute',
+            right: '-2px',
+            bottom: '-2px',
+            width: '16px',
+            height: '16px',
+            borderRadius: '50%',
+            background: isExpense ? '#64748B' : '#0075EB',
+            color: '#FFFFFF',
+            border: '2px solid var(--rev-card)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {isExpense ? <ArrowUpRight size={10} strokeWidth={2.8} /> : <ArrowDownLeft size={10} strokeWidth={2.8} />}
+          </span>
+        </span>
 
-        {/* Fila del movimiento con icono según categoría */}
-        <button
-          className="movement bg-white dark:bg-transparent"
-          onClick={handleItemClick}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          style={{ transform: `translateX(${swipeOffset})`, transition: 'transform 0.2s ease-out' }}
-        >
-          <span className="movement-icon">
-            {getCategoryIcon(transaction.category, transaction.type,14)}
-          </span>
-          <span className="movement-info">
-            <strong>{transaction.description || transaction.category}</strong>
-            <small className="flex items-center gap-1">
-              {transaction.category} · {transaction.date}
-            </small>
-          </span>
-          <strong className={`movement-amount ${isExpense ? 'expense' : 'income'}`}>
-            {!isExpense ? '+' : '−'}
-            {displayMoney(Number(transaction.amount))}
+        {/* 3 LÍNEAS COMO EN REVOLUT */}
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <strong style={{
+            display: 'block',
+            fontSize: '14px',
+            fontWeight: 700,
+            color: 'var(--rev-text)',
+            letterSpacing: '-0.01em',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {transaction.description || transaction.category}
           </strong>
-          <Icon name="chevron" size={14} />
-        </button>
-      </div>
+          <small style={{
+            display: 'block',
+            fontSize: '11.5px',
+            fontWeight: 500,
+            color: 'var(--rev-muted)',
+            marginTop: '1px',
+          }}>
+            {transaction.date} · {transaction.category}
+          </small>
+          <small style={{
+            display: 'block',
+            fontSize: '11.5px',
+            fontWeight: 500,
+            color: 'var(--rev-muted)',
+          }}>
+            · {transaction.installment ? `Cuota ${transaction.installment.current}/${transaction.installment.total}` : 'Completado'}
+          </small>
+        </span>
 
-      {/* Modal de Detalle */}
+        {/* IMPORTE ALINEADO ARRIBA A LA DERECHA */}
+        <strong
+          className="privacy-sensitive"
+          style={{
+            alignSelf: 'flex-start',
+            marginTop: '2px',
+            fontSize: '14px',
+            fontWeight: 600,
+            fontVariantNumeric: 'tabular-nums',
+            color: isExpense ? 'var(--rev-text)' : 'var(--rev-green)',
+          }}
+        >
+          {!isExpense ? '+' : ''}{formatted}
+        </strong>
+      </button>
+
+      {/* DETALLE DE TRANSACCIÓN ESTILO REVOLUT */}
       {isDetailOpen && phoneNode && createPortal(
-        <div className="sheet-layer" onMouseDown={() => setIsDetailOpen(false)}>
+        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsDetailOpen(false)}>
           <section
-            className="bottom-sheet detail-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="detail-title"
-            onMouseDown={(event) => event.stopPropagation()}
+            className="bottom-sheet"
+            style={{ minHeight: '86dvh', background: 'var(--rev-bg)' }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
-            <div className="sheet-handle" />
-            <div className="detail-merchant-icon">
-              {getCategoryIcon(transaction.category, transaction.type, 18)}
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
+              <button
+                type="button"
+                className="sheet-close"
+                onClick={() => setIsDetailOpen(false)}
+                aria-label="Cerrar detalle"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <button
-              className="sheet-close"
-              onClick={() => setIsDetailOpen(false)}
-              aria-label="Cerrar"
-            >
-              <Icon name="close" size={14} />
-            </button>
-            
-            <p className="detail-kicker">
-              {!isExpense ? "INGRESO RECIBIDO" : "PAGO COMPLETADO"}
-            </p>
-            <h2 id="detail-title">{transaction.description || transaction.category}</h2>
-            
-            <strong className="detail-amount">
-              {!isExpense ? "+" : "−"}
-              {displayMoney(Number(transaction.amount))}
-            </strong>
-            
-            <div className="detail-list">
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px' }}>
               <div>
-                <span>Fecha</span>
-                <strong>{transaction.date}</strong>
+                <strong
+                  className="privacy-sensitive"
+                  style={{
+                    display: 'block',
+                    fontSize: '34px',
+                    fontWeight: 800,
+                    letterSpacing: '-0.03em',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: isExpense ? 'var(--rev-text)' : 'var(--rev-green)',
+                  }}
+                >
+                  {isExpense ? '−' : '+'}{formatted}
+                </strong>
+                <span style={{ display: 'block', fontSize: '15px', fontWeight: 700, color: 'var(--rev-blue)', marginTop: '2px' }}>
+                  {transaction.description || transaction.category}
+                </span>
+                <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)', marginTop: '2px' }}>
+                  {transaction.date}
+                </small>
               </div>
-              <div>
-                <span>Categoría</span>
-                <strong>{transaction.category}</strong>
+
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: visuals.bg,
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {getCategoryVisuals(transaction.category, transaction.type, 22).icon}
               </div>
-              <div>
-                <span>Método</span>
-                <strong>{transaction.paymentMethod || "Tarjeta"}</strong>
-              </div>
-              {transaction.invoice && (
-                <div>
-                  <span>Factura adjunta</span>
-                  <button 
-                    onClick={() => downloadInvoice(transaction.id, transaction.invoice.name)}
-                    className="flex items-center gap-1 text-[#15924c] font-semibold"
-                  >
-                    <Paperclip size={12} /> Descargar
-                  </button>
-                </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '18px' }}>
+              {isExpense && !transaction.installment && splitTransaction && (
+                <button
+                  type="button"
+                  onClick={() => setIsSplitting((v) => !v)}
+                  style={{
+                    flex: 1,
+                    height: '38px',
+                    borderRadius: '999px',
+                    border: 0,
+                    background: 'var(--rev-blue-soft)',
+                    color: 'var(--rev-blue)',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Scissors size={14} /> Dividir gasto
+                </button>
               )}
-              <div>
-                <span>Estado</span>
-                <strong className="detail-status">Completado</strong>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setEditingTransaction(transaction);
+                }}
+                style={{
+                  flex: 1,
+                  height: '38px',
+                  borderRadius: '999px',
+                  border: 0,
+                  background: 'var(--rev-blue-soft)',
+                  color: 'var(--rev-blue)',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                }}
+              >
+                <Pencil size={14} /> Editar movimiento
+              </button>
+            </div>
+
+            {isSplitting && (
+              <div style={{ ...detailCardStyle, padding: '14px' }}>
+                <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '10px' }}>
+                  Dividir en cuotas ({new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format((Number(transaction.amount) || 0) / splitCount)}/mes)
+                </span>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                  {[2, 3, 4, 6, 12].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setSplitCount(n)}
+                      style={{
+                        flex: 1,
+                        padding: '7px 0',
+                        borderRadius: '10px',
+                        border: 0,
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        background: splitCount === n ? 'var(--rev-blue)' : 'var(--rev-subtle)',
+                        color: splitCount === n ? '#fff' : 'var(--rev-text)',
+                      }}
+                    >
+                      {n}x
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="sheet-submit"
+                  style={{ height: '42px', fontSize: '13px' }}
+                  onClick={() => {
+                    try {
+                      splitTransaction(transaction.id, splitCount);
+                      triggerHaptic();
+                      setIsDetailOpen(false);
+                    } catch (err) {
+                      setDetailError(err.message);
+                    }
+                  }}
+                >
+                  Confirmar {splitCount} cuotas
+                </button>
+              </div>
+            )}
+
+            <div style={detailCardStyle}>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--rev-border)' }}>
+                <span style={{ color: 'var(--rev-muted)' }}>Estado</span>
+                <strong style={{ fontWeight: 600 }}>Completado</strong>
+              </div>
+
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--rev-border)' }}>
+                <span style={{ color: 'var(--rev-muted)' }}>Método</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--rev-blue)', fontWeight: 700 }}>
+                  <CreditCard size={15} /> {transaction.paymentMethod || 'Tarjeta'}
+                </span>
+              </div>
+
+              <div style={detailRowStyle}>
+                <span style={{ color: 'var(--rev-muted)' }}>Justificante</span>
+                {transaction.invoice ? (
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const url = await previewInvoice(transaction.id);
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        } catch (err) {
+                          setDetailError(err.message);
+                        }
+                      }}
+                      style={{ background: 'transparent', border: 0, color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                    >
+                      <Eye size={14} /> Ver
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadInvoice(transaction.id, transaction.invoice.name).catch((err) => setDetailError(err.message))}
+                      style={{ background: 'transparent', border: 0, color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                    >
+                      <Download size={14} /> Descargar
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{ color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                    <Upload size={14} /> Subir
+                    <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleUploadReceipt} />
+                  </label>
+                )}
               </div>
             </div>
-            
-            <div className="flex gap-2 mt-5">
-               <button
-                 className="detail-action"
-                 onClick={() => {
-                   setIsDetailOpen(false);
-                   setEditingTransaction(transaction);
-                 }}
-                 style={{ background: '#f1f1ef', color: '#090909' }}
-               >
-                 Editar 
-                 <Pencil size={14} />
-               </button>
-               
-               <button
-                 className="detail-action"
-                 onClick={() => setIsDetailOpen(false)}
-               >
-                 Cerrar detalle
-                 <Icon name="arrow" size={16} />
-               </button>
+
+            <div style={detailCardStyle}>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--rev-border)' }}>
+                <span style={{ color: 'var(--rev-muted)' }}>Categoría</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--rev-blue)', fontWeight: 700 }}>
+                  {getCategoryVisuals(transaction.category, transaction.type, 15).icon}
+                  {transaction.category}
+                </span>
+              </div>
+
+              <div style={detailRowStyle}>
+                <span style={{ color: 'var(--rev-muted)' }}>Importe en análisis</span>
+                <span style={{ color: 'var(--rev-blue)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                  {formatted}
+                </span>
+              </div>
+            </div>
+
+            <div style={detailCardStyle}>
+              <div style={detailRowStyle}>
+                <span style={{ color: 'var(--rev-muted)' }}>Nota</span>
+                {!isEditingNote ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingNote(true)}
+                    style={{ background: 'transparent', border: 0, color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}
+                  >
+                    <Pencil size={13} /> {transaction.description || 'Añadir nota'}
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', gap: '6px', flex: 1, marginLeft: '16px' }}>
+                    <input
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      style={{ margin: 0, height: '36px', fontSize: '13px' }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveNote}
+                      style={{ padding: '0 12px', borderRadius: '10px', border: 0, background: 'var(--rev-blue)', color: '#fff', fontWeight: 700, fontSize: '12px' }}
+                    >
+                      OK
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {detailError && (
+              <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '12px' }}>
+                {detailError}
+              </p>
+            )}
+
+            <div style={detailCardStyle}>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  setIsDetailOpen(false);
+                  deleteTransaction(transaction.id);
+                }}
+                style={{
+                  ...detailRowStyle,
+                  width: '100%',
+                  background: 'transparent',
+                  border: 0,
+                  color: 'var(--rev-red)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                <span>Eliminar movimiento</span>
+                <Trash2 size={16} />
+              </button>
             </div>
           </section>
         </div>,
-        phoneNode
+        phoneNode,
       )}
     </>
   );

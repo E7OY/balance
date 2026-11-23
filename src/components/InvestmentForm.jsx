@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import InvestmentAssetPicker from './InvestmentAssetPicker';
 import { getInvestmentQuote } from '../utils/investmentMarketData';
-
+import { triggerHaptic } from '../utils/haptics';
 
 const getToday = () => {
   const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 };
 
 const formatMoney = (value) => new Intl.NumberFormat('es-ES', {
@@ -45,7 +42,10 @@ const InvestmentForm = ({ onClose }) => {
     setIsLoadingQuote(true);
 
     getInvestmentQuote(asset, controller.signal)
-      .then(setQuote)
+      .then((q) => {
+        if (q.priceEur > 0) setQuote(q);
+        else setQuoteError('Cotización no disponible ahora. Usa el modo manual.');
+      })
       .catch((error) => {
         if (error.name !== 'AbortError') setQuoteError(error.message);
       })
@@ -67,9 +67,7 @@ const InvestmentForm = ({ onClose }) => {
           name: asset?.name || '',
           date,
           investedAmount: invested,
-          currentValue: quote && invested > 0
-            ? Number(((invested / quote.priceEur) * quote.priceEur).toFixed(2))
-            : 0,
+          currentValue: invested,
           asset: quote?.image ? { ...asset, image: quote.image } : asset,
           units: quote && invested > 0 ? invested / quote.priceEur : 0,
           currentPrice: quote?.priceEur,
@@ -83,6 +81,7 @@ const InvestmentForm = ({ onClose }) => {
         };
 
       addInvestmentRecord(record);
+      triggerHaptic();
       onClose();
     } catch (error) {
       setFormError(error.message);
@@ -96,9 +95,9 @@ const InvestmentForm = ({ onClose }) => {
     : Boolean(name.trim() && parsedInvested > 0 && Number.isFinite(parsedCurrentValue) && parsedCurrentValue >= 0 && date);
 
   return (
-    <div className="sheet-layer" style={{ zIndex: 90 }} onMouseDown={onClose}>
+    <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={onClose}>
       <section
-        className="bottom-sheet investment-sheet"
+        className="bottom-sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby="investment-title"
@@ -106,7 +105,7 @@ const InvestmentForm = ({ onClose }) => {
       >
         <div className="sheet-handle" />
         <button className="sheet-close" onClick={onClose} type="button" aria-label="Cerrar">
-          <X size={18} />
+          <X size={17} />
         </button>
 
         <div className="record-tabs" aria-label="Tipo de inversión">
@@ -126,21 +125,33 @@ const InvestmentForm = ({ onClose }) => {
           </button>
         </div>
 
-        <h2 id="investment-title">Añadir inversión</h2>
-        <p>Registra una posición en tu cartera.</p>
+        <h2 id="investment-title">Nueva inversión</h2>
+        <p>Añade una posición en tiempo real o manual a tu cartera.</p>
 
         <form onSubmit={handleSubmit}>
           {mode === 'market' ? (
-            <>
+            <div style={{ marginBottom: '12px' }}>
               <InvestmentAssetPicker value={asset} onChange={setAsset} />
-              {isLoadingQuote && <p className="investment-status" role="status">Consultando cotización…</p>}
-              {quoteError && <p className="investment-error" role="alert">{quoteError} Puedes registrarla en modo manual.</p>}
-              {quote && (
-                <p className="investment-status" aria-live="polite">
-                  Precio actual: {formatMoney(quote.priceEur)} por unidad
+              {isLoadingQuote && (
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                  Consultando cotización...
                 </p>
               )}
-            </>
+              {quoteError && (
+                <p style={{ fontSize: '12px', color: 'var(--accent-red)', fontWeight: 600, marginTop: '8px' }}>
+                  {quoteError}
+                </p>
+              )}
+              {quote && (
+                <div style={{
+                  marginTop: '10px', padding: '10px 14px', borderRadius: '14px',
+                  background: 'rgba(0, 117, 235, 0.1)', color: 'var(--accent-blue)',
+                  fontSize: '13px', fontWeight: 700, fontVariantNumeric: 'tabular-nums'
+                }}>
+                  Precio actual: {formatMoney(quote.priceEur)} / ud
+                </div>
+              )}
+            </div>
           ) : (
             <label>
               Nombre de la inversión
@@ -149,7 +160,7 @@ const InvestmentForm = ({ onClose }) => {
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 maxLength={60}
-                placeholder="Ej.: Fondo indexado"
+                placeholder="Ej. Fondo indexado MSCI World"
                 required
               />
             </label>
@@ -165,6 +176,7 @@ const InvestmentForm = ({ onClose }) => {
               value={investedAmount}
               onChange={(event) => setInvestedAmount(event.target.value)}
               placeholder="0,00"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
               required
             />
           </label>
@@ -180,14 +192,15 @@ const InvestmentForm = ({ onClose }) => {
                 value={currentValue}
                 onChange={(event) => setCurrentValue(event.target.value)}
                 placeholder="0,00"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
                 required
               />
             </label>
           )}
 
           {mode === 'market' && quote && parsedInvested > 0 && (
-            <p className="investment-preview">
-              Valor actual estimado: {formatMoney(parsedInvested)}
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '12px' }}>
+              Recibirás aprox. {(parsedInvested / quote.priceEur).toFixed(6)} unidades
             </p>
           )}
 
@@ -201,13 +214,14 @@ const InvestmentForm = ({ onClose }) => {
             />
           </label>
 
-          {formError && <p className="investment-error" role="alert">{formError}</p>}
+          {formError && (
+            <p style={{ fontSize: '12px', color: 'var(--accent-red)', fontWeight: 700, marginBottom: '10px' }}>
+              {formError}
+            </p>
+          )}
 
-          <button className="sheet-submit limits-submit investment-submit" type="submit" disabled={!canSubmit}>
-            Comprar
-            <svg className="ml-8" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M5 12h14M14 7l5 5-5 5" />
-            </svg>
+          <button className="sheet-submit" style={{ marginTop: '6px' }} type="submit" disabled={!canSubmit}>
+            Confirmar inversión <ArrowRight size={17} />
           </button>
         </form>
       </section>

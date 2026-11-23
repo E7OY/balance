@@ -1,211 +1,337 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Copy, Plus, Trash2, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { expenseCategories, incomeCategories } from '../utils/categories';
+import { getCategoryVisuals } from './TransactionItem';
 import { triggerHaptic } from '../utils/haptics';
 
-function Icon({ name, size = 17 }) {
-  const paths = {
-    close: <path d="m6 6 12 12M18 6 6 18" />,
-    arrow: <path d="M5 12h14M14 7l5 5-5 5" />
-  };
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  );
-}
-
-const DEFAULT_EXPENSE_CATEGORIES = [
-  'Comida', 'Alquiler/Hipoteca', 'Transporte', 'Ocio', 'Suscripciones', 'Mascotas', 'Salud', 'Ropa', 'Hogar', 'Viajes', 'Regalos', 'Inversiones', 'Deudas', 'Otros'
-];
-
-
 const CategoryLimitsForm = ({ onClose }) => {
-  const { 
-    transactions, 
-    filters, 
-    categoryLimits, 
-    setCategoryLimits,
+  const {
+    transactions,
+    filters,
+    monthlyCategoryCaps,
+    setMonthlyCategoryCaps,
+    previousMonthCategoryCaps,
+    customCategories,
     allCategories,
-    setAllCategories,
-    activeProfileId 
+    addCategory,
+    deleteCategory,
+    activeProfileId,
   } = useFinance();
 
+  const [activeType, setActiveType] = useState('Gasto');
+  const [newCat, setNewCat] = useState('');
+  const [showAddInput, setShowAddInput] = useState(false);
+  const [formError, setFormError] = useState('');
+
   const storageLimitsKey = `balance-category-limits-${activeProfileId || 'default'}`;
-  const storageCatsKey = `balance-custom-categories-${activeProfileId || 'default'}`;
 
-  // 1. Cargamos categorías guardadas en localStorage + contexto + defaults
-  const [localCategories, setLocalCategories] = useState(() => {
-    try {
-      const savedCats = JSON.parse(localStorage.getItem(storageCatsKey) || '[]');
-      const savedLimits = JSON.parse(localStorage.getItem(storageLimitsKey) || '{}');
-      const fromContext = allCategories?.Gasto || [];
-      const fromLimits = Object.keys(categoryLimits || {});
-      const fromTx = transactions.filter(t => t.type === 'Gasto').map(t => t.category);
-      return Array.from(new Set([
-        ...DEFAULT_EXPENSE_CATEGORIES,
-        ...savedCats,
-        ...fromContext,
-        ...fromLimits,
-        ...Object.keys(savedLimits),
-        ...fromTx
-      ]));
-    } catch {
-      return DEFAULT_EXPENSE_CATEGORIES;
-    }
-  });
-
-  // 2. Cargamos los límites en un estado reactivo (clave-valor)
   const [limitsValues, setLimitsValues] = useState(() => {
     try {
       const savedLimits = JSON.parse(localStorage.getItem(storageLimitsKey) || '{}');
-      return { ...savedLimits, ...(categoryLimits || {}) };
+      return { ...savedLimits, ...(monthlyCategoryCaps || {}) };
     } catch {
-      return categoryLimits || {};
+      return monthlyCategoryCaps || {};
     }
   });
 
-  const [newCat, setNewCat] = useState('');
+  const customList = useMemo(
+    () => (Array.isArray(customCategories?.[activeType]) ? customCategories[activeType] : []),
+    [customCategories, activeType],
+  );
+
+  const defaultList = useMemo(() => {
+    const base = activeType === 'Gasto' ? expenseCategories : incomeCategories;
+    const extra = (allCategories?.[activeType] || []).filter((c) => !customList.includes(c));
+    return Array.from(new Set([...base, ...extra]));
+  }, [activeType, allCategories, customList]);
 
   const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
-  const monthlyExpenses = useMemo(() => 
-    transactions.filter(tx => tx.type === 'Gasto' && typeof tx.date === 'string' && tx.date.startsWith(monthPrefix)),
-  [transactions, monthPrefix]);
+  const monthlyTotals = useMemo(() => {
+    const map = {};
+    transactions
+      .filter((tx) => tx.type === activeType && typeof tx.date === 'string' && tx.date.startsWith(monthPrefix))
+      .forEach((tx) => {
+        map[tx.category] = (map[tx.category] || 0) + (Number(tx.amount) || 0);
+      });
+    return map;
+  }, [transactions, activeType, monthPrefix]);
 
-  const handleInputChange = (cat, val) => {
-    setLimitsValues(prev => ({
-      ...prev,
-      [cat]: val
-    }));
-  };
+  const hasPreviousCaps = previousMonthCategoryCaps && Object.keys(previousMonthCategoryCaps).length > 0;
 
   const handleAddCategory = () => {
-    const catName = newCat.trim();
-    if (!catName) return;
-    
-    if (!localCategories.includes(catName)) {
-      const updatedCats = [catName, ...localCategories];
-      setLocalCategories(updatedCats);
-      
-      // Guardar de inmediato en localStorage
-      try {
-        localStorage.setItem(storageCatsKey, JSON.stringify(updatedCats));
-      } catch (e) {
-        console.error(e);
-      }
-
-      if (setAllCategories) {
-        setAllCategories(prev => ({
-          ...prev,
-          Gasto: updatedCats
-        }));
-      }
+    setFormError('');
+    const trimmed = newCat.trim();
+    if (!trimmed) return;
+    try {
+      addCategory(activeType, trimmed);
+      triggerHaptic();
+      setNewCat('');
+      setShowAddInput(false);
+    } catch (err) {
+      setFormError(err.message);
     }
-    setNewCat('');
   };
 
-  const handleSaveLimits = (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
-    
-    // Normalizar números y filtrar vacíos o 0
     const finalLimits = {};
-    localCategories.forEach(cat => {
+    [...customList, ...defaultList].forEach((cat) => {
       const val = Number(limitsValues[cat]);
       if (val > 0) finalLimits[cat] = val;
     });
-
-    // 1. Guardar en localStorage persistente
     try {
       localStorage.setItem(storageLimitsKey, JSON.stringify(finalLimits));
-      localStorage.setItem(storageCatsKey, JSON.stringify(localCategories));
-    } catch (err) {
-      console.error('Error guardando en localStorage:', err);
-    }
-
-    // 2. Guardar en el Contexto de la app
-    if (setCategoryLimits) {
-      setCategoryLimits(finalLimits);
-    }
-    if (setAllCategories) {
-      setAllCategories(prev => ({
-        ...prev,
-        Gasto: localCategories
-      }));
-    }
-
+    } catch {}
+    setMonthlyCategoryCaps?.(finalLimits);
     triggerHaptic();
     onClose();
   };
 
-  const displayMoney = (val) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(val);
+  const displayMoney = (val) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val);
+
+  const renderCategoryRow = (cat, isCustom, isLast) => {
+    const visuals = getCategoryVisuals(cat, activeType, 17);
+    const spent = monthlyTotals[cat] || 0;
+    const limit = activeType === 'Gasto' ? (Number(limitsValues[cat]) || 0) : 0;
+
+    return (
+      <div
+        key={cat}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          padding: '12px 0',
+          borderBottom: isLast ? 'none' : '1px solid var(--rev-border)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+          <span style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: visuals.bg,
+            color: '#FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            {visuals.icon}
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <strong style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--rev-text)' }}>
+              {cat}
+            </strong>
+            <small style={{ display: 'block', fontSize: '11px', color: 'var(--rev-muted)' }}>
+              {displayMoney(spent)} {activeType === 'Gasto' ? 'gastados' : 'recibidos'}
+            </small>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {activeType === 'Gasto' && (
+            <div style={{ position: 'relative', width: '88px' }}>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={limitsValues[cat] ?? ''}
+                onChange={(e) => setLimitsValues((prev) => ({ ...prev, [cat]: e.target.value }))}
+                placeholder="Tope"
+                style={{
+                  margin: 0,
+                  height: '36px',
+                  paddingRight: '20px',
+                  textAlign: 'right',
+                  fontSize: '13px',
+                  background: 'var(--rev-bg)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              />
+              <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', fontWeight: 700, color: 'var(--rev-muted)' }}>
+                €
+              </span>
+            </div>
+          )}
+
+          {isCustom && (
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  deleteCategory(activeType, cat);
+                  triggerHaptic();
+                } catch (err) {
+                  setFormError(err.message);
+                }
+              }}
+              style={{
+                background: 'transparent',
+                border: 0,
+                color: 'var(--rev-blue)',
+                fontSize: '13px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              <Trash2 size={14} /> Borrar
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="sheet-layer" style={{ zIndex: 80 }} onMouseDown={onClose}>
-      <section 
-        className="bottom-sheet limits-sheet" 
-        onMouseDown={e => e.stopPropagation()}
+    <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={onClose}>
+      <section
+        className="bottom-sheet"
+        style={{ minHeight: '88dvh', background: 'var(--rev-bg)' }}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="sheet-handle" />
-        <div className="sheet-icon limits">%</div>
-        
-        <h2 id="limits-title">Topes por categoría</h2>
-        <p>Define cuánto quieres gastar como máximo o añade nuevas categorías.</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <button type="button" className="sheet-close" onClick={onClose} aria-label="Cerrar">
+            <X size={18} />
+          </button>
 
-        {/* Añadir nueva categoría */}
-        <div style={{ display: 'flex', gap: '8px', marginTop: '20px', marginBottom: '20px' }}>
-          <input 
-            type="text" 
-            value={newCat} 
-            onChange={(e) => setNewCat(e.target.value)} 
-            placeholder="Añadir nueva categoría..." 
-            style={{ flex: 1, margin: 0 }}
-          />
-          <button 
-            type="button" 
-            onClick={handleAddCategory}
-            className="sheet-submit limits-submit"
-            style={{ width: 'auto', height: '50px', margin: 0, padding: '0 16px', fontSize: '12px', background: '#090909' }}
+          <button
+            type="button"
+            onClick={() => setShowAddInput((v) => !v)}
+            style={{
+              background: 'transparent',
+              border: 0,
+              color: 'var(--rev-blue)',
+              fontSize: '13px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              cursor: 'pointer',
+            }}
           >
-            Añadir
+            <Plus size={16} /> Añadir categoría
           </button>
         </div>
 
-        <form onSubmit={handleSaveLimits}>
-          <div className="limits-list">
-            {localCategories.map(cat => {
-              const currentLimit = Number(limitsValues[cat]) || 0;
-              const spent = monthlyExpenses
-                .filter(tx => tx.category === cat)
-                .reduce((sum, tx) => sum + Number(tx.amount), 0);
-              
-              const percent = currentLimit > 0 ? Math.min(100, Math.round((spent / currentLimit) * 100)) : 0;
+        <h1 style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 14px' }}>
+          Editar categorías
+        </h1>
 
-              return (
-                <label className="limit-row" key={cat}>
-                  <span>
-                    <strong>{cat}</strong>
-                    <small>
-                      {displayMoney(spent)} gastados {currentLimit > 0 ? `· ${percent}%` : ''}
-                    </small>
-                  </span>
-                  <span className="limit-input">
-                    <input
-                      name={cat}
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={limitsValues[cat] ?? ''}
-                      onChange={(e) => handleInputChange(cat, e.target.value)}
-                      placeholder="0"
-                    />
-                    <i>€</i>
-                  </span>
-                </label>
-              );
-            })}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '16px' }}>
+          <div className="record-tabs">
+            <button type="button" className={activeType === 'Gasto' ? 'active' : ''} onClick={() => setActiveType('Gasto')}>
+              Gastos
+            </button>
+            <button type="button" className={activeType === 'Ingreso' ? 'active' : ''} onClick={() => setActiveType('Ingreso')}>
+              Ingresos
+            </button>
           </div>
-          <button className="sheet-submit limits-submit" style={{ marginTop: '20px', background: '#090909' }} type="submit">
-            Guardar
-            <Icon name="arrow" size={16} />
+
+          {activeType === 'Gasto' && hasPreviousCaps && (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic();
+                setLimitsValues((prev) => ({ ...prev, ...previousMonthCategoryCaps }));
+              }}
+              style={{
+                background: 'var(--rev-blue-soft)',
+                color: 'var(--rev-blue)',
+                border: 0,
+                borderRadius: '999px',
+                padding: '6px 12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              <Copy size={12} /> Copiar mes ant.
+            </button>
+          )}
+        </div>
+
+        {showAddInput && (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <input
+              type="text"
+              value={newCat}
+              onChange={(e) => setNewCat(e.target.value)}
+              placeholder={`Nombre de categoría de ${activeType.toLowerCase()}...`}
+              style={{ margin: 0, flex: 1 }}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={handleAddCategory}
+              style={{
+                height: '46px',
+                padding: '0 16px',
+                borderRadius: '14px',
+                border: 0,
+                background: 'var(--rev-blue)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
+            >
+              Crear
+            </button>
+          </div>
+        )}
+
+        {formError && (
+          <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>
+            {formError}
+          </p>
+        )}
+
+        <form onSubmit={handleSave}>
+          {/* SECCIÓN: CATEGORÍAS PERSONALIZADAS */}
+          {customList.length > 0 && (
+            <div style={{ marginBottom: '18px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', margin: '0 0 8px 4px' }}>
+                Categorías personalizadas
+              </p>
+              <div style={{
+                background: 'var(--rev-card)',
+                borderRadius: '18px',
+                padding: '2px 14px',
+                border: '1px solid var(--rev-border)',
+                boxShadow: 'var(--rev-shadow)',
+              }}>
+                {customList.map((cat, idx) => renderCategoryRow(cat, true, idx === customList.length - 1))}
+              </div>
+            </div>
+          )}
+
+          {/* SECCIÓN: CATEGORÍAS POR DEFECTO */}
+          <div style={{ marginBottom: '20px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', margin: '0 0 8px 4px' }}>
+              Categorías por defecto
+            </p>
+            <div style={{
+              background: 'var(--rev-card)',
+              borderRadius: '18px',
+              padding: '2px 14px',
+              border: '1px solid var(--rev-border)',
+              boxShadow: 'var(--rev-shadow)',
+            }}>
+              {defaultList.map((cat, idx) => renderCategoryRow(cat, false, idx === defaultList.length - 1))}
+            </div>
+          </div>
+
+          <button type="submit" className="sheet-submit">
+            Guardar cambios
           </button>
         </form>
       </section>

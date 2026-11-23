@@ -1,44 +1,66 @@
 import React, { useEffect, useState } from 'react';
-import './splashScreen.css';
 
-const HOLD_MS = 900;
-const FADE_MS = 400;
-
-const prefersReducedMotion = () => (
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-);
-
-// Pantalla negra con logo y nombre al entrar en la app (solo al arrancar, no al navegar).
-const SplashScreen = ({ logo = 'favicon.svg', name = 'Axion' }) => {
-  const [phase, setPhase] = useState(() => (prefersReducedMotion() ? 'gone' : 'visible'));
-  const [logoFailed, setLogoFailed] = useState(false);
+const SplashScreen = () => {
+  const [visible, setVisible] = useState(true);
+  const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    if (phase === 'visible') {
-      const timer = window.setTimeout(() => setPhase('leaving'), HOLD_MS);
-      return () => window.clearTimeout(timer);
-    }
-    if (phase === 'leaving') {
-      const timer = window.setTimeout(() => setPhase('gone'), FADE_MS);
-      return () => window.clearTimeout(timer);
-    }
-    return undefined;
-  }, [phase]);
+    const fadeTimer = window.setTimeout(() => setFading(true), 450);
+    const hideTimer = window.setTimeout(() => setVisible(false), 750);
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, []);
 
-  if (phase === 'gone') return null;
+  if (!visible) return null;
 
   return (
     <div
-      className={`splash-screen ${phase === 'leaving' ? 'leaving' : ''}`}
       aria-hidden="true"
-      onClick={() => setPhase('leaving')}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-app)',
+        opacity: fading ? 0 : 1,
+        transition: 'opacity 0.3s ease-out',
+        pointerEvents: 'none',
+      }}
     >
-      {logoFailed ? (
-        <span className="splash-logo splash-logo-fallback">{name.slice(0, 1).toUpperCase()}</span>
-      ) : (
-        <img className="splash-logo" src={logo} alt="" onError={() => setLogoFailed(true)} />
-      )}
-      <span className="splash-name">{name}</span>
+      <div
+        style={{
+          width: '64px',
+          height: '64px',
+          borderRadius: '20px',
+          background: '#0075EB',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '28px',
+          fontWeight: 800,
+          letterSpacing: '-0.04em',
+          boxShadow: '0 14px 34px rgba(0, 117, 235, 0.38)',
+        }}
+      >
+        A
+      </div>
+      <span
+        style={{
+          marginTop: '14px',
+          fontSize: '15px',
+          fontWeight: 800,
+          letterSpacing: '-0.02em',
+          color: 'var(--text-primary)',
+        }}
+      >
+        Axiom
+      </span>
     </div>
   );
 };
