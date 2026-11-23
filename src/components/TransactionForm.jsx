@@ -56,95 +56,74 @@ const KEYPAD_GRID = [
   { key: 'backspace', sub: '' },
 ];
 
-const REV_FORM_CSS = `
-  .rev-kp-screen {
+const NX_FORM_CSS = `
+  .nx-kp-screen {
     position: fixed;
     inset: 0;
     z-index: 9999;
     display: flex;
     flex-direction: column;
-    background: var(--rev-bg);
-    color: var(--rev-text);
-    animation: rev-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    background-color: var(--canvas-dark);
+    color: var(--on-dark);
+    animation: nx-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .rev-kp-header {
+  .nx-kp-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 8px;
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) var(--sp-sm);
   }
-  .rev-kp-display {
+  .nx-kp-display {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0 20px;
+    padding: 0 var(--sp-xl);
   }
-  .rev-kp-confirm-wrap {
-    padding: 0 18px 14px;
+  .nx-kp-cta-wrap {
+    padding: 0 var(--sp-xl) var(--sp-lg);
     max-width: 440px;
     width: 100%;
     margin: 0 auto;
   }
-  .rev-kp-confirm {
-    width: 100%;
-    height: 50px;
-    border-radius: 999px;
-    border: 0;
-    background: var(--rev-blue);
-    color: #FFFFFF;
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.15s ease, transform 0.12s ease;
+  .nx-kp-dock {
+    background-color: var(--surface-elevated);
+    padding-bottom: calc(var(--sp-md) + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
-  .rev-kp-confirm:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-  .rev-kp-confirm:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-  .rev-kp-dock {
-    background: var(--rev-subtle);
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--rev-border);
-  }
-  .rev-kp-ops {
+  .nx-kp-ops {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    background: var(--rev-card);
-    border-bottom: 1px solid var(--rev-border);
+    background-color: var(--canvas-dark);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
-  .rev-kp-ops button {
+  .nx-kp-ops button {
     height: 40px;
     border: 0;
     background: transparent;
-    color: var(--rev-text);
+    color: var(--on-dark);
     font-size: 18px;
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
   }
-  .rev-kp-ops button:active {
-    background: var(--rev-subtle);
+  .nx-kp-ops button:active {
+    background: var(--surface-elevated);
   }
-  .rev-kp-keys {
+  .nx-kp-keys {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 6px;
+    gap: var(--sp-xs);
+    padding: var(--sp-xs);
     max-width: 460px;
     margin: 0 auto;
   }
-  .rev-kp-btn {
-    height: 52px;
-    border-radius: 8px;
+  .nx-kp-btn {
+    height: 54px;
+    border-radius: var(--rounded-md);
     border: 0;
-    background: var(--rev-card);
-    color: var(--rev-text);
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+    background-color: #242428;
+    color: var(--on-dark);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -152,132 +131,139 @@ const REV_FORM_CSS = `
     cursor: pointer;
     touch-action: manipulation;
   }
-  .rev-kp-btn.ghost {
+  .nx-kp-btn.ghost {
     background: transparent;
-    box-shadow: none;
   }
-  .rev-kp-btn:active {
-    opacity: 0.7;
+  .nx-kp-btn:active {
+    background-color: #323238;
   }
-  .rev-kp-num {
-    font-size: 23px;
+  .nx-kp-num {
+    font-size: 24px;
     font-weight: 500;
     line-height: 1.05;
     font-variant-numeric: tabular-nums;
   }
-  .rev-kp-sub {
+  .nx-kp-sub {
     font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--rev-muted);
-    margin-top: 1px;
+    font-weight: 500;
+    letter-spacing: 0.24px;
+    color: var(--on-dark-mute);
+    margin-top: 2px;
     height: 10px;
   }
 
-  /* PASO 2: ESTRUCTURA DE TARJETAS REVOLUT */
-  .rev-detail-modal {
+  /* PASO 2: ESTRUCTURA DE TARJETAS AGRUPADAS */
+  .nx-detail-modal {
     position: fixed;
     inset: 0;
     z-index: 10000;
-    background: var(--rev-bg);
-    color: var(--rev-text);
+    background-color: var(--bg-page);
+    color: var(--text-main);
     overflow-y: auto;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(32px + env(safe-area-inset-bottom, 0px));
-    animation: rev-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) calc(var(--sp-xxl) + env(safe-area-inset-bottom, 0px));
+    animation: nx-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .rev-detail-inner {
+  .nx-detail-inner {
     max-width: 440px;
     margin: 0 auto;
   }
-  .rev-group-card {
-    background: var(--rev-card);
-    border-radius: 16px;
-    padding: 2px 16px;
-    border: 1px solid var(--rev-border);
-    box-shadow: var(--rev-shadow);
-    margin-bottom: 12px;
+  .nx-group-card {
+    background-color: var(--bg-card);
+    border-radius: var(--rounded-lg);
+    padding: var(--sp-xs) var(--sp-xl);
+    margin-bottom: var(--sp-md);
   }
-  .rev-group-row {
+  .nx-group-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--sp-md);
     min-height: 48px;
-    padding: 11px 0;
+    padding: var(--sp-md) 0;
     font-size: 14px;
   }
-  .rev-group-row + .rev-group-row {
-    border-top: 1px solid var(--rev-border);
+  .nx-group-row + .nx-group-row {
+    border-top: 1px solid var(--border-hairline);
   }
-  .rev-row-label {
-    color: var(--rev-muted);
-    font-weight: 500;
+  .nx-row-label {
+    color: var(--text-mute);
+    font-weight: 400;
     flex-shrink: 0;
   }
-  .rev-row-action {
+  .nx-row-action {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-xs);
     background: transparent;
     border: 0;
     padding: 0;
-    color: var(--rev-blue);
+    color: var(--primary);
     font-family: inherit;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     text-align: right;
   }
-  .rev-soft-pill {
-    height: 36px;
-    padding: 0 14px;
-    border-radius: 999px;
-    border: 0;
-    background: var(--rev-blue-soft);
-    color: var(--rev-blue);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    cursor: pointer;
-    transition: transform 0.12s ease;
+  .nx-inline-drawer {
+    padding: var(--sp-md) 0 var(--sp-lg);
+    border-top: 1px solid var(--border-hairline);
   }
-  .rev-soft-pill:active {
-    transform: scale(0.96);
-  }
-  .rev-inline-drawer {
-    padding: 10px 0 14px;
-    border-top: 1px solid var(--rev-border);
-  }
-  .rev-note-input {
+  .nx-note-input {
     flex: 1;
     min-width: 0;
     border: 0;
     background: transparent;
-    color: var(--rev-blue);
+    color: var(--primary);
     font-family: inherit;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     text-align: right;
     outline: none;
   }
-  .rev-note-input::placeholder {
-    color: var(--rev-blue);
+  .nx-note-input::placeholder {
+    color: var(--primary);
     opacity: 0.85;
   }
-  .rev-date-input {
+  .nx-date-input {
     border: 0;
     background: transparent;
-    color: var(--rev-blue);
+    color: var(--primary);
     font-family: inherit;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     text-align: right;
     outline: none;
     cursor: pointer;
+  }
+  .nx-switch {
+    width: 46px;
+    height: 26px;
+    border-radius: var(--rounded-full);
+    border: 0;
+    padding: 3px;
+    background: var(--faint);
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .dark .nx-switch {
+    background: #2C2C32;
+  }
+  .nx-switch.on {
+    background: var(--primary);
+  }
+  .nx-switch-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: var(--rounded-full);
+    background: #FFFFFF;
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateX(0);
+  }
+  .nx-switch.on .nx-switch-thumb {
+    transform: translateX(20px);
   }
 `;
 
@@ -303,9 +289,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
 
   const [type, setType] = useState(initialType);
   const [selectedProfileId, setSelectedProfileId] = useState(activeProfileId);
-
-  // Control de secciones desplegables dentro de las tarjetas Revolut
-  const [openDrawer, setOpenDrawer] = useState(null); // 'account' | 'category' | 'method' | null
+  const [openDrawer, setOpenDrawer] = useState(null);
 
   const frozenAccounts = useMemo(() => {
     try {
@@ -487,69 +471,100 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
 
   return (
     <>
-      <style>{REV_FORM_CSS}</style>
+      <style>{NX_FORM_CSS}</style>
 
-      {/* PASO 1: TECLADO NUMÉRICO REVOLUT */}
+      {/* PASO 1: TECLADO SOBRE CANVAS DARK (#000000) CON PÍLDORA BLANCA */}
       {step === 1 && (
-        <div className="rev-kp-screen">
-          <div className="rev-kp-header">
-            <button type="button" className="sheet-close" onClick={onClose} aria-label="Cerrar">
+        <div className="nx-kp-screen">
+          <div className="nx-kp-header">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: 'var(--rounded-full)',
+                border: 0,
+                backgroundColor: 'var(--surface-elevated)',
+                color: 'var(--on-dark)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
               <X size={18} />
             </button>
 
-            <span style={{ fontSize: '14px', fontWeight: 700 }}>
+            <span className="nx-label" style={{ color: 'var(--on-dark)' }}>
               {transaction ? `Editar ${type.toLowerCase()}` : isIncome ? 'Añadir ingreso' : 'Añadir gasto'}
             </span>
 
-            <span style={{ width: '32px' }} />
+            <span style={{ width: '36px' }} />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '6px' }}>
-            <div className="record-tabs">
-              <button type="button" className={type === 'Gasto' ? 'active' : ''} onClick={() => switchTransactionType('Gasto')}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--sp-sm)' }}>
+            <div style={{ display: 'inline-flex', gap: '4px', padding: '4px', borderRadius: 'var(--rounded-full)', backgroundColor: 'var(--surface-elevated)' }}>
+              <button
+                type="button"
+                onClick={() => switchTransactionType('Gasto')}
+                style={{
+                  border: 0,
+                  padding: '6px 16px',
+                  borderRadius: 'var(--rounded-full)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  backgroundColor: type === 'Gasto' ? 'var(--canvas-light)' : 'transparent',
+                  color: type === 'Gasto' ? 'var(--canvas-dark)' : 'var(--on-dark-mute)',
+                }}
+              >
                 Gasto
               </button>
-              <button type="button" className={type === 'Ingreso' ? 'active' : ''} onClick={() => switchTransactionType('Ingreso')}>
+              <button
+                type="button"
+                onClick={() => switchTransactionType('Ingreso')}
+                style={{
+                  border: 0,
+                  padding: '6px 16px',
+                  borderRadius: 'var(--rounded-full)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  backgroundColor: type === 'Ingreso' ? 'var(--canvas-light)' : 'transparent',
+                  color: type === 'Ingreso' ? 'var(--canvas-dark)' : 'var(--on-dark-mute)',
+                }}
+              >
                 Ingreso
               </button>
             </div>
           </div>
 
-          <div className="rev-kp-display">
-            <div style={{ display: 'flex', alignItems: 'baseline', fontVariantNumeric: 'tabular-nums' }}>
-              <span style={{ fontSize: '50px', fontWeight: 800, letterSpacing: '-0.03em' }}>
+          <div className="nx-kp-display">
+            <div className="nx-display" style={{ display: 'flex', alignItems: 'baseline' }}>
+              <span style={{ fontSize: '56px', color: isIncome && isValidAmount ? 'var(--accent-teal)' : 'var(--on-dark)' }}>
                 {isIncome && isValidAmount ? '+' : ''}€{amount}
               </span>
             </div>
 
             <button
               type="button"
+              className="nx-sub-nav-pill"
               onClick={cycleTargetAccount}
-              style={{
-                marginTop: '10px',
-                padding: '6px 14px',
-                borderRadius: '999px',
-                border: '1px solid var(--rev-border)',
-                background: 'var(--rev-card)',
-                color: 'var(--rev-text)',
-                fontSize: '12px',
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: profiles.length > 1 ? 'pointer' : 'default',
-              }}
+              style={{ marginTop: 'var(--sp-md)' }}
             >
-              <CreditCard size={13} style={{ color: 'var(--rev-blue)' }} />
+              <CreditCard size={13} style={{ color: 'var(--primary)' }} />
               <span>{selectedAccountObj?.name} **{selectedAccountDigits} · {formattedAccountBalance}</span>
-              {frozenAccounts[selectedProfileId] && <Snowflake size={12} style={{ color: 'var(--rev-blue)' }} />}
+              {frozenAccounts[selectedProfileId] && <Snowflake size={12} style={{ color: 'var(--accent-light-blue)' }} />}
             </button>
           </div>
 
-          <div className="rev-kp-confirm-wrap">
+          <div className="nx-kp-cta-wrap">
             <button
               type="button"
-              className="rev-kp-confirm"
+              className="nx-btn-primary"
+              style={{ width: '100%' }}
               disabled={!isValidAmount}
               onClick={goToDetails}
             >
@@ -557,8 +572,8 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
             </button>
           </div>
 
-          <div className="rev-kp-dock">
-            <div className="rev-kp-ops">
+          <div className="nx-kp-dock">
+            <div className="nx-kp-ops">
               {['+', '−', '×', '÷', '='].map((op) => (
                 <button key={op} type="button" onClick={() => handleOperator(op)}>
                   {op}
@@ -566,16 +581,16 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               ))}
             </div>
 
-            <div className="rev-kp-keys">
+            <div className="nx-kp-keys">
               {KEYPAD_GRID.map(({ key, sub }) => (
                 <button
                   key={key}
                   type="button"
-                  className={`rev-kp-btn ${key === ',' || key === 'backspace' ? 'ghost' : ''}`}
+                  className={`nx-kp-btn ${key === ',' || key === 'backspace' ? 'ghost' : ''}`}
                   onClick={() => handleKey(key)}
                 >
-                  <span className="rev-kp-num">{key === 'backspace' ? '⌫' : key}</span>
-                  <span className="rev-kp-sub">{sub}</span>
+                  <span className="nx-kp-num">{key === 'backspace' ? '⌫' : key}</span>
+                  <span className="nx-kp-sub">{sub}</span>
                 </button>
               ))}
             </div>
@@ -583,79 +598,61 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
         </div>
       )}
 
-      {/* PASO 2: ESTRUCTURA DE TARJETAS AGRUPADAS ESTILO REVOLUT */}
+      {/* PASO 2: ESTRUCTURA DE TARJETAS AGRUPADAS (rounded: 20px, inputs: 12px/56px) */}
       {step === 2 && (
-        <div className="rev-detail-modal">
-          <div className="rev-detail-inner">
-            {/* BOTÓN X ARRIBA A LA IZQUIERDA */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+        <div className="nx-detail-modal">
+          <div className="nx-detail-inner">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-lg)' }}>
               <button type="button" className="sheet-close" onClick={onClose} aria-label="Cerrar">
                 <X size={18} />
               </button>
 
               <button
                 type="button"
+                className="nx-btn-pill-sm"
+                style={{ color: 'var(--primary)' }}
                 onClick={() => setStep(1)}
-                style={{
-                  background: 'transparent',
-                  border: 0,
-                  color: 'var(--rev-blue)',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
               >
                 Cambiar importe
               </button>
             </div>
 
-            {/* BLOQUE HERO IZQUIERDO: IMPORTE + TÍTULO AZUL + FECHA */}
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: 'var(--sp-lg)' }}>
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                style={{
-                  background: 'transparent',
-                  border: 0,
-                  padding: 0,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  display: 'block',
-                }}
+                style={{ background: 'transparent', border: 0, padding: 0, textAlign: 'left', cursor: 'pointer', display: 'block' }}
               >
-                <strong
+                <span
+                  className="nx-display"
                   style={{
                     display: 'block',
-                    fontSize: '36px',
-                    fontWeight: 800,
-                    letterSpacing: '-0.03em',
-                    fontVariantNumeric: 'tabular-nums',
-                    color: isIncome ? 'var(--rev-green)' : 'var(--rev-text)',
+                    fontSize: '40px',
+                    color: isIncome ? 'var(--accent-teal)' : 'var(--text-main)',
                   }}
                 >
                   {isIncome ? '+' : '−'}€{amount}
-                </strong>
+                </span>
               </button>
 
-              <span style={{ display: 'block', fontSize: '15px', fontWeight: 700, color: 'var(--rev-blue)', marginTop: '2px' }}>
+              <span style={{ display: 'block', fontSize: '15px', fontWeight: 500, color: 'var(--primary)', marginTop: 'var(--sp-xs)' }}>
                 {description.trim() || selectedAccountObj?.name || category}
               </span>
 
-              <small style={{ display: 'block', fontSize: '12.5px', color: 'var(--rev-muted)', marginTop: '2px', fontWeight: 500 }}>
+              <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: 'var(--sp-xxs)' }}>
                 {formatReadableDate(date)}
-              </small>
+              </span>
             </div>
 
-            {/* DOS PÍLDORAS AZULES SUPERIORES (GASTO / INGRESO) */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', gap: 'var(--sp-sm)', marginBottom: 'var(--sp-xl)' }}>
               <button
                 type="button"
-                className="rev-soft-pill"
+                className="nx-btn-pill-sm"
                 onClick={() => switchTransactionType('Gasto')}
                 style={{
                   flex: 1,
-                  background: !isIncome ? 'var(--rev-blue)' : 'var(--rev-blue-soft)',
-                  color: !isIncome ? '#FFFFFF' : 'var(--rev-blue)',
+                  backgroundColor: !isIncome ? 'var(--primary)' : undefined,
+                  color: !isIncome ? 'var(--on-primary)' : 'var(--primary)',
                 }}
               >
                 − Gasto
@@ -663,12 +660,12 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
 
               <button
                 type="button"
-                className="rev-soft-pill"
+                className="nx-btn-pill-sm"
                 onClick={() => switchTransactionType('Ingreso')}
                 style={{
                   flex: 1,
-                  background: isIncome ? 'var(--rev-green)' : 'var(--rev-blue-soft)',
-                  color: isIncome ? '#FFFFFF' : 'var(--rev-blue)',
+                  backgroundColor: isIncome ? 'var(--accent-teal)' : undefined,
+                  color: isIncome ? '#FFFFFF' : 'var(--primary)',
                 }}
               >
                 + Ingreso
@@ -676,21 +673,18 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
             </div>
 
             <form onSubmit={handleSubmit}>
-              {/* TARJETA 1: ESTADO, TARJETA/CUENTA DESTINO Y FECHA */}
-              <div className="rev-group-card">
-                <div className="rev-group-row">
-                  <span className="rev-row-label">Estado</span>
-                  <strong style={{ fontSize: '14px', fontWeight: 600 }}>
-                    {transaction ? 'Editando' : 'Listo para guardar'}
-                  </strong>
+              {/* TARJETA 1: ESTADO, TARJETA/CUENTA Y FECHA */}
+              <div className="nx-group-card">
+                <div className="nx-group-row">
+                  <span className="nx-row-label">Estado</span>
+                  <span style={{ fontWeight: 500 }}>{transaction ? 'Editando' : 'Completado'}</span>
                 </div>
 
-                {/* FILA TARJETA / CUENTA DONDE SE GUARDA EL MOVIMIENTO */}
-                <div className="rev-group-row">
-                  <span className="rev-row-label">Tarjeta / Cuenta</span>
+                <div className="nx-group-row">
+                  <span className="nx-row-label">Tarjeta / Cuenta</span>
                   <button
                     type="button"
-                    className="rev-row-action"
+                    className="nx-row-action"
                     onClick={() => setOpenDrawer(openDrawer === 'account' ? null : 'account')}
                   >
                     <CreditCard size={15} />
@@ -700,8 +694,8 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                 </div>
 
                 {openDrawer === 'account' && (
-                  <div className="rev-inline-drawer">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="nx-inline-drawer">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-sm)' }}>
                       {profiles.map((p) => {
                         const isSel = selectedProfileId === p.id;
                         const digits = getMaskedDigits(p.id);
@@ -719,22 +713,22 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              padding: '10px 12px',
-                              borderRadius: '12px',
-                              border: isSel ? '1.5px solid var(--rev-blue)' : '1px solid var(--rev-border)',
-                              background: isSel ? 'var(--rev-blue-soft)' : 'var(--rev-bg)',
-                              color: 'var(--rev-text)',
+                              padding: '12px 14px',
+                              borderRadius: 'var(--rounded-md)',
+                              border: isSel ? '1.5px solid var(--primary)' : '1px solid var(--border-hairline)',
+                              backgroundColor: 'var(--bg-card-alt)',
+                              color: isSel ? 'var(--primary)' : 'var(--text-main)',
                               fontSize: '13px',
-                              fontWeight: 700,
+                              fontWeight: 500,
                               cursor: 'pointer',
                             }}
                           >
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                              <CreditCard size={15} style={{ color: 'var(--rev-blue)' }} />
+                              <CreditCard size={15} style={{ color: 'var(--primary)' }} />
                               <span>{p.name} · **{digits}</span>
-                              {isFrozen && <Snowflake size={12} style={{ color: 'var(--rev-blue)' }} />}
+                              {isFrozen && <Snowflake size={12} style={{ color: 'var(--accent-light-blue)' }} />}
                             </span>
-                            {isSel && <Check size={15} style={{ color: 'var(--rev-blue)' }} />}
+                            {isSel && <Check size={15} style={{ color: 'var(--primary)' }} />}
                           </button>
                         );
                       })}
@@ -742,25 +736,25 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </div>
                 )}
 
-                <div className="rev-group-row">
-                  <span className="rev-row-label">Fecha</span>
+                <div className="nx-group-row">
+                  <span className="nx-row-label">Fecha</span>
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="rev-date-input"
+                    className="nx-date-input"
                     required
                   />
                 </div>
               </div>
 
-              {/* TARJETA 2: CATEGORÍA, MÉTODO DE PAGO E IMPORTE */}
-              <div className="rev-group-card">
-                <div className="rev-group-row">
-                  <span className="rev-row-label">Categoría</span>
+              {/* TARJETA 2: CATEGORÍA, MÉTODO E IMPORTE */}
+              <div className="nx-group-card">
+                <div className="nx-group-row">
+                  <span className="nx-row-label">Categoría</span>
                   <button
                     type="button"
-                    className="rev-row-action"
+                    className="nx-row-action"
                     onClick={() => setOpenDrawer(openDrawer === 'category' ? null : 'category')}
                   >
                     {categoryVisuals.icon}
@@ -770,8 +764,8 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                 </div>
 
                 {openDrawer === 'category' && (
-                  <div className="rev-inline-drawer">
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+                  <div className="nx-inline-drawer">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-sm)' }}>
                       {categoriesForType.map((c) => {
                         const selected = category === c;
                         const vis = getCategoryVisuals(c, type, 13);
@@ -788,20 +782,21 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '6px',
-                              padding: '6px 11px 6px 6px',
-                              borderRadius: '999px',
-                              border: selected ? '1.5px solid var(--rev-blue)' : '1px solid var(--rev-border)',
-                              background: selected ? 'var(--rev-blue-soft)' : 'var(--rev-bg)',
-                              color: selected ? 'var(--rev-blue)' : 'var(--rev-text)',
+                              height: '36px',
+                              padding: '0 14px 0 8px',
+                              borderRadius: 'var(--rounded-full)',
+                              border: selected ? '1.5px solid var(--primary)' : '1px solid var(--border-hairline)',
+                              backgroundColor: 'var(--bg-card-alt)',
+                              color: selected ? 'var(--primary)' : 'var(--text-main)',
                               fontSize: '12px',
-                              fontWeight: 700,
+                              fontWeight: 500,
                               cursor: 'pointer',
                             }}
                           >
                             <span style={{
                               width: '20px',
                               height: '20px',
-                              borderRadius: '50%',
+                              borderRadius: 'var(--rounded-full)',
                               background: vis.bg,
                               color: '#fff',
                               display: 'inline-flex',
@@ -818,58 +813,29 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                       <button
                         type="button"
                         onClick={() => setIsAddingCat((v) => !v)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '6px 12px',
-                          borderRadius: '999px',
-                          border: '1px dashed var(--rev-blue)',
-                          background: 'transparent',
-                          color: 'var(--rev-blue)',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
+                        className="nx-btn-pill-sm"
+                        style={{ color: 'var(--primary)', border: '1px dashed var(--primary)' }}
                       >
                         <Plus size={13} /> Nueva
                       </button>
                     </div>
 
                     {isAddingCat && (
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                      <div style={{ display: 'flex', gap: 'var(--sp-sm)', marginTop: 'var(--sp-md)' }}>
                         <input
                           type="text"
                           value={newCatName}
                           onChange={(e) => setNewCatName(e.target.value)}
-                          placeholder="Nombre categoría..."
-                          style={{
-                            flex: 1,
-                            height: '38px',
-                            padding: '0 12px',
-                            borderRadius: '12px',
-                            border: '1px solid var(--rev-border)',
-                            background: 'var(--rev-bg)',
-                            color: 'var(--rev-text)',
-                            fontSize: '13px',
-                            outline: 'none',
-                          }}
+                          placeholder="Nombre de categoría..."
+                          className="nx-input"
+                          style={{ margin: 0, flex: 1 }}
                           autoFocus
                         />
                         <button
                           type="button"
                           onClick={handleCreateInlineCategory}
-                          style={{
-                            height: '38px',
-                            padding: '0 14px',
-                            borderRadius: '12px',
-                            border: 0,
-                            background: 'var(--rev-blue)',
-                            color: '#fff',
-                            fontWeight: 700,
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                          }}
+                          className="nx-btn-dark"
+                          style={{ height: '56px', padding: '0 20px' }}
                         >
                           Añadir
                         </button>
@@ -878,11 +844,11 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </div>
                 )}
 
-                <div className="rev-group-row">
-                  <span className="rev-row-label">{isIncome ? 'Recepción' : 'Método'}</span>
+                <div className="nx-group-row">
+                  <span className="nx-row-label">{isIncome ? 'Recepción' : 'Método'}</span>
                   <button
                     type="button"
-                    className="rev-row-action"
+                    className="nx-row-action"
                     onClick={() => setOpenDrawer(openDrawer === 'method' ? null : 'method')}
                   >
                     <span>{paymentMethod}</span>
@@ -891,8 +857,8 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                 </div>
 
                 {openDrawer === 'method' && (
-                  <div className="rev-inline-drawer">
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <div className="nx-inline-drawer">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-xs)' }}>
                       {PAYMENT_METHODS.map((m) => (
                         <button
                           key={m}
@@ -903,14 +869,15 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                             setOpenDrawer(null);
                           }}
                           style={{
-                            padding: '6px 12px',
-                            borderRadius: '999px',
+                            height: '36px',
+                            padding: '0 16px',
+                            borderRadius: 'var(--rounded-full)',
                             border: 0,
                             fontSize: '12px',
-                            fontWeight: 700,
+                            fontWeight: 500,
                             cursor: 'pointer',
-                            background: paymentMethod === m ? 'var(--rev-blue)' : 'var(--rev-bg)',
-                            color: paymentMethod === m ? '#fff' : 'var(--rev-text)',
+                            backgroundColor: paymentMethod === m ? 'var(--primary)' : 'var(--bg-card-alt)',
+                            color: paymentMethod === m ? '#FFFFFF' : 'var(--text-main)',
                           }}
                         >
                           {m}
@@ -920,37 +887,36 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </div>
                 )}
 
-                <div className="rev-group-row">
-                  <span className="rev-row-label">Importe en análisis</span>
-                  <button type="button" className="rev-row-action" onClick={() => setStep(1)}>
+                <div className="nx-group-row">
+                  <span className="nx-row-label">Importe en análisis</span>
+                  <button type="button" className="nx-row-action" onClick={() => setStep(1)}>
                     <Pencil size={13} />
                     <span style={{ fontVariantNumeric: 'tabular-nums' }}>€{amount}</span>
                   </button>
                 </div>
               </div>
 
-              {/* TARJETA 3: JUSTIFICANTE / TICKET */}
-              <div className="rev-group-card">
-                <div className="rev-group-row">
-                  <span className="rev-row-label">Justificante</span>
+              {/* TARJETA 3: JUSTIFICANTE */}
+              <div className="nx-group-card">
+                <div className="nx-group-row">
+                  <span className="nx-row-label">Justificante</span>
 
                   {invoiceFile || existingInvoiceName ? (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rev-blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
                         {invoiceFile ? invoiceFile.name : existingInvoiceName}
                       </span>
                       <button
                         type="button"
                         onClick={() => (invoiceFile ? setInvoiceFile(null) : setRemoveExistingInvoice(true))}
-                        style={{ background: 'transparent', border: 0, color: 'var(--rev-red)', display: 'flex', padding: 0, cursor: 'pointer' }}
-                        aria-label="Quitar justificante"
+                        style={{ background: 'transparent', border: 0, color: 'var(--danger-red)', display: 'flex', padding: 0, cursor: 'pointer' }}
                       >
                         <Trash2 size={15} />
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '14px' }}>
-                      <label className="rev-row-action" style={{ margin: 0 }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
+                      <label className="nx-row-action" style={{ margin: 0 }}>
                         <Camera size={15} />
                         <span>Foto</span>
                         <input
@@ -965,7 +931,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                         />
                       </label>
 
-                      <label className="rev-row-action" style={{ margin: 0 }}>
+                      <label className="nx-row-action" style={{ margin: 0 }}>
                         <Upload size={15} />
                         <span>Subir</span>
                         <input
@@ -983,44 +949,44 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                 </div>
               </div>
 
-              {/* TARJETA 4: NOTA / COMERCIO */}
-              <div className="rev-group-card">
-                <div className="rev-group-row">
-                  <span className="rev-row-label">Nota</span>
+              {/* TARJETA 4: NOTA */}
+              <div className="nx-group-card">
+                <div className="nx-group-row">
+                  <span className="nx-row-label">Nota</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, justifyContent: 'flex-end' }}>
-                    <Pencil size={13} style={{ color: 'var(--rev-blue)', flexShrink: 0 }} />
+                    <Pencil size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                     <input
                       type="text"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Añadir nota"
-                      className="rev-note-input"
+                      className="nx-note-input"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* TARJETA 5: PAGO FRACCIONADO (INTERRUPTOR ESTILO REVOLUT) */}
+              {/* TARJETA 5: PAGO A PLAZOS */}
               {!isIncome && !transaction && (
-                <div className="rev-group-card">
-                  <div className="rev-group-row">
-                    <span className="rev-row-label">Pago a plazos</span>
+                <div className="nx-group-card">
+                  <div className="nx-group-row">
+                    <span className="nx-row-label">Pago a plazos</span>
                     <button
                       type="button"
                       role="switch"
                       aria-checked={isInstallmentEnabled}
-                      className={`rev-switch ${isInstallmentEnabled ? 'on' : ''}`}
+                      className={`nx-switch ${isInstallmentEnabled ? 'on' : ''}`}
                       onClick={() => {
                         triggerHaptic();
                         setInstallments(isInstallmentEnabled ? 1 : 3);
                       }}
                     >
-                      <span className="rev-switch-thumb" />
+                      <span className="nx-switch-thumb" />
                     </button>
                   </div>
 
                   {isInstallmentEnabled && (
-                    <div className="rev-inline-drawer">
+                    <div className="nx-inline-drawer">
                       <div style={{ display: 'flex', gap: '6px' }}>
                         {[2, 3, 4, 6, 12, 24].map((n) => (
                           <button
@@ -1029,42 +995,35 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                             onClick={() => setInstallments(n)}
                             style={{
                               flex: 1,
-                              padding: '7px 0',
-                              borderRadius: '10px',
+                              height: '36px',
+                              borderRadius: 'var(--rounded-full)',
                               border: 0,
                               fontSize: '12px',
-                              fontWeight: 700,
+                              fontWeight: 500,
                               cursor: 'pointer',
-                              background: Number(installments) === n ? 'var(--rev-blue)' : 'var(--rev-bg)',
-                              color: Number(installments) === n ? '#fff' : 'var(--rev-text)',
+                              backgroundColor: Number(installments) === n ? 'var(--primary)' : 'var(--bg-card-alt)',
+                              color: Number(installments) === n ? '#FFFFFF' : 'var(--text-main)',
                             }}
                           >
                             {n}x
                           </button>
                         ))}
                       </div>
-                      <small style={{ display: 'block', fontSize: '11px', color: 'var(--rev-muted)', marginTop: '8px' }}>
+                      <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: 'var(--sp-sm)' }}>
                         {installments} cuotas de {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(numAmount / Number(installments))} / mes
-                      </small>
+                      </span>
                     </div>
                   )}
                 </div>
               )}
 
               {formError && (
-                <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '12px' }}>
+                <p style={{ color: 'var(--danger-red)', fontSize: '12px', fontWeight: 500, marginBottom: 'var(--sp-md)' }}>
                   {formError}
                 </p>
               )}
 
-              <button
-                type="submit"
-                className="sheet-submit"
-                style={{
-                  marginTop: '8px',
-                  background: isIncome ? 'var(--rev-green)' : 'var(--rev-blue)',
-                }}
-              >
+              <button type="submit" className="nx-btn-dark" style={{ width: '100%', marginTop: 'var(--sp-sm)' }}>
                 {transaction ? 'Guardar cambios' : isIncome ? 'Guardar ingreso' : 'Guardar gasto'}
               </button>
             </form>

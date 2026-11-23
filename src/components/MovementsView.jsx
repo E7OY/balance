@@ -22,11 +22,11 @@ import TransactionItem from './TransactionItem';
 import { triggerHaptic } from '../utils/haptics';
 
 const CARD_THEMES = [
-  { id: 'standard', label: 'Negro Estándar', bg: 'linear-gradient(145deg, #2D2F34 0%, #17181A 100%)', mini: '#232529' },
-  { id: 'cobalt', label: 'Azul Revolut', bg: 'linear-gradient(145deg, #3B28F6 0%, #0075EB 100%)', mini: '#1D4ED8' },
-  { id: 'burgundy', label: 'Burdeos Metal', bg: 'linear-gradient(145deg, #6B2337 0%, #3A101C 100%)', mini: '#5B1D2E' },
-  { id: 'emerald', label: 'Esmeralda', bg: 'linear-gradient(145deg, #0F6B4E 0%, #063B2A 100%)', mini: '#0D5C43' },
-  { id: 'violet', label: 'Ultravioleta', bg: 'linear-gradient(145deg, #5B21B6 0%, #2E1065 100%)', mini: '#4C1D95' },
+  { id: 'standard', label: 'Negro Estándar', bg: '#141416' },
+  { id: 'cobalt', label: 'Azul Cobalto', bg: '#494fdf' },
+  { id: 'teal', label: 'Verde Azulado', bg: '#00a87e' },
+  { id: 'pink', label: 'Rosa Intenso', bg: '#e61e49' },
+  { id: 'brown', label: 'Bronce', bg: '#936d62' },
 ];
 
 const getMaskedDigits = (id = '') => {
@@ -51,164 +51,92 @@ const writeMapStorage = (key, value) => {
   } catch {}
 };
 
-const ACCOUNTS_CSS = `
-.rev-cards-list-screen {
+const NX_ACCOUNTS_CSS = `
+  .nx-accounts-dark-screen {
     min-height: 100dvh;
-    margin-bottom: calc(-96px - env(safe-area-inset-bottom, 0px));
-    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(154px + env(safe-area-inset-bottom, 0px));
-    background:
-      radial-gradient(95% 50% at 50% 8%, #4721E0 0%, #2B1378 50%, transparent 88%),
-      linear-gradient(180deg, #2B1378 0%, #434157 56%, #6C6B73 100%);
-    color: #FFFFFF;
+    margin-bottom: calc(-88px - env(safe-area-inset-bottom, 0px));
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) calc(150px + env(safe-area-inset-bottom, 0px));
+    background-color: var(--canvas-dark);
+    color: var(--on-dark);
     display: flex;
     flex-direction: column;
     position: relative;
   }
-  .rev-glass-group {
-    background: rgba(255, 255, 255, 0.13);
-    border-radius: 20px;
-    padding: 4px 16px;
-    margin-bottom: 12px;
+  .nx-elevated-group {
+    background-color: var(--surface-elevated);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--rounded-lg);
+    padding: var(--sp-xs) var(--sp-xl);
+    margin-bottom: var(--sp-lg);
   }
-  .rev-card-list-row {
+  .nx-account-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 16px 0;
+    padding: var(--sp-md) 0;
     background: transparent;
     border: 0;
-    color: #FFFFFF;
+    color: var(--on-dark);
     text-align: left;
     cursor: pointer;
-    gap: 18px;
+    gap: var(--sp-md);
   }
-  .rev-mini-thumb {
+  .nx-mini-thumb {
     width: 44px;
     height: 28px;
-    border-radius: 5px;
-    padding: 4px 5px;
+    border-radius: 6px;
+    padding: 4px 6px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     flex-shrink: 0;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     position: relative;
     overflow: hidden;
   }
-  .rev-add-card-float {
+  .nx-add-account-float {
     position: fixed;
     left: 50%;
-    bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
-    background: #FFFFFF;
-    color: #111418;
-    border: 0;
-    border-radius: 999px;
-    padding: 12px 24px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-    cursor: pointer;
     z-index: 35;
-    transition: transform 0.14s ease;
-  }
-  .rev-add-card-float:active {
-    transform: translateX(-50%) scale(0.95);
   }
 
-  /* VISTA DETALLE DE TARJETA (PANTALLAS 2 Y 3 DE REVOLUT) */
-  .rev-card-stage {
-    background: #2C2E31;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 34px;
-    color: #FFFFFF;
+  /* VISTA DETALLE DE TARJETA */
+  .nx-card-hero-band {
+    background-color: var(--canvas-dark);
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) var(--sp-xxl);
+    color: var(--on-dark);
   }
-  .rev-physical-card {
+  .nx-physical-card {
     position: relative;
     width: 100%;
     aspect-ratio: 1.586 / 1;
-    border-radius: 18px;
-    padding: 20px 22px;
+    border-radius: var(--rounded-lg);
+    padding: var(--sp-xl);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     overflow: hidden;
-    transition: filter 0.35s ease, transform 0.25s ease;
   }
-  /* EFECTO CONGELADO / HIELO COMO EN LA 3ª PANTALLA */
-  .rev-frost-overlay {
+  .nx-frost-overlay {
     position: absolute;
     inset: 0;
     background:
       radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.42) 0%, transparent 45%),
-      radial-gradient(circle at 80% 30%, rgba(210, 235, 255, 0.38) 0%, transparent 50%),
-      radial-gradient(circle at 50% 85%, rgba(255, 255, 255, 0.46) 0%, transparent 55%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0%, rgba(190, 225, 255, 0.18) 100%);
+      radial-gradient(circle at 80% 30%, rgba(210, 235, 255, 0.36) 0%, transparent 50%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(190, 225, 255, 0.16) 100%);
     backdrop-filter: blur(6px) saturate(130%);
     -webkit-backdrop-filter: blur(6px) saturate(130%);
-    border: 1.5px solid rgba(255, 255, 255, 0.55);
-    border-radius: 18px;
+    border-radius: var(--rounded-lg);
     pointer-events: none;
     z-index: 2;
   }
-  .rev-card-detail-body {
-    background: var(--rev-bg);
-    border-radius: 26px 26px 0 0;
-    margin-top: -18px;
-    padding: 12px 16px 28px;
-    position: relative;
-    z-index: 3;
-  }
-  .rev-card-actions-trio {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 8px 0 20px;
-  }
-  .rev-card-action-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 7px;
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .rev-card-action-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--rev-card);
-    color: var(--rev-text);
-    box-shadow: var(--rev-shadow);
-    border: 1px solid var(--rev-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-  .rev-card-action-circle.frozen-active {
-    background: var(--rev-blue);
-    color: #FFFFFF;
-    border-color: transparent;
-    box-shadow: 0 6px 18px rgba(0, 117, 235, 0.35);
-  }
-  .rev-card-action-btn span {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--rev-text);
-  }
-  .rev-card-action-btn.frozen-text span {
-    color: var(--rev-blue);
-    font-weight: 700;
+  .nx-card-catalogue-band {
+    background-color: var(--bg-page);
+    padding: var(--sp-xl) var(--sp-lg) var(--sp-xxl);
   }
 `;
 
@@ -231,12 +159,10 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
     syncUser,
   } = useFinance();
 
-  // 'list' = pantalla morada "Cuentas" (1ª captura), 'detail' = pantalla tarjeta + acciones (2ª y 3ª captura)
   const [viewMode, setViewMode] = useState('list');
   const [frozenMap, setFrozenMap] = useState(() => readMapStorage('balance-frozen-accounts'));
   const [themeMap, setThemeMap] = useState(() => readMapStorage('balance-account-themes'));
 
-  // Modales
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addTab, setAddTab] = useState('create');
   const [newAccountName, setNewAccountName] = useState('');
@@ -289,7 +215,6 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
     writeMapStorage('balance-account-themes', next);
   };
 
-  // Datos para el modal de Análisis mensual
   const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
   const monthlyTxs = useMemo(
     () => transactions.filter((tx) => typeof tx.date === 'string' && tx.date.startsWith(monthPrefix)),
@@ -323,46 +248,46 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
 
   return (
     <>
-      <style>{ACCOUNTS_CSS}</style>
+      <style>{NX_ACCOUNTS_CSS}</style>
 
-      {/* PANTALLA 1: LISTA DE CUENTAS ESTILO REVOLUT */}
+      {/* PANTALLA 1: LISTA DE CUENTAS SOBRE CANVAS DARK (#000000) */}
       {viewMode === 'list' && (
-        <div className="rev-cards-list-screen">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div className="nx-accounts-dark-screen">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
             <button
               type="button"
               onClick={onClose}
+              aria-label="Volver al inicio"
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                borderRadius: 'var(--rounded-full)',
                 border: 0,
-                background: 'rgba(255,255,255,0.14)',
-                color: '#FFFFFF',
+                backgroundColor: 'var(--surface-elevated)',
+                color: 'var(--on-dark)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
               }}
-              aria-label="Volver al inicio"
             >
               <X size={18} />
             </button>
           </div>
 
-          <h1 style={{ fontSize: '30px', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 18px' }}>
+          <h1 className="nx-display" style={{ fontSize: '32px', margin: '0 0 var(--sp-xl)' }}>
             Cuentas
           </h1>
 
-          {/* TARJETA TRANSLÚCIDA CON TODAS LAS CUENTAS */}
-          <div className="rev-glass-group">
+          <div className="nx-elevated-group">
             {accountsData.map((acc, index) => {
               const isSelected = acc.id === activeProfileId;
               return (
                 <button
                   key={acc.id}
                   type="button"
-                  className="rev-card-list-row"
+                  className="nx-account-row"
+                  style={{ borderBottom: index === accountsData.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.08)' }}
                   onClick={() => {
                     triggerHaptic();
                     switchProfile(acc.id);
@@ -370,35 +295,25 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                     setViewMode('detail');
                   }}
                 >
-                  {/* MINI TARJETA A LA IZQUIERDA */}
-                  <span className="rev-mini-thumb" style={{ background: acc.theme.bg }}>
-                    <span style={{ fontSize: '6px', fontWeight: 800, opacity: 0.85 }}>NEXO</span>
+                  <span className="nx-mini-thumb" style={{ backgroundColor: acc.theme.bg }}>
+                    <span style={{ fontSize: '6px', fontWeight: 500, letterSpacing: '0.24px' }}>NEXO</span>
                     <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.6)' }} />
-                      <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.35)', marginLeft: '-2px' }} />
+                      <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
+                      <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-orange)', marginLeft: '-2px' }} />
                     </span>
                     {acc.isFrozen && (
-                      <span style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'rgba(210, 235, 255, 0.45)',
-                        backdropFilter: 'blur(2px)',
-                      }} />
+                      <span style={{ position: 'absolute', inset: 0, background: 'rgba(210, 235, 255, 0.45)', backdropFilter: 'blur(2px)' }} />
                     )}
                   </span>
 
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', fontWeight: 700 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 500 }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</span>
-                      {acc.isFrozen && (
-                        <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '999px', background: 'rgba(255,255,255,0.2)' }}>
-                          Congelada
-                        </span>
-                      )}
-                    </strong>
-                    <small className="privacy-sensitive" style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.72)', marginTop: '1px', fontVariantNumeric: 'tabular-nums' }}>
+                      {acc.isFrozen && <span className="nx-badge-feature">Congelada</span>}
+                    </span>
+                    <span className="nx-label privacy-sensitive" style={{ display: 'block', color: 'var(--on-dark-mute)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
                       ••• {acc.digits} · {displayMoney(acc.balance)}
-                    </small>
+                    </span>
                   </span>
 
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -406,35 +321,35 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                       <span style={{
                         width: '20px',
                         height: '20px',
-                        borderRadius: '50%',
-                        background: '#FFFFFF',
-                        color: '#2B1378',
+                        borderRadius: 'var(--rounded-full)',
+                        backgroundColor: 'var(--canvas-light)',
+                        color: 'var(--canvas-dark)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
-                        <Check size={12} strokeWidth={3} />
+                        <Check size={12} strokeWidth={2.5} />
                       </span>
                     )}
-                    <ChevronRight size={17} style={{ opacity: 0.65 }} />
+                    <ChevronRight size={17} style={{ color: 'var(--on-dark-mute)' }} />
                   </span>
                 </button>
               );
             })}
           </div>
 
-          {/* SEGUNDA TARJETA TRANSLÚCIDA: ANÁLISIS MENSUAL Y TOPES */}
-          <div className="rev-glass-group">
+          <div className="nx-elevated-group">
             <button
               type="button"
-              className="rev-card-list-row"
+              className="nx-account-row"
               onClick={() => setIsAnalyticsOpen(true)}
             >
               <span style={{
                 width: '36px',
                 height: '36px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.16)',
+                borderRadius: 'var(--rounded-full)',
+                backgroundColor: 'var(--primary)',
+                color: '#FFFFFF',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -442,21 +357,17 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               }}>
                 <BarChart3 size={17} />
               </span>
-              <span style={{ flex: 1, fontSize: '14px', fontWeight: 700 }}>
+              <span style={{ flex: 1, fontSize: '14px', fontWeight: 500 }}>
                 Análisis mensual de {activeAccount?.name}
               </span>
-              <ChevronRight size={17} style={{ opacity: 0.65 }} />
+              <ChevronRight size={17} style={{ color: 'var(--on-dark-mute)' }} />
             </button>
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.62)', marginTop: '10px' }}>
-            Toca una cuenta para activarla, congelarla o ver sus movimientos
-          </p>
-
-          {/* BOTÓN FLOTANTE BLANCO + AÑADIR CUENTA */}
+          {/* PRIMARY CTA: WHITE PILL ON BLACK */}
           <button
             type="button"
-            className="rev-add-card-float"
+            className="nx-btn-primary nx-add-account-float"
             onClick={() => {
               setModalError('');
               setNewAccountName('');
@@ -465,37 +376,36 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               setIsAddModalOpen(true);
             }}
           >
-            <Plus size={17} strokeWidth={2.6} /> Añadir cuenta
+            <Plus size={17} strokeWidth={2.2} /> Añadir cuenta
           </button>
         </div>
       )}
 
-      {/* PANTALLAS 2 Y 3: DETALLE DE CUENTA / TARJETA CON EFECTO CONGELAR */}
+      {/* PANTALLA 2: DETALLE DE CUENTA (BANDA NEGRA SUPERIOR + BANDA BLANCA INFERIOR) */}
       {viewMode === 'detail' && activeAccount && (
         <div>
-          <div className="rev-card-stage">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div className="nx-card-hero-band">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
+                aria-label="Volver a cuentas"
                 style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '50%',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: 'var(--rounded-full)',
                   border: 0,
-                  background: 'rgba(255,255,255,0.12)',
-                  color: '#FFFFFF',
+                  backgroundColor: 'var(--surface-elevated)',
+                  color: 'var(--on-dark)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
                 }}
-                aria-label="Volver a cuentas"
               >
                 <ArrowLeft size={18} />
               </button>
 
-              {/* SELECTOR RÁPIDO ENTRE CUENTAS */}
               <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '75%' }}>
                 {accountsData.map((acc) => (
                   <button
@@ -506,15 +416,16 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                       switchProfile(acc.id);
                     }}
                     style={{
-                      padding: '5px 12px',
-                      borderRadius: '999px',
+                      height: '36px',
+                      padding: '8px 16px',
+                      borderRadius: 'var(--rounded-full)',
                       border: 0,
-                      fontSize: '12px',
-                      fontWeight: 700,
+                      fontSize: '13px',
+                      fontWeight: 500,
                       whiteSpace: 'nowrap',
                       cursor: 'pointer',
-                      background: acc.id === activeProfileId ? '#FFFFFF' : 'rgba(255,255,255,0.12)',
-                      color: acc.id === activeProfileId ? '#111418' : 'rgba(255,255,255,0.8)',
+                      backgroundColor: acc.id === activeProfileId ? 'var(--canvas-light)' : 'var(--surface-elevated)',
+                      color: acc.id === activeProfileId ? 'var(--canvas-dark)' : 'var(--on-dark)',
                     }}
                   >
                     {acc.name}
@@ -523,96 +434,92 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               </div>
             </div>
 
-            {/* TARJETA FÍSICA ESTILO REVOLUT */}
-            <div className="rev-physical-card" style={{ background: activeAccount.theme.bg }}>
-              {activeAccount.isFrozen && <div className="rev-frost-overlay" />}
+            <div className="nx-physical-card" style={{ backgroundColor: activeAccount.theme.bg }}>
+              {activeAccount.isFrozen && <div className="nx-frost-overlay" />}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 3 }}>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255,255,255,0.92)' }}>
+                <span className="nx-label" style={{ color: 'rgba(255,255,255,0.85)' }}>
                   {activeAccount.isShared ? 'Compartida' : 'Estándar'}
                 </span>
-                <strong className="privacy-sensitive" style={{ fontSize: '18px', fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+                <span className="nx-display privacy-sensitive" style={{ fontSize: '20px' }}>
                   {displayMoney(activeAccount.balance)}
-                </strong>
+                </span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 3 }}>
                 <div>
-                  <strong style={{ display: 'block', fontSize: '15px', fontWeight: 700 }}>
+                  <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
                     {activeAccount.name}
-                  </strong>
-                  <span style={{ fontSize: '13px', fontWeight: 600, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
+                  </span>
+                  <span className="nx-label" style={{ opacity: 0.8, fontVariantNumeric: 'tabular-nums' }}>
                     •• {activeAccount.digits}
                   </span>
                 </div>
 
-                {/* DOBLE CÍRCULO ESTILO MASTERCARD */}
                 <div style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.42)' }} />
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.22)', marginLeft: '-10px' }} />
+                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
+                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--accent-orange)', marginLeft: '-10px', opacity: 0.9 }} />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* HOJA BLANCA INFERIOR CON 3 ACCIONES Y TRANSACCIONES */}
-          <div className="rev-card-detail-body">
-            <div className="sheet-handle" />
-
-            <div className="rev-card-actions-trio">
+          <div className="nx-card-catalogue-band">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
               <button
                 type="button"
-                className="rev-card-action-btn"
                 onClick={() => {
                   triggerHaptic();
                   setIsAmountsHidden?.((prev) => !prev);
                 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text-main)' }}
               >
-                <span className="rev-card-action-circle">
+                <span style={{ width: '48px', height: '48px', borderRadius: 'var(--rounded-full)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {isAmountsHidden ? <EyeOff size={20} /> : <Eye size={20} />}
                 </span>
-                <span>{isAmountsHidden ? 'Mostrar' : 'Ocultar'}</span>
+                <span className="nx-label">{isAmountsHidden ? 'Mostrar' : 'Ocultar'}</span>
               </button>
 
               <button
                 type="button"
-                className={`rev-card-action-btn ${activeAccount.isFrozen ? 'frozen-text' : ''}`}
                 onClick={() => toggleFreeze(activeAccount.id)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: activeAccount.isFrozen ? 'var(--primary)' : 'var(--text-main)' }}
               >
-                <span className={`rev-card-action-circle ${activeAccount.isFrozen ? 'frozen-active' : ''}`}>
+                <span style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: 'var(--rounded-full)',
+                  backgroundColor: activeAccount.isFrozen ? 'var(--primary)' : 'var(--bg-card)',
+                  color: activeAccount.isFrozen ? '#FFFFFF' : 'var(--text-main)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
                   <Snowflake size={20} />
                 </span>
-                <span>{activeAccount.isFrozen ? 'Descongelar' : 'Congelar'}</span>
+                <span className="nx-label">{activeAccount.isFrozen ? 'Descongelar' : 'Congelar'}</span>
               </button>
 
               <button
                 type="button"
-                className="rev-card-action-btn"
                 onClick={() => {
                   setEditName(activeAccount.name);
                   setCopiedCode(false);
                   setIsSettingsOpen(true);
                 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text-main)' }}
               >
-                <span className="rev-card-action-circle">
+                <span style={{ width: '48px', height: '48px', borderRadius: 'var(--rounded-full)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Settings size={20} />
                 </span>
-                <span>Ajustes</span>
+                <span className="nx-label">Ajustes</span>
               </button>
             </div>
 
-            {/* TRANSACCIONES DE ESTA CUENTA */}
-            <div style={{
-              background: 'var(--rev-card)',
-              borderRadius: '18px',
-              padding: '14px 16px 8px',
-              border: '1px solid var(--rev-border)',
-              boxShadow: 'var(--rev-shadow)',
-              marginBottom: '12px',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--rev-muted)', marginBottom: '4px' }}>
-                <span>Transacción</span>
-                <span>Importe</span>
+            <div className="nx-card" style={{ marginBottom: 'var(--sp-lg)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--sp-sm)' }}>
+                <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Transacción</span>
+                <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Importe</span>
               </div>
 
               {recentAccountTxs.length > 0 ? (
@@ -621,53 +528,42 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                     <TransactionItem key={tx.id} transaction={tx} />
                   ))}
                   {transactions.length > 4 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllCardTx((prev) => !prev)}
-                      style={{
-                        width: '100%',
-                        border: 0,
-                        background: 'transparent',
-                        color: 'var(--rev-blue)',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        padding: '10px 0 6px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {showAllCardTx ? 'Mostrar menos' : 'Ver todo'}
-                    </button>
+                    <div style={{ textAlign: 'center', marginTop: 'var(--sp-md)' }}>
+                      <button
+                        type="button"
+                        className="nx-btn-pill-sm"
+                        style={{ color: 'var(--primary)' }}
+                        onClick={() => setShowAllCardTx((prev) => !prev)}
+                      >
+                        {showAllCardTx ? 'Mostrar menos' : 'Ver todo'}
+                      </button>
+                    </div>
                   )}
                 </>
               ) : (
-                <p style={{ fontSize: '13px', color: 'var(--rev-muted)', textAlign: 'center', padding: '16px 0' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-mute)', textAlign: 'center', padding: 'var(--sp-lg) 0', margin: 0 }}>
                   Aún no hay movimientos en esta cuenta.
                 </p>
               )}
             </div>
 
-            {/* ACCESO A ANÁLISIS MENSUAL DE LA CUENTA */}
             <button
               type="button"
               onClick={() => setIsAnalyticsOpen(true)}
+              className="nx-card"
               style={{
                 width: '100%',
-                background: 'var(--rev-card)',
-                borderRadius: '16px',
-                padding: '15px 16px',
-                border: '1px solid var(--rev-border)',
-                boxShadow: 'var(--rev-shadow)',
+                border: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                color: 'var(--rev-text)',
                 fontSize: '14px',
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
               }}
             >
               <span>Ver análisis mensual y categorías</span>
-              <ChevronRight size={17} style={{ color: 'var(--rev-muted)' }} />
+              <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
             </button>
           </div>
         </div>
@@ -678,14 +574,14 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsAddModalOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Nueva cuenta</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-md)' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Nueva cuenta</h2>
               <button type="button" className="sheet-close" onClick={() => setIsAddModalOpen(false)}>
                 <X size={17} />
               </button>
             </div>
 
-            <div className="record-tabs" style={{ marginBottom: '16px' }}>
+            <div className="record-tabs" style={{ marginBottom: 'var(--sp-lg)' }}>
               <button type="button" className={addTab === 'create' ? 'active' : ''} onClick={() => { setAddTab('create'); setModalError(''); }}>
                 Crear cuenta
               </button>
@@ -707,7 +603,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   setModalError(err.message);
                 }
               }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '14px' }}>
+                <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-lg)' }}>
                   Nombre de la cuenta
                   <input
                     required
@@ -718,10 +614,10 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   />
                 </label>
 
-                <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '8px' }}>
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-sm)' }}>
                   Color de tarjeta
                 </span>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '18px' }}>
+                <div style={{ display: 'flex', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
                   {CARD_THEMES.map((t) => (
                     <button
                       key={t.id}
@@ -730,9 +626,9 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                       style={{
                         width: '38px',
                         height: '38px',
-                        borderRadius: '50%',
-                        background: t.bg,
-                        border: selectedCardTheme === t.id ? '3px solid var(--rev-blue)' : '2px solid transparent',
+                        borderRadius: 'var(--rounded-full)',
+                        backgroundColor: t.bg,
+                        border: selectedCardTheme === t.id ? '3px solid var(--primary)' : '2px solid transparent',
                         cursor: 'pointer',
                       }}
                       aria-label={t.label}
@@ -740,9 +636,9 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   ))}
                 </div>
 
-                {modalError && <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>{modalError}</p>}
+                {modalError && <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: 'var(--sp-md)' }}>{modalError}</p>}
 
-                <button type="submit" className="sheet-submit">
+                <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
                   Crear cuenta <ArrowRight size={16} />
                 </button>
               </form>
@@ -759,16 +655,16 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   setModalError(err.message);
                 }
               }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '12px' }}>
+                <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
                   Código de invitación
                   <input required value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="uid___default" />
                 </label>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '14px' }}>
+                <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-lg)' }}>
                   Nombre para esta cuenta
                   <input required value={joinName} onChange={(e) => setJoinName(e.target.value)} placeholder="Ej. Gastos Casa" />
                 </label>
-                {modalError && <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>{modalError}</p>}
-                <button type="submit" className="sheet-submit">
+                {modalError && <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: 'var(--sp-md)' }}>{modalError}</p>}
+                <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
                   <UserPlus size={16} /> Vincular cuenta
                 </button>
               </form>
@@ -783,8 +679,8 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsSettingsOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Ajustes de cuenta</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-lg)' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Ajustes de cuenta</h2>
               <button type="button" className="sheet-close" onClick={() => setIsSettingsOpen(false)}>
                 <X size={17} />
               </button>
@@ -798,21 +694,21 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   setIsSettingsOpen(false);
                 } catch {}
               }}
-              style={{ marginBottom: '16px' }}
+              style={{ marginBottom: 'var(--sp-lg)' }}
             >
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '10px' }}>
+              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
                 Nombre de la cuenta
                 <input value={editName} onChange={(e) => setEditName(e.target.value)} required />
               </label>
-              <button type="submit" className="sheet-submit" style={{ height: '44px', fontSize: '14px' }}>
+              <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
                 Guardar nombre
               </button>
             </form>
 
-            <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '8px' }}>
-              Diseño de tarjeta
+            <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-sm)' }}>
+              Color de tarjeta
             </span>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
               {CARD_THEMES.map((t) => (
                 <button
                   key={t.id}
@@ -821,9 +717,9 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   style={{
                     width: '38px',
                     height: '38px',
-                    borderRadius: '50%',
-                    background: t.bg,
-                    border: activeAccount.theme.id === t.id ? '3px solid var(--rev-blue)' : '2px solid transparent',
+                    borderRadius: 'var(--rounded-full)',
+                    backgroundColor: t.bg,
+                    border: activeAccount.theme.id === t.id ? '3px solid var(--primary)' : '2px solid transparent',
                     cursor: 'pointer',
                   }}
                 />
@@ -831,36 +727,19 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
             </div>
 
             {shareCode && (
-              <div style={{
-                background: 'var(--rev-card)',
-                borderRadius: '16px',
-                padding: '12px 14px',
-                border: '1px solid var(--rev-border)',
-                marginBottom: '14px',
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '6px' }}>
+              <div className="nx-card" style={{ padding: 'var(--sp-lg)', marginBottom: 'var(--sp-lg)' }}>
+                <span className="nx-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-mute)', marginBottom: '8px' }}>
                   <Share2 size={13} /> Código para compartir esta cuenta
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                   <code style={{ fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shareCode}</code>
                   <button
                     type="button"
+                    className="nx-btn-pill-sm"
+                    style={{ color: 'var(--primary)' }}
                     onClick={() => {
                       navigator.clipboard?.writeText(shareCode);
                       setCopiedCode(true);
-                    }}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '999px',
-                      border: 0,
-                      background: 'var(--rev-blue-soft)',
-                      color: 'var(--rev-blue)',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      cursor: 'pointer',
                     }}
                   >
                     {copiedCode ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar</>}
@@ -880,21 +759,8 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                     })
                     .catch((err) => alert(err.message));
                 }}
-                style={{
-                  width: '100%',
-                  height: '46px',
-                  borderRadius: '999px',
-                  border: 0,
-                  background: 'rgba(244, 63, 94, 0.14)',
-                  color: 'var(--rev-red)',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                }}
+                className="nx-btn-soft"
+                style={{ width: '100%', color: 'var(--danger-red)' }}
               >
                 <Trash2 size={15} /> {activeAccount.isShared ? 'Desvincular cuenta' : 'Eliminar cuenta'}
               </button>
@@ -904,13 +770,13 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
         document.body,
       )}
 
-      {/* MODAL ANÁLISIS MENSUAL DE LA CUENTA */}
+      {/* MODAL ANÁLISIS MENSUAL */}
       {isAnalyticsOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsAnalyticsOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-lg)' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>
                 Análisis · {activeProfile?.name}
               </h2>
               <button type="button" className="sheet-close" onClick={() => setIsAnalyticsOpen(false)}>
@@ -918,31 +784,32 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ background: 'var(--rev-card)', padding: '14px', borderRadius: '16px', border: '1px solid var(--rev-border)' }}>
-                <span style={{ fontSize: '12px', color: 'var(--rev-muted)' }}>Ingresos del mes</span>
-                <strong style={{ display: 'block', fontSize: '18px', fontWeight: 800, color: 'var(--rev-green)', marginTop: '4px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-md)', marginBottom: 'var(--sp-lg)' }}>
+              <div className="nx-card" style={{ padding: 'var(--sp-lg)' }}>
+                <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Ingresos del mes</span>
+                <span className="nx-display" style={{ display: 'block', fontSize: '20px', color: 'var(--accent-teal)', marginTop: '6px' }}>
                   {displayMoney(monthTotals.income)}
-                </strong>
+                </span>
               </div>
-              <div style={{ background: 'var(--rev-card)', padding: '14px', borderRadius: '16px', border: '1px solid var(--rev-border)' }}>
-                <span style={{ fontSize: '12px', color: 'var(--rev-muted)' }}>Gastos del mes</span>
-                <strong style={{ display: 'block', fontSize: '18px', fontWeight: 800, color: 'var(--rev-red)', marginTop: '4px' }}>
+              <div className="nx-card" style={{ padding: 'var(--sp-lg)' }}>
+                <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Gastos del mes</span>
+                <span className="nx-display" style={{ display: 'block', fontSize: '20px', color: 'var(--danger-red)', marginTop: '6px' }}>
                   {displayMoney(monthTotals.expenses)}
-                </strong>
+                </span>
               </div>
             </div>
 
-            <div style={{ background: 'var(--rev-card)', padding: '16px', borderRadius: '18px', border: '1px solid var(--rev-border)', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <strong style={{ fontSize: '14px' }}>Gastos por categoría</strong>
+            <div className="nx-card" style={{ marginBottom: 'var(--sp-lg)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-lg)' }}>
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>Gastos por categoría</span>
                 <button
                   type="button"
+                  className="nx-btn-pill-sm"
+                  style={{ color: 'var(--primary)' }}
                   onClick={() => {
                     setIsAnalyticsOpen(false);
                     onOpenLimits?.();
                   }}
-                  style={{ background: 'var(--rev-blue-soft)', color: 'var(--rev-blue)', border: 0, borderRadius: '999px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Editar topes
                 </button>
@@ -954,32 +821,32 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   ? Math.min(100, Math.round((cat.amount / limit) * 100))
                   : (monthTotals.expenses > 0 ? Math.min(100, Math.round((cat.amount / monthTotals.expenses) * 100)) : 0);
                 return (
-                  <div key={cat.name} style={{ marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '5px' }}>
-                      <strong>{cat.name}</strong>
+                  <div key={cat.name} style={{ marginBottom: 'var(--sp-md)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                      <span>{cat.name}</span>
                       <span>
                         {displayMoney(cat.amount)}
-                        {limit > 0 && <span style={{ color: 'var(--rev-muted)' }}> / {displayMoney(limit)}</span>}
+                        {limit > 0 && <span style={{ color: 'var(--text-mute)' }}> / {displayMoney(limit)}</span>}
                       </span>
                     </div>
-                    <div style={{ height: '6px', borderRadius: '99px', background: 'var(--rev-subtle)', overflow: 'hidden' }}>
+                    <div style={{ height: '6px', borderRadius: 'var(--rounded-full)', backgroundColor: 'var(--bg-card-alt)', overflow: 'hidden' }}>
                       <div style={{
                         height: '100%',
                         width: `${pct}%`,
-                        borderRadius: '99px',
-                        background: limit > 0 && cat.amount > limit ? 'var(--rev-red)' : 'var(--rev-blue)',
+                        borderRadius: 'var(--rounded-full)',
+                        backgroundColor: limit > 0 && cat.amount > limit ? 'var(--danger-red)' : 'var(--primary)',
                       }} />
                     </div>
                   </div>
                 );
               }) : (
-                <p style={{ fontSize: '13px', color: 'var(--rev-muted)', margin: 0 }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: 0 }}>
                   Sin gastos registrados este mes.
                 </p>
               )}
             </div>
 
-            <button type="button" className="sheet-submit" onClick={() => setIsAnalyticsOpen(false)}>
+            <button type="button" className="nx-btn-dark" style={{ width: '100%' }} onClick={() => setIsAnalyticsOpen(false)}>
               Cerrar
             </button>
           </section>

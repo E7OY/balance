@@ -27,44 +27,47 @@ import {
 import { useFinance } from '../context/FinanceContext';
 import { triggerHaptic } from '../utils/haptics';
 
-export const getCategoryVisuals = (category = '', type = 'Gasto', size = 18) => {
+/* Paleta oficial de 8 colores de producto:
+   teal #00a87e, light-blue #007bc2, deep-pink #e61e49, light-green #428619,
+   orange #ec7e00, yellow #b09000, brown #936d62, danger-red #e23b4a */
+export const getCategoryVisuals = (category = '', type = 'Gasto', size = 17) => {
   const norm = category.toLowerCase().trim();
   if (norm.includes('comida') || norm.includes('supermercado')) {
-    return { icon: <ShoppingBag size={size} />, bg: '#F59E0B', softBg: 'rgba(245, 158, 11, 0.16)', fg: '#D97706' };
+    return { icon: <ShoppingBag size={size} />, bg: '#428619', softBg: 'rgba(66, 134, 25, 0.14)', fg: '#428619' };
   }
   if (norm.includes('restaurante') || norm.includes('bar')) {
-    return { icon: <Utensils size={size} />, bg: '#F97316', softBg: 'rgba(249, 115, 22, 0.16)', fg: '#EA580C' };
+    return { icon: <Utensils size={size} />, bg: '#ec7e00', softBg: 'rgba(236, 126, 0, 0.14)', fg: '#ec7e00' };
   }
   if (norm.includes('hogar') || norm.includes('alquiler') || norm.includes('hipoteca')) {
-    return { icon: <Home size={size} />, bg: '#8B5CF6', softBg: 'rgba(139, 92, 246, 0.16)', fg: '#7C3AED' };
+    return { icon: <Home size={size} />, bg: '#936d62', softBg: 'rgba(147, 109, 98, 0.16)', fg: '#936d62' };
   }
   if (norm.includes('transporte') || norm.includes('coche') || norm.includes('gasolina')) {
-    return { icon: <Car size={size} />, bg: '#0075EB', softBg: 'rgba(0, 117, 235, 0.15)', fg: '#0075EB' };
+    return { icon: <Car size={size} />, bg: '#007bc2', softBg: 'rgba(0, 123, 194, 0.14)', fg: '#007bc2' };
   }
   if (norm.includes('ocio') || norm.includes('cine') || norm.includes('viajes')) {
-    return { icon: <Film size={size} />, bg: '#EC4899', softBg: 'rgba(236, 72, 153, 0.16)', fg: '#DB2777' };
+    return { icon: <Film size={size} />, bg: '#e61e49', softBg: 'rgba(230, 30, 73, 0.14)', fg: '#e61e49' };
   }
   if (norm.includes('salud')) {
-    return { icon: <HeartPulse size={size} />, bg: '#F43F5E', softBg: 'rgba(244, 63, 94, 0.16)', fg: '#E11D48' };
+    return { icon: <HeartPulse size={size} />, bg: '#e23b4a', softBg: 'rgba(226, 59, 74, 0.14)', fg: '#e23b4a' };
   }
   if (norm.includes('suscripcion') || norm.includes('netflix') || norm.includes('spotify')) {
-    return { icon: <Tv size={size} />, bg: '#6366F1', softBg: 'rgba(99, 102, 241, 0.16)', fg: '#4F46E5' };
+    return { icon: <Tv size={size} />, bg: '#494fdf', softBg: 'rgba(73, 79, 223, 0.14)', fg: '#494fdf' };
   }
   if (norm.includes('nómina') || norm.includes('nomina') || norm.includes('sueldo') || norm.includes('salario')) {
-    return { icon: <Briefcase size={size} />, bg: '#4F46E5', softBg: 'rgba(79, 70, 229, 0.16)', fg: '#4338CA' };
+    return { icon: <Briefcase size={size} />, bg: '#00a87e', softBg: 'rgba(0, 168, 126, 0.14)', fg: '#00a87e' };
   }
   if (norm.includes('transferencia') || norm.includes('bizum')) {
-    return { icon: <ArrowLeftRight size={size} />, bg: '#0EA5E9', softBg: 'rgba(14, 165, 233, 0.16)', fg: '#0284C7' };
+    return { icon: <ArrowLeftRight size={size} />, bg: '#007bc2', softBg: 'rgba(0, 123, 194, 0.14)', fg: '#007bc2' };
   }
   if (norm.includes('inversion')) {
-    return { icon: <TrendingUp size={size} />, bg: '#10B981', softBg: 'rgba(16, 185, 129, 0.16)', fg: '#059669' };
+    return { icon: <TrendingUp size={size} />, bg: '#00a87e', softBg: 'rgba(0, 168, 126, 0.14)', fg: '#00a87e' };
   }
-  if (norm.includes('venta') || norm.includes('ropa')) {
-    return { icon: <Tag size={size} />, bg: '#A855F7', softBg: 'rgba(168, 85, 247, 0.16)', fg: '#9333EA' };
+  if (norm.includes('venta') || norm.includes('ropa') || norm.includes('regalo')) {
+    return { icon: <Tag size={size} />, bg: '#b09000', softBg: 'rgba(176, 144, 0, 0.15)', fg: '#b09000' };
   }
   return type === 'Ingreso'
-    ? { icon: <TrendingUp size={size} />, bg: '#00A859', softBg: 'rgba(0, 168, 89, 0.16)', fg: '#00A859' }
-    : { icon: <Receipt size={size} />, bg: '#64748B', softBg: 'rgba(100, 116, 139, 0.15)', fg: '#475569' };
+    ? { icon: <TrendingUp size={size} />, bg: '#00a87e', softBg: 'rgba(0, 168, 126, 0.14)', fg: '#00a87e' }
+    : { icon: <Receipt size={size} />, bg: '#936d62', softBg: 'rgba(147, 109, 98, 0.14)', fg: '#936d62' };
 };
 
 const TransactionItem = ({ transaction }) => {
@@ -120,25 +123,22 @@ const TransactionItem = ({ transaction }) => {
   };
 
   const detailCardStyle = {
-    background: 'var(--rev-card)',
-    borderRadius: '16px',
-    padding: '4px 16px',
-    border: '1px solid var(--rev-border)',
-    boxShadow: 'var(--rev-shadow)',
-    marginBottom: '12px',
+    backgroundColor: 'var(--bg-card)',
+    borderRadius: 'var(--rounded-lg)',
+    padding: 'var(--sp-xs) var(--sp-xl)',
+    marginBottom: 'var(--sp-md)',
   };
 
   const detailRowStyle = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '13px 0',
+    padding: 'var(--sp-md) 0',
     fontSize: '14px',
   };
 
   return (
     <>
-      {/* FILA DE TRANSACCIÓN ESTILO REVOLUT CON MINI-BADGE EN EL ICONO */}
       <button
         type="button"
         onClick={() => {
@@ -152,20 +152,19 @@ const TransactionItem = ({ transaction }) => {
           display: 'flex',
           alignItems: 'center',
           width: '100%',
-          padding: '11px 0',
+          padding: '12px 0',
           background: 'transparent',
           border: 0,
           textAlign: 'left',
           cursor: 'pointer',
-          gap: '12px',
+          gap: 'var(--sp-md)',
         }}
       >
-        {/* AVATAR CIRCULAR CON BADGE INFERIOR DERECHO */}
         <span style={{ position: 'relative', width: '40px', height: '40px', flexShrink: 0 }}>
           <span style={{
             width: '40px',
             height: '40px',
-            borderRadius: '50%',
+            borderRadius: 'var(--rounded-full)',
             background: visuals.softBg,
             color: visuals.fg,
             display: 'flex',
@@ -180,76 +179,61 @@ const TransactionItem = ({ transaction }) => {
             bottom: '-2px',
             width: '16px',
             height: '16px',
-            borderRadius: '50%',
-            background: isExpense ? '#64748B' : '#0075EB',
+            borderRadius: 'var(--rounded-full)',
+            background: isExpense ? 'var(--ink)' : 'var(--primary)',
             color: '#FFFFFF',
-            border: '2px solid var(--rev-card)',
+            border: '2px solid var(--bg-card)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            {isExpense ? <ArrowUpRight size={10} strokeWidth={2.8} /> : <ArrowDownLeft size={10} strokeWidth={2.8} />}
+            {isExpense ? <ArrowUpRight size={10} strokeWidth={2.5} /> : <ArrowDownLeft size={10} strokeWidth={2.5} />}
           </span>
         </span>
 
-        {/* 3 LÍNEAS COMO EN REVOLUT */}
         <span style={{ flex: 1, minWidth: 0 }}>
-          <strong style={{
+          <span style={{
             display: 'block',
             fontSize: '14px',
-            fontWeight: 700,
-            color: 'var(--rev-text)',
-            letterSpacing: '-0.01em',
+            fontWeight: 500,
+            color: 'var(--text-main)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           }}>
             {transaction.description || transaction.category}
-          </strong>
-          <small style={{
-            display: 'block',
-            fontSize: '11.5px',
-            fontWeight: 500,
-            color: 'var(--rev-muted)',
-            marginTop: '1px',
-          }}>
+          </span>
+          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '2px' }}>
             {transaction.date} · {transaction.category}
-          </small>
-          <small style={{
-            display: 'block',
-            fontSize: '11.5px',
-            fontWeight: 500,
-            color: 'var(--rev-muted)',
-          }}>
+          </span>
+          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
             · {transaction.installment ? `Cuota ${transaction.installment.current}/${transaction.installment.total}` : 'Completado'}
-          </small>
+          </span>
         </span>
 
-        {/* IMPORTE ALINEADO ARRIBA A LA DERECHA */}
-        <strong
+        <span
           className="privacy-sensitive"
           style={{
             alignSelf: 'flex-start',
             marginTop: '2px',
             fontSize: '14px',
-            fontWeight: 600,
+            fontWeight: 500,
             fontVariantNumeric: 'tabular-nums',
-            color: isExpense ? 'var(--rev-text)' : 'var(--rev-green)',
+            color: isExpense ? 'var(--text-main)' : 'var(--accent-teal)',
           }}
         >
           {!isExpense ? '+' : ''}{formatted}
-        </strong>
+        </span>
       </button>
 
-      {/* DETALLE DE TRANSACCIÓN ESTILO REVOLUT */}
       {isDetailOpen && phoneNode && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsDetailOpen(false)}>
           <section
             className="bottom-sheet"
-            style={{ minHeight: '86dvh', background: 'var(--rev-bg)' }}
+            style={{ minHeight: '86dvh' }}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 'var(--sp-lg)' }}>
               <button
                 type="button"
                 className="sheet-close"
@@ -260,33 +244,30 @@ const TransactionItem = ({ transaction }) => {
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--sp-xl)' }}>
               <div>
-                <strong
-                  className="privacy-sensitive"
+                <span
+                  className="nx-display privacy-sensitive"
                   style={{
                     display: 'block',
-                    fontSize: '34px',
-                    fontWeight: 800,
-                    letterSpacing: '-0.03em',
-                    fontVariantNumeric: 'tabular-nums',
-                    color: isExpense ? 'var(--rev-text)' : 'var(--rev-green)',
+                    fontSize: '36px',
+                    color: isExpense ? 'var(--text-main)' : 'var(--accent-teal)',
                   }}
                 >
                   {isExpense ? '−' : '+'}{formatted}
-                </strong>
-                <span style={{ display: 'block', fontSize: '15px', fontWeight: 700, color: 'var(--rev-blue)', marginTop: '2px' }}>
+                </span>
+                <span style={{ display: 'block', fontSize: '15px', fontWeight: 500, color: 'var(--primary)', marginTop: 'var(--sp-xs)' }}>
                   {transaction.description || transaction.category}
                 </span>
-                <small style={{ display: 'block', fontSize: '12px', color: 'var(--rev-muted)', marginTop: '2px' }}>
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: 'var(--sp-xxs)' }}>
                   {transaction.date}
-                </small>
+                </span>
               </div>
 
               <div style={{
                 width: '48px',
                 height: '48px',
-                borderRadius: '50%',
+                borderRadius: 'var(--rounded-full)',
                 background: visuals.bg,
                 color: '#FFFFFF',
                 display: 'flex',
@@ -298,26 +279,14 @@ const TransactionItem = ({ transaction }) => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '18px' }}>
+            {/* button-pill-sm (height: 36px, padding: 8px 16px) */}
+            <div style={{ display: 'flex', gap: 'var(--sp-sm)', marginBottom: 'var(--sp-xl)' }}>
               {isExpense && !transaction.installment && splitTransaction && (
                 <button
                   type="button"
+                  className="nx-btn-pill-sm"
+                  style={{ flex: 1, color: 'var(--primary)' }}
                   onClick={() => setIsSplitting((v) => !v)}
-                  style={{
-                    flex: 1,
-                    height: '38px',
-                    borderRadius: '999px',
-                    border: 0,
-                    background: 'var(--rev-blue-soft)',
-                    color: 'var(--rev-blue)',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    cursor: 'pointer',
-                  }}
                 >
                   <Scissors size={14} /> Dividir gasto
                 </button>
@@ -325,24 +294,11 @@ const TransactionItem = ({ transaction }) => {
 
               <button
                 type="button"
+                className="nx-btn-pill-sm"
+                style={{ flex: 1, color: 'var(--primary)' }}
                 onClick={() => {
                   setIsDetailOpen(false);
                   setEditingTransaction(transaction);
-                }}
-                style={{
-                  flex: 1,
-                  height: '38px',
-                  borderRadius: '999px',
-                  border: 0,
-                  background: 'var(--rev-blue-soft)',
-                  color: 'var(--rev-blue)',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
                 }}
               >
                 <Pencil size={14} /> Editar movimiento
@@ -350,11 +306,11 @@ const TransactionItem = ({ transaction }) => {
             </div>
 
             {isSplitting && (
-              <div style={{ ...detailCardStyle, padding: '14px' }}>
-                <span style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--rev-muted)', marginBottom: '10px' }}>
+              <div style={{ ...detailCardStyle, padding: 'var(--sp-lg)' }}>
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
                   Dividir en cuotas ({new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format((Number(transaction.amount) || 0) / splitCount)}/mes)
                 </span>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', gap: 'var(--sp-xs)', marginBottom: 'var(--sp-md)' }}>
                   {[2, 3, 4, 6, 12].map((n) => (
                     <button
                       key={n}
@@ -362,14 +318,14 @@ const TransactionItem = ({ transaction }) => {
                       onClick={() => setSplitCount(n)}
                       style={{
                         flex: 1,
-                        padding: '7px 0',
-                        borderRadius: '10px',
+                        height: '36px',
+                        borderRadius: 'var(--rounded-full)',
                         border: 0,
-                        fontWeight: 700,
+                        fontWeight: 500,
                         fontSize: '13px',
                         cursor: 'pointer',
-                        background: splitCount === n ? 'var(--rev-blue)' : 'var(--rev-subtle)',
-                        color: splitCount === n ? '#fff' : 'var(--rev-text)',
+                        background: splitCount === n ? 'var(--primary)' : 'var(--bg-card-alt)',
+                        color: splitCount === n ? '#FFFFFF' : 'var(--text-main)',
                       }}
                     >
                       {n}x
@@ -378,8 +334,8 @@ const TransactionItem = ({ transaction }) => {
                 </div>
                 <button
                   type="button"
-                  className="sheet-submit"
-                  style={{ height: '42px', fontSize: '13px' }}
+                  className="nx-btn-dark"
+                  style={{ width: '100%' }}
                   onClick={() => {
                     try {
                       splitTransaction(transaction.id, splitCount);
@@ -396,22 +352,22 @@ const TransactionItem = ({ transaction }) => {
             )}
 
             <div style={detailCardStyle}>
-              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--rev-border)' }}>
-                <span style={{ color: 'var(--rev-muted)' }}>Estado</span>
-                <strong style={{ fontWeight: 600 }}>Completado</strong>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--border-hairline)' }}>
+                <span style={{ color: 'var(--text-mute)' }}>Estado</span>
+                <span style={{ fontWeight: 500 }}>Completado</span>
               </div>
 
-              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--rev-border)' }}>
-                <span style={{ color: 'var(--rev-muted)' }}>Método</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--rev-blue)', fontWeight: 700 }}>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--border-hairline)' }}>
+                <span style={{ color: 'var(--text-mute)' }}>Método</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 500 }}>
                   <CreditCard size={15} /> {transaction.paymentMethod || 'Tarjeta'}
                 </span>
               </div>
 
               <div style={detailRowStyle}>
-                <span style={{ color: 'var(--rev-muted)' }}>Justificante</span>
+                <span style={{ color: 'var(--text-mute)' }}>Justificante</span>
                 {transaction.invoice ? (
-                  <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '14px' }}>
                     <button
                       type="button"
                       onClick={async () => {
@@ -422,20 +378,20 @@ const TransactionItem = ({ transaction }) => {
                           setDetailError(err.message);
                         }
                       }}
-                      style={{ background: 'transparent', border: 0, color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                      style={{ background: 'transparent', border: 0, color: 'var(--primary)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
                     >
                       <Eye size={14} /> Ver
                     </button>
                     <button
                       type="button"
                       onClick={() => downloadInvoice(transaction.id, transaction.invoice.name).catch((err) => setDetailError(err.message))}
-                      style={{ background: 'transparent', border: 0, color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                      style={{ background: 'transparent', border: 0, color: 'var(--primary)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
                     >
                       <Download size={14} /> Descargar
                     </button>
                   </div>
                 ) : (
-                  <label style={{ color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                  <label style={{ color: 'var(--primary)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}>
                     <Upload size={14} /> Subir
                     <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleUploadReceipt} />
                   </label>
@@ -444,17 +400,17 @@ const TransactionItem = ({ transaction }) => {
             </div>
 
             <div style={detailCardStyle}>
-              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--rev-border)' }}>
-                <span style={{ color: 'var(--rev-muted)' }}>Categoría</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--rev-blue)', fontWeight: 700 }}>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--border-hairline)' }}>
+                <span style={{ color: 'var(--text-mute)' }}>Categoría</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 500 }}>
                   {getCategoryVisuals(transaction.category, transaction.type, 15).icon}
                   {transaction.category}
                 </span>
               </div>
 
               <div style={detailRowStyle}>
-                <span style={{ color: 'var(--rev-muted)' }}>Importe en análisis</span>
-                <span style={{ color: 'var(--rev-blue)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ color: 'var(--text-mute)' }}>Importe en análisis</span>
+                <span style={{ color: 'var(--primary)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
                   {formatted}
                 </span>
               </div>
@@ -462,27 +418,28 @@ const TransactionItem = ({ transaction }) => {
 
             <div style={detailCardStyle}>
               <div style={detailRowStyle}>
-                <span style={{ color: 'var(--rev-muted)' }}>Nota</span>
+                <span style={{ color: 'var(--text-mute)' }}>Nota</span>
                 {!isEditingNote ? (
                   <button
                     type="button"
                     onClick={() => setIsEditingNote(true)}
-                    style={{ background: 'transparent', border: 0, color: 'var(--rev-blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}
+                    style={{ background: 'transparent', border: 0, color: 'var(--primary)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                   >
                     <Pencil size={13} /> {transaction.description || 'Añadir nota'}
                   </button>
                 ) : (
-                  <div style={{ display: 'flex', gap: '6px', flex: 1, marginLeft: '16px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flex: 1, marginLeft: '16px' }}>
                     <input
                       value={noteText}
                       onChange={(e) => setNoteText(e.target.value)}
-                      style={{ margin: 0, height: '36px', fontSize: '13px' }}
+                      style={{ margin: 0, height: '40px', fontSize: '14px' }}
                       autoFocus
                     />
                     <button
                       type="button"
+                      className="nx-btn-pill-sm"
+                      style={{ background: 'var(--primary)', color: '#FFFFFF' }}
                       onClick={handleSaveNote}
-                      style={{ padding: '0 12px', borderRadius: '10px', border: 0, background: 'var(--rev-blue)', color: '#fff', fontWeight: 700, fontSize: '12px' }}
                     >
                       OK
                     </button>
@@ -492,7 +449,7 @@ const TransactionItem = ({ transaction }) => {
             </div>
 
             {detailError && (
-              <p style={{ color: 'var(--rev-red)', fontSize: '12px', fontWeight: 700, marginBottom: '12px' }}>
+              <p style={{ color: 'var(--danger-red)', fontSize: '12px', fontWeight: 500, marginBottom: 'var(--sp-md)' }}>
                 {detailError}
               </p>
             )}
@@ -510,8 +467,8 @@ const TransactionItem = ({ transaction }) => {
                   width: '100%',
                   background: 'transparent',
                   border: 0,
-                  color: 'var(--rev-red)',
-                  fontWeight: 700,
+                  color: 'var(--danger-red)',
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
