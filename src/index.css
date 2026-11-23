@@ -536,3 +536,105 @@ html, body {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+.screen-content {
+  min-height: 100dvh;
+  padding-bottom: calc(98px + env(safe-area-inset-bottom, 0px));
+  scrollbar-width: none;
+}
+
+/* MENÚ INFERIOR FLOTANTE REDONDEADO (LIQUID GLASS PILL) */
+.rev-liquid-nav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: calc(100% - 28px);
+  max-width: 432px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(11, 11, 13, 0.09);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  z-index: 45;
+}
+
+.dark .rev-liquid-nav {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.03) 48%,
+      rgba(73, 79, 223, 0.14) 100%
+    ),
+    rgba(20, 22, 28, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.rev-nav-item {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: 0;
+  border-radius: 9999px;
+  color: rgba(11, 11, 13, 0.55);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: background-color 0.22s ease, color 0.18s ease, box-shadow 0.22s ease, transform 0.12s ease;
+}
+
+.dark .rev-nav-item {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.rev-nav-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.rev-nav-item.active {
+  background: rgba(11, 11, 13, 0.08);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.dark .rev-nav-item.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.rev-nav-item:active {
+  transform: scale(0.94);
+}
+
+/* Ajuste para que el botón flotante de Cuentas quede despejado sobre el nuevo menú */
+.nx-add-account-float {
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+}

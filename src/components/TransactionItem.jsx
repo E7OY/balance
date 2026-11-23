@@ -203,11 +203,11 @@ const TransactionItem = ({ transaction }) => {
           }}>
             {transaction.description || transaction.category}
           </span>
-          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '2px' }}>
+          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '5px' }}>
             {transaction.date} · {transaction.category}
           </span>
-          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)' }}>
-            · {transaction.installment ? `Cuota ${transaction.installment.current}/${transaction.installment.total}` : 'Completado'}
+          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '5px' }}>
+          {transaction.installment ? `Cuota ${transaction.installment.current}/${transaction.installment.total}` : 'Completado'}
           </span>
         </span>
 

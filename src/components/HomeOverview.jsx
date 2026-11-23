@@ -1,54 +1,101 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowDown,
+  ArrowLeftRight,
+  ArrowRight,
   ArrowUp,
   BarChart2,
   CreditCard,
+  FileText,
+  FolderPlus,
   GitFork,
-  ListChecks,
+  Landmark,
   MoreHorizontal,
+  Palette,
   Plus,
   Search,
+  Shuffle,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import TransactionItem, { getCategoryVisuals } from './TransactionItem';
 import NexoLogo from './NexoLogo';
+import HomeThemeModal from './HomeThemeModal';
+import {
+  getSavedHomeBackground,
+  HOME_BG_EVENT,
+  resolveBackgroundCss,
+} from '../utils/homeBackgrounds';
 import { useElasticScroll } from '../hooks/useElasticScroll';
 import { getFromLocalStorage } from '../utils/localStorage';
 import { triggerHaptic } from '../utils/haptics';
 
 const HOME_TOKENS_CSS = `
-  /* Fondo gris suave (#F3F4F6) en modo claro para que las tarjetas blancas (#FFFFFF) destaquen como en Revolut */
+  /* Fondo gris suave (#F3F4F6) en modo claro para que las tarjetas blancas (#FFFFFF) destaquen */
   .stage:not(.dark),
   .stage:not(.dark) .phone,
   .stage:not(.dark) .screen-content {
     background-color: var(--surface-soft);
   }
 
-  /* HERO BAND DARK (#000000 por defecto o imagen /hero_bg.jpg cuando colorfulHero está activo) */
-  .nx-hero-band {
-    background-color: var(--canvas-dark);
-    color: var(--on-dark);
-    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) var(--sp-xxl);
-    border-radius: var(--rounded-none);
-    position: relative;
+  /* CAPA DE FONDO INDEPENDIENTE CON DEGRADADO SUAVIZADO */
+  .nx-hero-bg-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 430px;
+    pointer-events: none;
+    z-index: 0;
     overflow: hidden;
   }
-  .nx-hero-band.colorful {
-    background: #3D17EE url('/hero_bg.jpg') center / cover no-repeat;
-    padding-bottom: 54px;
-  }
-  .dark .nx-hero-band.colorful::before {
-    content: '';
+
+  .nx-hero-bg-artwork {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.28);
-    pointer-events: none;
+    background-position: center top;
+    background-size: cover;
+    background-repeat: no-repeat;
+    transition: background 0.3s ease;
   }
+
+  .nx-hero-bg-fade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.18) 0%,
+      rgba(0, 0, 0, 0.1) 46%,
+      rgba(243, 244, 246, 0.72) 80%,
+      var(--surface-soft) 100%
+    );
+  }
+  .dark .nx-hero-bg-fade {
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.24) 0%,
+      rgba(0, 0, 0, 0.12) 46%,
+      rgba(0, 0, 0, 0.78) 80%,
+      var(--canvas-dark) 100%
+    );
+  }
+
+  /* HERO BAND */
+  .nx-hero-band {
+    background-color: transparent;
+    color: var(--on-dark);
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) 42px;
+    border-radius: var(--rounded-none);
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+  }
+
   .nx-hero-inner {
     position: relative;
-    z-index: 1;
+    z-index: 2;
   }
   .nx-top-bar {
     display: flex;
@@ -60,8 +107,10 @@ const HOME_TOKENS_CSS = `
     width: 36px;
     height: 36px;
     border-radius: var(--rounded-full);
-    background-color: var(--surface-elevated);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(15, 23, 42, 0.28);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     color: var(--on-dark);
     font-size: 12px;
     font-weight: 500;
@@ -72,12 +121,6 @@ const HOME_TOKENS_CSS = `
     flex-shrink: 0;
     cursor: pointer;
     position: relative;
-  }
-  .nx-hero-band.colorful .nx-avatar-pill {
-    background: rgba(255, 255, 255, 0.22);
-    backdrop-filter: blur(18px) saturate(160%);
-    -webkit-backdrop-filter: blur(18px) saturate(160%);
-    border-color: rgba(255, 255, 255, 0.35);
   }
   .nx-avatar-dot {
     position: absolute;
@@ -93,19 +136,14 @@ const HOME_TOKENS_CSS = `
     flex: 1;
     height: 36px;
     border-radius: var(--rounded-full);
-    background-color: var(--surface-elevated);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.26);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     display: flex;
     align-items: center;
     gap: var(--sp-sm);
     padding: 0 var(--sp-lg);
-    color: var(--on-dark-mute);
-  }
-  .nx-hero-band.colorful .nx-search-pill {
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(18px) saturate(160%);
-    -webkit-backdrop-filter: blur(18px) saturate(160%);
-    border-color: rgba(255, 255, 255, 0.22);
     color: #FFFFFF;
   }
   .nx-search-pill input {
@@ -113,7 +151,7 @@ const HOME_TOKENS_CSS = `
     background: transparent;
     border: 0;
     outline: none;
-    color: var(--on-dark);
+    color: #FFFFFF;
     font-family: inherit;
     font-size: 13px;
     font-weight: 400;
@@ -121,37 +159,34 @@ const HOME_TOKENS_CSS = `
     min-width: 0;
   }
   .nx-search-pill input::placeholder {
-    color: rgba(255, 255, 255, 0.78);
+    color: rgba(255, 255, 255, 0.82);
   }
   .nx-icon-circle {
     width: 36px;
     height: 36px;
     border-radius: var(--rounded-full);
-    background-color: var(--surface-elevated);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: var(--on-dark);
+    background: rgba(15, 23, 42, 0.26);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
   }
-  .nx-hero-band.colorful .nx-icon-circle,
-  .nx-hero-band.colorful .nx-sub-nav-pill {
-    background: rgba(255, 255, 255, 0.18);
+  .nx-hero-band .nx-sub-nav-pill {
+    background: rgba(15, 23, 42, 0.32);
     backdrop-filter: blur(18px) saturate(160%);
     -webkit-backdrop-filter: blur(18px) saturate(160%);
-    border-color: rgba(255, 255, 255, 0.22);
-  }
-  .nx-hero-band.colorful .nx-btn-outline-dark {
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(18px) saturate(160%);
-    -webkit-backdrop-filter: blur(18px) saturate(160%);
-    border-color: rgba(255, 255, 255, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
   }
   .nx-hero-balance {
     text-align: center;
-    margin-bottom: var(--sp-xl);
+    margin-bottom: 26px;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
   }
   .nx-hero-display {
     display: flex;
@@ -167,54 +202,150 @@ const HOME_TOKENS_CSS = `
   }
   .nx-hero-int {
     font-size: 56px;
-    color: var(--on-dark);
+    color: #FFFFFF;
   }
   .nx-hero-dec {
     font-size: 28px;
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.88);
     margin-left: 2px;
   }
-  .nx-hero-cta-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-md);
-    margin-bottom: var(--sp-xl);
+
+  /* 4 BOTONES CIRCULARES ESTILO REVOLUT */
+  .nx-hero-circle-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    position: relative;
   }
-  .nx-hero-sub-pills {
+  .nx-circle-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: #FFFFFF;
+    font-family: inherit;
+    cursor: pointer;
+    user-select: none;
+  }
+  .nx-circle-disc {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--rounded-full);
+    background: rgba(22, 24, 30, 0.56);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--sp-sm);
-    flex-wrap: wrap;
+    transition: transform 0.12s ease, background-color 0.16s ease;
+  }
+  .nx-circle-action:active .nx-circle-disc {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.26);
+  }
+  .nx-circle-action.open .nx-circle-disc {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.32);
+  }
+  .nx-circle-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+    color: rgba(255, 255, 255, 0.94);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
   }
 
-  /* CATALOGUE BAND: FONDO GRIS SUAVE (#F3F4F6) Y TARJETAS EN BLANCO PURO (#FFFFFF) */
+  /* MENÚ DESPLEGABLE SOBRE EL BOTÓN MÁS */
+  .nx-more-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.18);
+  }
+  .nx-more-popover {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 12px);
+    width: 226px;
+    z-index: 20;
+    border-radius: 18px;
+    background: rgba(30, 31, 38, 0.96);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    transform-origin: bottom right;
+    animation: nx-popover-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nx-more-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 16px;
+    background: transparent;
+    border: 0;
+    color: rgba(255, 255, 255, 0.94);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+  }
+  .nx-more-item + .nx-more-item {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .nx-more-item:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .nx-more-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .nx-more-item.danger {
+    color: #EF4444;
+  }
+
+  @keyframes nx-popover-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* CATALOGUE BAND: SIEMPRE POR ENCIMA DE LA CAPA DE FONDO (z-index: 3 > z-index: 0) */
   .nx-catalogue-band {
-    background-color: var(--surface-soft);
-    padding: var(--sp-xl) var(--sp-lg) var(--sp-xxl);
-    position: relative;
-    z-index: 2;
-  }
-  .dark .nx-catalogue-band {
-    background-color: var(--canvas-dark);
-  }
-  .nx-catalogue-band.colorful {
     background-color: transparent;
-    margin-top: -32px;
-    padding-top: 0;
+    padding: 0 var(--sp-lg) var(--sp-xxl);
+    margin-top: -18px;
+    position: relative;
+    z-index: 3;
   }
 
   .nx-tx-catalogue-card {
     background-color: var(--canvas-light);
     color: var(--ink);
-    border-radius: var(--rounded-lg);
-    padding: var(--sp-xl);
+    border-radius: 22px;
+    padding: 10px 18px 14px;
     margin-bottom: var(--sp-xl);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
   }
   .dark .nx-tx-catalogue-card {
-    background-color: var(--surface-elevated);
+    background-color: rgba(24, 27, 34, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     color: var(--on-dark);
     box-shadow: none;
   }
@@ -281,14 +412,40 @@ const HomeOverview = ({
     getTransactionsForProfile,
     isAmountsHidden,
     setIsAmountsHidden,
+    addProfile,
+    deleteActiveProfile,
+    exportPdf,
+    exportCsv,
   } = useFinance();
 
+  const [bgConfig, setBgConfig] = useState(() => getSavedHomeBackground());
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isNewAccountOpen, setIsNewAccountOpen] = useState(false);
+  const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountError, setNewAccountError] = useState('');
   const [showAllTx, setShowAllTx] = useState(false);
+
   const scrollContainerRef = useRef(null);
   const longPressRef = useRef(null);
   const didLongPressRef = useRef(false);
 
   const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } = useElasticScroll(75, 0.35);
+
+  useEffect(() => {
+    const handleBgChanged = (e) => {
+      setBgConfig(e.detail || getSavedHomeBackground());
+    };
+    window.addEventListener(HOME_BG_EVENT, handleBgChanged);
+    return () => window.removeEventListener(HOME_BG_EVENT, handleBgChanged);
+  }, []);
+
+  const activeBackgroundCss = useMemo(() => {
+    if (!colorfulHero && !bgConfig.customImage && bgConfig.id === 'obsidian-pure') {
+      return '#000000';
+    }
+    return resolveBackgroundCss(bgConfig);
+  }, [bgConfig, colorfulHero]);
 
   const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(filters.year, filters.month));
   const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
@@ -318,7 +475,6 @@ const HomeOverview = ({
   const available = totals.income - totals.expenses;
   const expenseDiff = totals.expenses - previousMonthExpenses;
 
-  // Patrimonio total acumulado entre TODAS las cuentas (efectivo + inversiones activas)
   const { totalWealth, allAccountsMonthlyDelta } = useMemo(() => {
     const accountList = profiles.length > 0 ? profiles : (activeProfile ? [activeProfile] : []);
     let wealth = 0;
@@ -355,7 +511,6 @@ const HomeOverview = ({
     return { totalWealth: wealth, allAccountsMonthlyDelta: monthlyDelta };
   }, [profiles, activeProfile, activeProfileId, transactions, investmentRecords, getTransactionsForProfile, monthPrefix]);
 
-  // Top 3 categorías de gasto del mes para el widget de Gastos por categoría
   const topCategories = useMemo(() => {
     const map = {};
     monthlyTransactions
@@ -467,7 +622,11 @@ const HomeOverview = ({
     <div
       ref={scrollContainerRef}
       className={`elastic-scroll-wrapper ${isSnapping ? 'snapping' : ''}`}
-      style={{ transform: `translate3d(0, ${pullY}px, 0)` }}
+      style={{
+        position: 'relative',
+        transform: pullY ? `translate3d(0, ${pullY}px, 0)` : undefined,
+        zIndex: isMoreMenuOpen ? 60 : undefined,
+      }}
       onTouchStart={onTouchStart}
       onTouchMove={(e) => onTouchMove(e, scrollContainerRef.current?.closest('.screen-content'))}
       onTouchEnd={onTouchEnd}
@@ -475,8 +634,23 @@ const HomeOverview = ({
     >
       <style>{HOME_TOKENS_CSS}</style>
 
-      {/* BANDA 1: HERO BAND (IMAGEN DE FONDO O NEGRO PURO SEGÚN OPCIÓN) */}
-      <section className={`nx-hero-band ${colorfulHero ? 'colorful' : ''}`}>
+      {isMoreMenuOpen && createPortal(
+        <div
+          className="nx-more-backdrop"
+          onClick={() => setIsMoreMenuOpen(false)}
+          aria-hidden="true"
+        />,
+        document.body,
+      )}
+
+      {/* CAPA DE FONDO INDEPENDIENTE (z-index: 0, NUNCA TAPA LA TARJETA DE MOVIMIENTOS) */}
+      <div className="nx-hero-bg-layer" aria-hidden="true">
+        <div className="nx-hero-bg-artwork" style={{ background: activeBackgroundCss }} />
+        <div className="nx-hero-bg-fade" />
+      </div>
+
+      {/* BANDA 1: HERO */}
+      <section className="nx-hero-band" style={{ zIndex: isMoreMenuOpen ? 10 : 2 }}>
         <div className="nx-hero-inner">
           <div className="nx-top-bar">
             <button
@@ -516,7 +690,7 @@ const HomeOverview = ({
                 <button
                   type="button"
                   onClick={() => onQueryChange?.('')}
-                  style={{ background: 'transparent', border: 0, color: 'var(--on-dark)', display: 'flex', padding: 0, cursor: 'pointer' }}
+                  style={{ background: 'transparent', border: 0, color: '#FFFFFF', display: 'flex', padding: 0, cursor: 'pointer' }}
                 >
                   <X size={13} />
                 </button>
@@ -529,7 +703,7 @@ const HomeOverview = ({
           </div>
 
           <div className="nx-hero-balance">
-            <span className="nx-label" style={{ color: 'rgba(255, 255, 255, 0.85)', display: 'block' }}>
+            <span className="nx-label" style={{ color: 'rgba(255, 255, 255, 0.92)', display: 'block' }}>
               {activeProfile?.name || 'Personal'} · {capitalizedMonth} {filters.year}
             </span>
 
@@ -549,67 +723,190 @@ const HomeOverview = ({
             </button>
           </div>
 
-          <div className="nx-hero-cta-row">
-            <button type="button" className="nx-btn-primary" onClick={() => onQuickAction?.('expense')}>
-              <Plus size={16} strokeWidth={2.2} />
-              <span>Añadir gasto</span>
+          {/* 4 BOTONES CIRCULARES + MENÚ DESPLEGABLE EN "MÁS" */}
+          <div className="nx-hero-circle-grid">
+            {isMoreMenuOpen && (
+              <div className="nx-more-popover" role="menu" aria-label="Más opciones">
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  role="menuitem"
+                  onClick={() => {
+                    triggerHaptic();
+                    setIsMoreMenuOpen(false);
+                    onOpenMovements?.();
+                  }}
+                >
+                  <span>Análisis</span>
+                  <BarChart2 size={17} strokeWidth={2} />
+                </button>
+
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  role="menuitem"
+                  onClick={() => {
+                    triggerHaptic();
+                    setIsMoreMenuOpen(false);
+                    exportPdf?.();
+                  }}
+                >
+                  <span>Extracto PDF</span>
+                  <FileText size={17} strokeWidth={2} />
+                </button>
+
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  role="menuitem"
+                  onClick={() => {
+                    triggerHaptic();
+                    setIsMoreMenuOpen(false);
+                    exportCsv?.();
+                  }}
+                >
+                  <span>Exportar CSV</span>
+                  <ArrowLeftRight size={17} strokeWidth={2} />
+                </button>
+
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  role="menuitem"
+                  onClick={() => {
+                    triggerHaptic();
+                    setIsMoreMenuOpen(false);
+                    setIsThemeModalOpen(true);
+                  }}
+                >
+                  <span>Tema</span>
+                  <Palette size={17} strokeWidth={2} />
+                </button>
+
+                <div className="nx-more-divider" />
+
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  role="menuitem"
+                  onClick={() => {
+                    triggerHaptic();
+                    setIsMoreMenuOpen(false);
+                    setNewAccountName('');
+                    setNewAccountError('');
+                    setIsNewAccountOpen(true);
+                  }}
+                >
+                  <span>Nueva cuenta</span>
+                  <FolderPlus size={17} strokeWidth={2} />
+                </button>
+
+                {profiles.length > 1 && (
+                  <button
+                    type="button"
+                    className="nx-more-item danger"
+                    role="menuitem"
+                    onClick={() => {
+                      triggerHaptic();
+                      setIsMoreMenuOpen(false);
+                      deleteActiveProfile?.().catch((err) => alert(err.message));
+                    }}
+                  >
+                    <span>Eliminar cuenta</span>
+                    <Trash2 size={17} strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="nx-circle-action"
+              onClick={() => {
+                setIsMoreMenuOpen(false);
+                onQuickAction?.('income');
+              }}
+            >
+              <span className="nx-circle-disc">
+                <Plus size={22} strokeWidth={2.2} />
+              </span>
+              <span className="nx-circle-label">Ingreso</span>
             </button>
 
-            <button type="button" className="nx-btn-outline-dark" onClick={() => onQuickAction?.('income')}>
-              <span>+ Ingreso</span>
+            <button
+              type="button"
+              className="nx-circle-action"
+              onClick={() => {
+                setIsMoreMenuOpen(false);
+                onQuickAction?.('expense');
+              }}
+            >
+              <span className="nx-circle-disc">
+                <Shuffle size={20} strokeWidth={2.1} />
+              </span>
+              <span className="nx-circle-label">Gasto</span>
             </button>
-          </div>
 
-          <div className="nx-hero-sub-pills">
-            <button type="button" className="nx-sub-nav-pill" onClick={onOpenLimits}>
-              <ListChecks size={14} /> Topes
+            <button
+              type="button"
+              className="nx-circle-action"
+              onClick={() => {
+                setIsMoreMenuOpen(false);
+                onOpenLimits?.();
+              }}
+            >
+              <span className="nx-circle-disc">
+                <Landmark size={20} strokeWidth={2.1} />
+              </span>
+              <span className="nx-circle-label">Topes</span>
             </button>
-            <button type="button" className="nx-sub-nav-pill" onClick={onOpenMovements}>
-              <BarChart2 size={14} /> Análisis
-            </button>
-            <button type="button" className="nx-sub-nav-pill" onClick={onOpenProfile}>
-              <MoreHorizontal size={14} /> Más
+
+            <button
+              type="button"
+              className={`nx-circle-action ${isMoreMenuOpen ? 'open' : ''}`}
+              onClick={() => {
+                triggerHaptic();
+                setIsMoreMenuOpen((prev) => !prev);
+              }}
+              aria-expanded={isMoreMenuOpen}
+              aria-haspopup="menu"
+            >
+              <span className="nx-circle-disc">
+                <MoreHorizontal size={21} strokeWidth={2.2} />
+              </span>
+              <span className="nx-circle-label">Más</span>
             </button>
           </div>
         </div>
       </section>
 
-      {/* BANDA 2: CATALOGUE BAND (FONDO GRIS #F3F4F6 Y TARJETAS BLANCAS #FFFFFF) */}
-      <div className={`nx-catalogue-band ${colorfulHero ? 'colorful' : ''}`}>
+      {/* BANDA 2: TARJETAS SOBRE FONDO (z-index: 3, POR ENCIMA DE LA CAPA DE FONDO) */}
+      <div className="nx-catalogue-band">
         <div className="nx-tx-catalogue-card">
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 'var(--sp-md)',
-          }}>
-            <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Transacción</span>
-            <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Importe</span>
-          </div>
-
           {visibleTransactions.length > 0 ? (
             <>
               {visibleTransactions.map((tx) => (
                 <TransactionItem key={tx.id} transaction={tx} />
               ))}
               {monthlyTransactions.length > 4 && (
-                <div style={{ textAlign: 'center', marginTop: 'var(--sp-sm)' }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowAllTx((prev) => !prev)}
-                    style={{
-                      background: 'transparent',
-                      border: 0,
-                      color: 'var(--primary)',
-                      fontSize: '13.5px',
-                      fontWeight: 600,
-                      padding: '8px 16px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {showAllTx ? 'Mostrar menos' : 'Ver todo'}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAllTx((prev) => !prev)}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 0,
+                    color: 'var(--text-main)',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    padding: '12px 0 4px',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  {showAllTx ? 'Mostrar menos' : 'Ver todo'}
+                </button>
               )}
             </>
           ) : (
@@ -875,6 +1172,62 @@ const HomeOverview = ({
           </div>
         </div>
       </div>
+
+      {/* MODAL CREAR NUEVA CUENTA DESDE EL MENÚ MÁS */}
+      {isNewAccountOpen && createPortal(
+        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsNewAccountOpen(false)}>
+          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Nueva cuenta</h2>
+              <button type="button" className="sheet-close" onClick={() => setIsNewAccountOpen(false)}>
+                <X size={17} />
+              </button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setNewAccountError('');
+              try {
+                addProfile(newAccountName);
+                triggerHaptic();
+                setNewAccountName('');
+                setIsNewAccountOpen(false);
+              } catch (err) {
+                setNewAccountError(err.message);
+              }
+            }}>
+              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '16px' }}>
+                Nombre de la cuenta
+                <input
+                  required
+                  autoFocus
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  placeholder="Ej. Ahorro, Viajes, Trabajo..."
+                />
+              </label>
+              {newAccountError && (
+                <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: '10px' }}>
+                  {newAccountError}
+                </p>
+              )}
+              <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
+                Crear cuenta <ArrowRight size={16} />
+              </button>
+            </form>
+          </section>
+        </div>,
+        document.body,
+      )}
+
+      {/* MODAL SELECTOR DE TEMA Y FONDO ESTILO REVOLUT */}
+      <HomeThemeModal
+        open={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+        accountLabel={`${activeProfile?.name || 'Personal'} · EUR`}
+        balanceDisplay={formattedAvailable}
+        onApplied={(nextConfig) => setBgConfig(nextConfig)}
+      />
     </div>
   );
 };

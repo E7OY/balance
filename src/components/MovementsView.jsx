@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
@@ -65,7 +65,7 @@ const NX_ACCOUNTS_CSS = `
   .nx-accounts-dark-screen.colorful {
     background:
       radial-gradient(95% 50% at 50% 8%, #4721E0 0%, #2B1378 50%, transparent 88%),
-      linear-gradient(180deg, #2B1378 0%, #434157 56%, #6C6B73 100%);
+      linear-gradient(180deg, #2B1378 0%, #282731 56%, #6C6B73 100%);
   }
   .nx-elevated-group {
     background-color: var(--surface-elevated);
@@ -119,6 +119,7 @@ const NX_ACCOUNTS_CSS = `
     background-color: #46474A;
     padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) 38px;
     color: var(--on-dark);
+    overflow: hidden;
   }
   .nx-card-hero-band.colorful {
     background: linear-gradient(180deg, #2B1378 0%, #46474A 100%);
@@ -128,6 +129,16 @@ const NX_ACCOUNTS_CSS = `
   }
   .dark .nx-card-hero-band.colorful {
     background: linear-gradient(180deg, #231063 0%, #16171A 100%);
+  }
+  .nx-pills-strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    max-width: 82%;
+    scrollbar-width: none;
+  }
+  .nx-pills-strip::-webkit-scrollbar {
+    display: none;
   }
   .nx-physical-card {
     position: relative;
@@ -141,6 +152,29 @@ const NX_ACCOUNTS_CSS = `
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
     border: 1px solid rgba(255, 255, 255, 0.14);
     overflow: hidden;
+    will-change: transform;
+    user-select: none;
+  }
+  .nx-card-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .nx-card-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    border: 0;
+    padding: 0;
+    background-color: rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    transition: width 0.2s ease, background-color 0.2s ease;
+  }
+  .nx-card-dot.active {
+    width: 16px;
+    background-color: #FFFFFF;
   }
   .nx-frost-overlay {
     position: absolute;
@@ -242,6 +276,18 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [showAllCardTx, setShowAllCardTx] = useState(false);
 
+  // Estado y referencias para deslizar entre cuentas
+  const [cardDragX, setCardDragX] = useState(0);
+  const [isSwipingCard, setIsSwipingCard] = useState(false);
+  const swipeStateRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    isHorizontal: false,
+  });
+  const pillRefs = useRef({});
+
   const displayMoney = (val) => (isAmountsHidden
     ? '•••• €'
     : new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val));
@@ -264,7 +310,91 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
     };
   }), [profiles, getTransactionsForProfile, themeMap, frozenMap]);
 
-  const activeAccount = accountsData.find((a) => a.id === activeProfileId) || accountsData[0];
+  const activeAccountIndex = Math.max(0, accountsData.findIndex((a) => a.id === activeProfileId));
+  const activeAccount = accountsData[activeAccountIndex] || accountsData[0];
+
+  useEffect(() => {
+    if (viewMode !== 'detail') return;
+    const activePill = pillRefs.current[activeProfileId];
+    activePill?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [activeProfileId, viewMode]);
+
+  const handleAccountTouchStart = (e) => {
+    if (accountsData.length <= 1 || e.touches.length !== 1) return;
+    if (e.target.closest?.('input, select, textarea, [data-swipe-ignore]')) return;
+    const touch = e.touches[0];
+    swipeStateRef.current = {
+      active: true,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: performance.now(),
+      isHorizontal: false,
+    };
+    setIsSwipingCard(true);
+  };
+
+  const handleAccountTouchMove = (e) => {
+    const st = swipeStateRef.current;
+    if (!st.active || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - st.startX;
+    const dy = touch.clientY - st.startY;
+
+    if (!st.isHorizontal) {
+      if (Math.abs(dy) > 12 && Math.abs(dy) >= Math.abs(dx)) {
+        st.active = false;
+        setIsSwipingCard(false);
+        setCardDragX(0);
+        return;
+      }
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        st.isHorizontal = true;
+      }
+    }
+
+    if (st.isHorizontal && viewMode === 'detail') {
+      const atStart = activeAccountIndex === 0 && dx > 0;
+      const atEnd = activeAccountIndex === accountsData.length - 1 && dx < 0;
+      const dampened = (atStart || atEnd) ? dx * 0.24 : Math.max(-140, Math.min(140, dx * 0.75));
+      setCardDragX(dampened);
+    }
+  };
+
+  const handleAccountTouchEnd = (e) => {
+    const st = swipeStateRef.current;
+    if (!st.active) return;
+    st.active = false;
+    setIsSwipingCard(false);
+    setCardDragX(0);
+
+    if (e.changedTouches.length !== 1) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - st.startX;
+    const dy = touch.clientY - st.startY;
+    const elapsed = Math.max(1, performance.now() - st.startTime);
+    const velocity = Math.abs(dx) / elapsed;
+
+    const isSwipe = (Math.abs(dx) > 48 || (Math.abs(dx) > 28 && velocity > 0.45))
+      && Math.abs(dx) > Math.abs(dy) * 1.2;
+
+    if (!isSwipe) return;
+
+    if (dx < 0 && activeAccountIndex < accountsData.length - 1) {
+      triggerHaptic();
+      setShowAllCardTx(false);
+      switchProfile(accountsData[activeAccountIndex + 1].id);
+    } else if (dx > 0 && activeAccountIndex > 0) {
+      triggerHaptic();
+      setShowAllCardTx(false);
+      switchProfile(accountsData[activeAccountIndex - 1].id);
+    }
+  };
+
+  const resetSwipeState = () => {
+    swipeStateRef.current.active = false;
+    setIsSwipingCard(false);
+    setCardDragX(0);
+  };
 
   const toggleFreeze = (profileId) => {
     triggerHaptic();
@@ -316,7 +446,13 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
 
       {/* PANTALLA 1: LISTA DE CUENTAS */}
       {viewMode === 'list' && (
-        <div className={`nx-accounts-dark-screen ${colorfulHero ? 'colorful' : ''}`}>
+        <div
+          className={`nx-accounts-dark-screen ${colorfulHero ? 'colorful' : ''}`}
+          onTouchStart={handleAccountTouchStart}
+          onTouchMove={handleAccountTouchMove}
+          onTouchEnd={handleAccountTouchEnd}
+          onTouchCancel={resetSwipeState}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
             <button
               type="button"
@@ -509,9 +645,14 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
         </div>
       )}
 
-      {/* PANTALLA 2: DETALLE DE TARJETA CON HOJA INFERIOR REDONDEADA Y TARJETAS BLANCAS */}
+      {/* PANTALLA 2: DETALLE DE TARJETA CON DESLIZAMIENTO ENTRE CUENTAS */}
       {viewMode === 'detail' && activeAccount && (
-        <div>
+        <div
+          onTouchStart={handleAccountTouchStart}
+          onTouchMove={handleAccountTouchMove}
+          onTouchEnd={handleAccountTouchEnd}
+          onTouchCancel={resetSwipeState}
+        >
           <div className={`nx-card-hero-band ${colorfulHero ? 'colorful' : ''}`}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
               <button
@@ -534,13 +675,15 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 <ArrowLeft size={20} strokeWidth={2.2} />
               </button>
 
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '82%' }}>
+              <div className="nx-pills-strip" data-swipe-ignore>
                 {accountsData.map((acc) => (
                   <button
                     key={acc.id}
+                    ref={(el) => { pillRefs.current[acc.id] = el; }}
                     type="button"
                     onClick={() => {
                       triggerHaptic();
+                      setShowAllCardTx(false);
                       switchProfile(acc.id);
                     }}
                     style={{
@@ -564,7 +707,14 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
               </div>
             </div>
 
-            <div className="nx-physical-card" style={{ background: activeAccount.theme.bg }}>
+            <div
+              className="nx-physical-card"
+              style={{
+                background: activeAccount.theme.bg,
+                transform: `translate3d(${cardDragX}px, 0, 0)`,
+                transition: isSwipingCard ? 'none' : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
               {activeAccount.isFrozen && <div className="nx-frost-overlay" />}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 3 }}>
@@ -592,6 +742,24 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 </div>
               </div>
             </div>
+
+            {accountsData.length > 1 && (
+              <div className="nx-card-dots" aria-label="Selector de cuenta">
+                {accountsData.map((acc) => (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    className={`nx-card-dot ${acc.id === activeProfileId ? 'active' : ''}`}
+                    onClick={() => {
+                      triggerHaptic();
+                      setShowAllCardTx(false);
+                      switchProfile(acc.id);
+                    }}
+                    aria-label={`Cambiar a ${acc.name}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* HOJA REDONDEADA SUPERIOR (#F3F4F6) CON BOTONES Y TARJETAS EN BLANCO (#FFFFFF) */}
@@ -640,43 +808,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
               </button>
             </div>
 
-            <div className="nx-detail-white-card" style={{ marginBottom: 'var(--sp-md)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--sp-sm)' }}>
-                <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Transacción</span>
-                <span className="nx-label" style={{ color: 'var(--text-mute)' }}>Importe</span>
-              </div>
-
-              {recentAccountTxs.length > 0 ? (
-                <>
-                  {recentAccountTxs.map((tx) => (
-                    <TransactionItem key={tx.id} transaction={tx} />
-                  ))}
-                  {transactions.length > 4 && (
-                    <div style={{ textAlign: 'center', marginTop: 'var(--sp-sm)' }}>
-                      <button
-                        type="button"
-                        onClick={() => setShowAllCardTx((prev) => !prev)}
-                        style={{
-                          background: 'transparent',
-                          border: 0,
-                          color: 'var(--primary)',
-                          fontSize: '13.5px',
-                          fontWeight: 600,
-                          padding: '8px 16px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {showAllCardTx ? 'Mostrar menos' : 'Ver todo'}
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p style={{ fontSize: '13px', color: 'var(--text-mute)', textAlign: 'center', padding: 'var(--sp-lg) 0', margin: 0 }}>
-                  Aún no hay movimientos en esta cuenta.
-                </p>
-              )}
-            </div>
+            
 
             <button
               type="button"

@@ -329,15 +329,24 @@ const App = () => {
     localStorage.setItem('nexo-colorful-hero', String(enabled));
   };
 
+const isFirstProfileMount = useRef(true);
+
   useEffect(() => {
     const showInvestments = getInvestmentsEnabled(activeProfileId);
     const savedPreferredTab = getPreferredHomeTab(activeProfileId);
     const preferredTab = !showInvestments && savedPreferredTab === 'investments' ? 'expenses' : savedPreferredTab;
+
     setInvestmentsEnabled(showInvestments);
     setProfileName(getStoredProfileName(activeProfileId));
-    setActiveTab(preferredTab);
     setDefaultHomeTab(preferredTab);
     setQuery('');
+
+    if (isFirstProfileMount.current) {
+      isFirstProfileMount.current = false;
+      setActiveTab(preferredTab);
+    } else if (!showInvestments && activeTab === 'investments') {
+      setActiveTab('expenses');
+    }
   }, [activeProfileId]);
 
   const handleDefaultHomeTabChange = (tab) => {
