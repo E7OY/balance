@@ -62,11 +62,30 @@ const NX_ACCOUNTS_CSS = `
     flex-direction: column;
     position: relative;
   }
-  .nx-accounts-dark-screen.colorful {
-    background:
-      radial-gradient(95% 50% at 50% 8%, #4721E0 0%, #2B1378 50%, transparent 88%),
-      linear-gradient(180deg, #2B1378 0%, #282731 56%, #6C6B73 100%);
-  }
+.nx-accounts-dark-screen.colorful {
+  background:
+    radial-gradient(
+      100% 42% at 50% 0%,
+      rgba(105, 45, 255, 0.95) 0%,
+      rgba(76, 29, 180, 0.55) 48%,
+      transparent 100%
+    ),
+    radial-gradient(
+      75% 35% at 100% 12%,
+      rgba(42, 77, 210, 0.22) 0%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      #351080 0%,
+      #29145D 20%,
+      #292735 48%,
+      #41404B 72%,
+      #686770 100%
+    );
+
+  background-color: #292735;
+}
   .nx-elevated-group {
     background-color: var(--surface-elevated);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -74,7 +93,7 @@ const NX_ACCOUNTS_CSS = `
     padding: var(--sp-xs) var(--sp-xl);
     margin-bottom: var(--sp-lg);
   }
-  .nx-accounts-dark-screen.colorful .nx-elevated-group {
+  .nx-elevated-group {
     background: rgba(255, 255, 255, 0.13);
     backdrop-filter: blur(22px) saturate(160%);
     -webkit-backdrop-filter: blur(22px) saturate(160%);
@@ -115,15 +134,21 @@ const NX_ACCOUNTS_CSS = `
   }
 
   /* DETALLE DE TARJETA: ESCENARIO GRIS OSCURO ARRIBA + HOJA CLARA REDONDEADA CON TARJETAS BLANCAS */
-  .nx-card-hero-band {
-    background-color: #46474A;
-    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) 38px;
-    color: var(--on-dark);
-    overflow: hidden;
-  }
-  .nx-card-hero-band.colorful {
-    background: linear-gradient(180deg, #2B1378 0%, #46474A 100%);
-  }
+.nx-card-hero-band.colorful {
+  background:
+    radial-gradient(
+      110% 85% at 50% 0%,
+      rgba(105, 45, 255, 0.9) 0%,
+      rgba(65, 30, 145, 0.45) 55%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      #351080 0%,
+      #292735 100%
+    );
+}
+
   .dark .nx-card-hero-band {
     background-color: #16171A;
   }
@@ -237,6 +262,7 @@ const NX_ACCOUNTS_CSS = `
     box-shadow: none;
   }
 `;
+
 
 const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   const {

@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowDownLeft,
   ArrowLeftRight,
-  ArrowUpRight,
+  Banknote,
   Briefcase,
-  Car,
+  Bus,
   CreditCard,
   Download,
   Eye,
-  Film,
-  HeartPulse,
+  Gamepad2,
+  Heart,
   Home,
   Pencil,
-  Receipt,
+  Plane,
   Scissors,
   ShoppingBag,
-  Tag,
+  ShoppingBasket,
   Trash2,
-  TrendingUp,
-  Tv,
   Upload,
   Utensils,
   X,
@@ -27,47 +24,140 @@ import {
 import { useFinance } from '../context/FinanceContext';
 import { triggerHaptic } from '../utils/haptics';
 
-/* Paleta oficial de 8 colores de producto:
-   teal #00a87e, light-blue #007bc2, deep-pink #e61e49, light-green #428619,
-   orange #ec7e00, yellow #b09000, brown #936d62, danger-red #e23b4a */
+const CUSTOM_STYLES_KEY = 'nexo-custom-category-styles';
+
+const MoneyBagIcon = ({ size = 17 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M9.2 4.5H14.8L13.5 7H10.5L9.2 4.5Z"
+      fill="currentColor"
+    />
+    <path
+      d="M10.2 8.2H13.8C16.4 9.5 17.5 12.2 17.2 14.8C16.9 17.3 15 19 12 19C9 19 7.1 17.3 6.8 14.8C6.5 12.2 7.6 9.5 10.2 8.2Z"
+      fill="currentColor"
+    />
+    <ellipse cx="17.8" cy="14.2" rx="2.7" ry="1.3" fill="currentColor" />
+    <path d="M15.1 16.2C15.1 16.9 16.3 17.5 17.8 17.5C19.3 17.5 20.5 16.9 20.5 16.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <path d="M15.1 18.2C15.1 18.9 16.3 19.5 17.8 19.5C19.3 19.5 20.5 18.9 20.5 18.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
+
+export const REVOLUT_CATEGORY_PRESETS = [
+  { id: 'topups', label: 'Recargas', bg: '#4B89DC', renderIcon: (s) => <MoneyBagIcon size={s} /> },
+  { id: 'entertainment', label: 'Ocio', bg: '#DE5448', renderIcon: (s) => <Gamepad2 size={s} strokeWidth={2.1} /> },
+  { id: 'travel', label: 'Viajes', bg: '#4B89DC', renderIcon: (s) => <Plane size={s} strokeWidth={2.1} /> },
+  { id: 'donation', label: 'Donación', bg: '#DE5448', renderIcon: (s) => <Heart size={s} fill="currentColor" strokeWidth={1.8} /> },
+  { id: 'groceries', label: 'Supermercado', bg: '#8CC152', renderIcon: (s) => <ShoppingBasket size={s} strokeWidth={2.1} /> },
+  { id: 'health', label: 'Salud', bg: '#73CEDB', renderIcon: (s) => <Heart size={s} fill="currentColor" strokeWidth={1.8} /> },
+  { id: 'restaurants', label: 'Restaurantes', bg: '#D47A47', renderIcon: (s) => <Utensils size={s} strokeWidth={2.1} /> },
+  { id: 'shopping', label: 'Compras', bg: '#C94FA0', renderIcon: (s) => <ShoppingBag size={s} strokeWidth={2.1} /> },
+  { id: 'services', label: 'Servicios', bg: '#6E74D8', renderIcon: (s) => <Briefcase size={s} strokeWidth={2.1} /> },
+  { id: 'netsales', label: 'Ingresos', bg: '#65BC89', renderIcon: (s) => <Banknote size={s} strokeWidth={2.1} /> },
+  { id: 'transport', label: 'Transporte', bg: '#7B5FF7', renderIcon: (s) => <Bus size={s} strokeWidth={2.1} /> },
+  { id: 'utilities', label: 'Hogar', bg: '#967B6E', renderIcon: (s) => <Home size={s} strokeWidth={2.1} /> },
+  { id: 'transfers', label: 'Transferencias', bg: '#7B5FF7', renderIcon: (s) => <ArrowLeftRight size={s} strokeWidth={2.2} /> },
+];
+
+export const getCustomCategoryPresetId = (category = '') => {
+  try {
+    const map = JSON.parse(localStorage.getItem(CUSTOM_STYLES_KEY) || '{}') || {};
+    return map[category] || null;
+  } catch {
+    return null;
+  }
+};
+
+export const setCustomCategoryPresetId = (category, presetId) => {
+  try {
+    const map = JSON.parse(localStorage.getItem(CUSTOM_STYLES_KEY) || '{}') || {};
+    if (presetId) map[category] = presetId;
+    else delete map[category];
+    localStorage.setItem(CUSTOM_STYLES_KEY, JSON.stringify(map));
+  } catch {}
+};
+
+const buildVisualsFromPreset = (preset, size) => ({
+  presetId: preset.id,
+  icon: preset.renderIcon(size),
+  bg: preset.bg,
+  softBg: `${preset.bg}24`,
+  fg: preset.bg,
+});
+
 export const getCategoryVisuals = (category = '', type = 'Gasto', size = 17) => {
+  const customPresetId = getCustomCategoryPresetId(category);
+  if (customPresetId) {
+    const found = REVOLUT_CATEGORY_PRESETS.find((p) => p.id === customPresetId);
+    if (found) return buildVisualsFromPreset(found, size);
+  }
+
   const norm = category.toLowerCase().trim();
-  if (norm.includes('comida') || norm.includes('supermercado')) {
-    return { icon: <ShoppingBag size={size} />, bg: '#428619', softBg: 'rgba(66, 134, 25, 0.14)', fg: '#428619' };
+
+  if (norm.includes('viaje') || norm.includes('vuelo') || norm.includes('hotel') || norm.includes('travel')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[2], size); // #4B89DC Plane
   }
-  if (norm.includes('restaurante') || norm.includes('bar')) {
-    return { icon: <Utensils size={size} />, bg: '#ec7e00', softBg: 'rgba(236, 126, 0, 0.14)', fg: '#ec7e00' };
+  if (norm.includes('donaci') || norm.includes('regalo') || norm.includes('donation')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[3], size); // #DE5448 Heart
   }
-  if (norm.includes('hogar') || norm.includes('alquiler') || norm.includes('hipoteca')) {
-    return { icon: <Home size={size} />, bg: '#936d62', softBg: 'rgba(147, 109, 98, 0.16)', fg: '#936d62' };
+  if (norm.includes('recarga') || norm.includes('top up') || norm.includes('ahorro')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[0], size); // #4B89DC MoneyBag
   }
-  if (norm.includes('transporte') || norm.includes('coche') || norm.includes('gasolina')) {
-    return { icon: <Car size={size} />, bg: '#007bc2', softBg: 'rgba(0, 123, 194, 0.14)', fg: '#007bc2' };
+  if (norm.includes('ocio') || norm.includes('entretenimiento') || norm.includes('juego') || norm.includes('cine') || norm.includes('entertainment')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[1], size); // #DE5448 Gamepad
   }
-  if (norm.includes('ocio') || norm.includes('cine') || norm.includes('viajes')) {
-    return { icon: <Film size={size} />, bg: '#e61e49', softBg: 'rgba(230, 30, 73, 0.14)', fg: '#e61e49' };
+  if (norm.includes('comida') || norm.includes('supermercado') || norm.includes('grocer') || norm.includes('aliment')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[4], size); // #8CC152 ShoppingBasket
   }
-  if (norm.includes('salud')) {
-    return { icon: <HeartPulse size={size} />, bg: '#e23b4a', softBg: 'rgba(226, 59, 74, 0.14)', fg: '#e23b4a' };
+  if (norm.includes('salud') || norm.includes('farmacia') || norm.includes('médico') || norm.includes('medico') || norm.includes('health')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[5], size); // #73CEDB Heart
   }
-  if (norm.includes('suscripcion') || norm.includes('netflix') || norm.includes('spotify')) {
-    return { icon: <Tv size={size} />, bg: '#494fdf', softBg: 'rgba(73, 79, 223, 0.14)', fg: '#494fdf' };
+  if (norm.includes('restaurante') || norm.includes('bar') || norm.includes('café') || norm.includes('cafe') || norm.includes('cena')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[6], size); // #D47A47 Utensils
   }
-  if (norm.includes('nómina') || norm.includes('nomina') || norm.includes('sueldo') || norm.includes('salario')) {
-    return { icon: <Briefcase size={size} />, bg: '#00a87e', softBg: 'rgba(0, 168, 126, 0.14)', fg: '#00a87e' };
+  if (norm.includes('compra') || norm.includes('ropa') || norm.includes('tienda') || norm.includes('shopping')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[7], size); // #C94FA0 ShoppingBag
   }
-  if (norm.includes('transferencia') || norm.includes('bizum')) {
-    return { icon: <ArrowLeftRight size={size} />, bg: '#007bc2', softBg: 'rgba(0, 123, 194, 0.14)', fg: '#007bc2' };
+  if (norm.includes('servicio') || norm.includes('suscrip') || norm.includes('trabajo') || norm.includes('nómina') || norm.includes('nomina') || norm.includes('sueldo')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[8], size); // #6E74D8 Briefcase
   }
-  if (norm.includes('inversion')) {
-    return { icon: <TrendingUp size={size} />, bg: '#00a87e', softBg: 'rgba(0, 168, 126, 0.14)', fg: '#00a87e' };
+  if (norm.includes('venta') || norm.includes('ingreso') || norm.includes('inversion') || norm.includes('net sales')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[9], size); // #65BC89 Banknote
   }
-  if (norm.includes('venta') || norm.includes('ropa') || norm.includes('regalo')) {
-    return { icon: <Tag size={size} />, bg: '#b09000', softBg: 'rgba(176, 144, 0, 0.15)', fg: '#b09000' };
+  if (norm.includes('transporte') || norm.includes('bus') || norm.includes('metro') || norm.includes('coche') || norm.includes('gasolina') || norm.includes('peaje')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[10], size); // #7B5FF7 Bus
   }
+  if (norm.includes('hogar') || norm.includes('casa') || norm.includes('alquiler') || norm.includes('hipoteca') || norm.includes('luz') || norm.includes('agua') || norm.includes('utilit')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[11], size); // #967B6E Home
+  }
+  if (norm.includes('transfer') || norm.includes('bizum')) {
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[12], size); // #7B5FF7 ArrowLeftRight
+  }
+
   return type === 'Ingreso'
-    ? { icon: <TrendingUp size={size} />, bg: '#00a87e', softBg: 'rgba(0, 168, 126, 0.14)', fg: '#00a87e' }
-    : { icon: <Receipt size={size} />, bg: '#936d62', softBg: 'rgba(147, 109, 98, 0.14)', fg: '#936d62' };
+    ? buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[9], size)
+    : buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[7], size);
+};
+
+const formatSmartDate = (isoDate = '', time = '') => {
+  if (!isoDate) return '';
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+  let label = isoDate;
+  if (isoDate === todayStr) {
+    label = 'Hoy';
+  } else if (isoDate === yesterdayStr) {
+    label = 'Ayer';
+  } else {
+    const ts = Date.parse(`${isoDate}T00:00:00`);
+    if (Number.isFinite(ts)) {
+      label = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(ts);
+    }
+  }
+  return time ? `${label}, ${time}` : label;
 };
 
 const TransactionItem = ({ transaction }) => {
@@ -90,15 +180,32 @@ const TransactionItem = ({ transaction }) => {
   const [phoneNode, setPhoneNode] = useState(null);
 
   const isExpense = transaction.type === 'Gasto';
-  const visuals = getCategoryVisuals(transaction.category, transaction.type, 17);
+  const visuals = getCategoryVisuals(transaction.category, transaction.type, 18);
 
   useEffect(() => {
     setPhoneNode(document.querySelector('.phone') || document.body);
   }, []);
 
+  const numericAmount = Number(transaction.amount) || 0;
+  const isWholeNumber = Number.isInteger(numericAmount);
   const formatted = isAmountsHidden
     ? '•••• €'
-    : new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(transaction.amount) || 0);
+    : new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: isWholeNumber ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(numericAmount);
+
+  const titleText = transaction.description || transaction.category;
+  const dateLabel = formatSmartDate(transaction.date, transaction.time);
+  const subtitleParts = [dateLabel];
+  if (transaction.description && transaction.category) {
+    subtitleParts.push(transaction.category);
+  }
+  if (transaction.installment) {
+    subtitleParts.push(`Cuota ${transaction.installment.current}/${transaction.installment.total}`);
+  }
 
   const handleSaveNote = async () => {
     try {
@@ -152,62 +259,58 @@ const TransactionItem = ({ transaction }) => {
           display: 'flex',
           alignItems: 'center',
           width: '100%',
-          padding: '12px 0',
+          padding: '11px 0',
           background: 'transparent',
           border: 0,
           textAlign: 'left',
           cursor: 'pointer',
-          gap: 'var(--sp-md)',
+          gap: '14px',
         }}
       >
-        <span style={{ position: 'relative', width: '40px', height: '40px', flexShrink: 0 }}>
-          <span style={{
+        <span
+          style={{
             width: '40px',
             height: '40px',
             borderRadius: 'var(--rounded-full)',
-            background: visuals.softBg,
-            color: visuals.fg,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            {visuals.icon}
-          </span>
-          <span style={{
-            position: 'absolute',
-            right: '-2px',
-            bottom: '-2px',
-            width: '16px',
-            height: '16px',
-            borderRadius: 'var(--rounded-full)',
-            background: isExpense ? 'var(--ink)' : 'var(--primary)',
+            backgroundColor: visuals.bg,
             color: '#FFFFFF',
-            border: '2px solid var(--bg-card)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-          }}>
-            {isExpense ? <ArrowUpRight size={10} strokeWidth={2.5} /> : <ArrowDownLeft size={10} strokeWidth={2.5} />}
-          </span>
+            flexShrink: 0,
+          }}
+        >
+          {visuals.icon}
         </span>
 
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{
-            display: 'block',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-main)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {transaction.description || transaction.category}
+          <span
+            style={{
+              display: 'block',
+              fontSize: '15px',
+              fontWeight: 500,
+              letterSpacing: '-0.01em',
+              color: 'var(--text-main)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {titleText}
           </span>
-          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '5px' }}>
-            {transaction.date} · {transaction.category}
-          </span>
-          <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '5px' }}>
-          {transaction.installment ? `Cuota ${transaction.installment.current}/${transaction.installment.total}` : 'Completado'}
+          <span
+            style={{
+              display: 'block',
+              fontSize: '12.5px',
+              fontWeight: 400,
+              color: 'var(--text-mute)',
+              marginTop: '2px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {subtitleParts.filter(Boolean).join(' · ')}
           </span>
         </span>
 
@@ -216,13 +319,15 @@ const TransactionItem = ({ transaction }) => {
           style={{
             alignSelf: 'flex-start',
             marginTop: '2px',
-            fontSize: '14px',
+            fontSize: '15px',
             fontWeight: 500,
+            letterSpacing: '-0.01em',
             fontVariantNumeric: 'tabular-nums',
             color: isExpense ? 'var(--text-main)' : 'var(--accent-teal)',
+            flexShrink: 0,
           }}
         >
-          {!isExpense ? '+' : ''}{formatted}
+          {isExpense ? '-' : '+'}{formatted}
         </span>
       </button>
 
@@ -257,7 +362,7 @@ const TransactionItem = ({ transaction }) => {
                   {isExpense ? '−' : '+'}{formatted}
                 </span>
                 <span style={{ display: 'block', fontSize: '15px', fontWeight: 500, color: 'var(--primary)', marginTop: 'var(--sp-xs)' }}>
-                  {transaction.description || transaction.category}
+                  {titleText}
                 </span>
                 <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: 'var(--sp-xxs)' }}>
                   {transaction.date}
@@ -279,7 +384,6 @@ const TransactionItem = ({ transaction }) => {
               </div>
             </div>
 
-            {/* button-pill-sm (height: 36px, padding: 8px 16px) */}
             <div style={{ display: 'flex', gap: 'var(--sp-sm)', marginBottom: 'var(--sp-xl)' }}>
               {isExpense && !transaction.installment && splitTransaction && (
                 <button
@@ -308,7 +412,7 @@ const TransactionItem = ({ transaction }) => {
             {isSplitting && (
               <div style={{ ...detailCardStyle, padding: 'var(--sp-lg)' }}>
                 <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
-                  Dividir en cuotas ({new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format((Number(transaction.amount) || 0) / splitCount)}/mes)
+                  Dividir en cuotas ({new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(numericAmount / splitCount)}/mes)
                 </span>
                 <div style={{ display: 'flex', gap: 'var(--sp-xs)', marginBottom: 'var(--sp-md)' }}>
                   {[2, 3, 4, 6, 12].map((n) => (
