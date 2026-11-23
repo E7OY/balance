@@ -192,7 +192,7 @@ const CategoryLimitsForm = ({ onClose }) => {
     <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={onClose}>
       <section
         className="bottom-sheet"
-        style={{ minHeight: '88dvh', background: 'var(--rev-bg)' }}
+        style={{ minHeight: '88dvh'}}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
