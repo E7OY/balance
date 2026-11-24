@@ -388,7 +388,7 @@ const HOME_TOKENS_CSS = `
   }
   .dark .nx-cat-track {
     background-color: #242428;
-  }
+  }WW
 `;
 
 const HomeOverview = ({

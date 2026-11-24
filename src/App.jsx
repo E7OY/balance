@@ -8,7 +8,6 @@ import TransactionForm from './components/TransactionForm';
 import InvestmentForm from './components/InvestmentForm';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CategoryLimitsForm from './components/CategoryLimitsForm';
-import SplashScreen from './components/SplashScreen';
 import NexoLogo from './components/NexoLogo';
 import { triggerHaptic } from './utils/haptics';
 import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage';
@@ -24,6 +23,12 @@ const getInvestmentsEnabled = (profileId) => (
 const getStoredProfileName = (profileId) => {
   const saved = getFromLocalStorage(`finance:${profileId}:displayName`);
   return typeof saved === 'string' ? saved.trim() : '';
+};
+const getStoredProfileAvatar = (profileId) => {
+  const saved = getFromLocalStorage(`finance:${profileId}:avatar`);
+  return typeof saved === 'string' && (saved.startsWith('https://') || saved.startsWith('data:image/'))
+    ? saved
+    : '';
 };
 
 const PIN_STORAGE_KEY = 'balance-pin';
@@ -446,7 +451,6 @@ const App = () => {
 
   return (
     <div className={`stage ${theme === 'dark' ? 'dark' : ''}`}>
-      <SplashScreen />
       {switchToast && <div className="account-toast">{switchToast}</div>}
 
       {isLocked && pinData ? (

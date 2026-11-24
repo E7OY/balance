@@ -35,7 +35,13 @@ import { getPushNotificationsEnabled, setPushNotificationsEnabled } from '../uti
 import { triggerHaptic } from '../utils/haptics';
 import HomeThemeModal from './HomeThemeModal';
 import { getSavedHomeBackground, HOME_BACKGROUNDS } from '../utils/homeBackgrounds';
-
+import { Camera, Shuffle } from 'lucide-react';
+import {
+  DICEBEAR_SEEDS,
+  getDiceBearAvatar,
+  getRandomSeeds,
+  processAvatarFile,
+} from '../utils/avatar';
 const SETTINGS_REVOLUT_CSS = `
   .rev-settings-page {
     min-height: 100dvh;
@@ -295,6 +301,8 @@ const ProfileSwitcher = ({
   profileName,
   onProfileNameChange,
   pinEnabled,
+  avatar = '',
+  onAvatarChange,
   onSetupPin,
   onChangePin,
   onRemovePin,
@@ -321,7 +329,8 @@ const ProfileSwitcher = ({
     joinProfile,
     deleteActiveProfile,
   } = useFinance();
-
+const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [avatarSeeds, setAvatarSeeds] = useState(DICEBEAR_SEEDS);
   const [notifications, setNotifications] = useState(() => getPushNotificationsEnabled(activeProfile.id));
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const customName = profileName || activeProfile?.name || 'Mi perfil';
@@ -426,15 +435,190 @@ const ProfileSwitcher = ({
 
       {/* CABECERA CENTRADA: AVATAR + NOMBRE + @USUARIO */}
       <div className="rev-settings-hero">
-        <div
-          className="rev-settings-avatar"
-          onClick={() => setProfileEditOpen(true)}
-          role="button"
-          tabIndex={0}
-          aria-label="Editar perfil"
+{/* AVATAR EN PERFIL */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            setIsAvatarModalOpen(true);
+          }}
+          style={{
+            position: 'relative',
+            width: '78px',
+            height: '78px',
+            borderRadius: '999px',
+            border: 0,
+            padding: 0,
+            backgroundColor: 'var(--primary)',
+            color: '#FFFFFF',
+            fontSize: '28px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(73, 79, 223, 0.28)',
+          }}
+          aria-label="Cambiar avatar"
         >
-          {initials}
-        </div>
+          {avatar ? (
+            <img
+              src={avatar}
+              alt="Avatar de perfil"
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '999px',
+                objectFit: 'cover',
+                display: 'block',
+                backgroundColor: '#FFFFFF',
+              }}
+            />
+          ) : (
+            (profileName || 'E').slice(0, 1).toUpperCase()
+          )}
+
+          <span
+            style={{
+              position: 'absolute',
+              right: '-2px',
+              bottom: '-2px',
+              width: '26px',
+              height: '26px',
+              borderRadius: '999px',
+              backgroundColor: 'var(--canvas-light)',
+              color: 'var(--ink)',
+              border: '2px solid var(--surface-soft)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.16)',
+            }}
+          >
+            <Camera size={13} strokeWidth={2.2} />
+          </span>
+        </button>
+      </div>
+
+      {/* MODAL SELECTOR DE AVATAR DICEBEAR */}
+      {isAvatarModalOpen && createPortal(
+        <div className="sheet-layer" style={{ zIndex: 120 }} onMouseDown={() => setIsAvatarModalOpen(false)}>
+          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Elige tu avatar</h2>
+              <button type="button" className="sheet-close" onClick={() => setIsAvatarModalOpen(false)}>
+                <X size={17} />
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '12px',
+                marginBottom: '18px',
+              }}
+            >
+              {avatarSeeds.map((seed) => {
+                const url = getDiceBearAvatar(seed);
+                const isSelected = avatar === url;
+                return (
+                  <button
+                    key={seed}
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      onAvatarChange?.(url);
+                      setIsAvatarModalOpen(false);
+                    }}
+                    style={{
+                      aspectRatio: '1 / 1',
+                      borderRadius: '999px',
+                      padding: '2px',
+                      background: 'transparent',
+                      border: isSelected ? '3px solid var(--primary)' : '2px solid transparent',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                    }}
+                    aria-label={`Avatar ${seed}`}
+                  >
+                    <img
+                      src={url}
+                      alt={seed}
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '999px',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: avatar ? '10px' : 0 }}>
+              <button
+                type="button"
+                className="nx-btn-soft"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  triggerHaptic();
+                  setAvatarSeeds(getRandomSeeds(12));
+                }}
+              >
+                <Shuffle size={15} /> Generar otros
+              </button>
+
+              <label
+                className="nx-btn-dark"
+                style={{ flex: 1, margin: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Upload size={15} /> Subir foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const dataUrl = await processAvatarFile(file, 256);
+                      onAvatarChange?.(dataUrl);
+                      triggerHaptic();
+                      setIsAvatarModalOpen(false);
+                    } catch (err) {
+                      alert(err.message);
+                    } finally {
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
+            {avatar && (
+              <button
+                type="button"
+                className="nx-btn-soft"
+                style={{ width: '100%', color: 'var(--danger-red)' }}
+                onClick={() => {
+                  triggerHaptic();
+                  onAvatarChange?.('');
+                  setIsAvatarModalOpen(false);
+                }}
+              >
+                <Trash2 size={15} /> Usar iniciales
+              </button>
+            )}
+          </section>
+        </div>,
+        document.body,
+      )}
 
         <h1 className="rev-settings-name">{customName}</h1>
 
