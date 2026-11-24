@@ -57,21 +57,77 @@ const KEYPAD_GRID = [
 ];
 
 const NX_FORM_CSS = `
-  .nx-kp-screen {
+ .nx-kp-screen {
     position: fixed;
     inset: 0;
     z-index: 9999;
     display: flex;
     flex-direction: column;
+    background-color: var(--surface-soft);
+    color: var(--ink);
+    animation: nx-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .dark .nx-kp-screen {
     background-color: var(--canvas-dark);
     color: var(--on-dark);
-    animation: nx-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .nx-kp-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) var(--sp-sm);
+  }
+  .nx-kp-close {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--rounded-full);
+    border: 0;
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .dark .nx-kp-close {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    box-shadow: none;
+  }
+  .nx-kp-seg {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--rounded-full);
+    background-color: rgba(11, 11, 13, 0.06);
+  }
+  .dark .nx-kp-seg {
+    background-color: var(--surface-elevated);
+  }
+  .nx-kp-seg button {
+    border: 0;
+    padding: 6px 16px;
+    border-radius: var(--rounded-full);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    background-color: transparent;
+    color: var(--text-mute);
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .nx-kp-seg button.active {
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+  .dark .nx-kp-seg button {
+    color: var(--on-dark-mute);
+  }
+  .dark .nx-kp-seg button.active {
+    background-color: var(--canvas-light);
+    color: var(--canvas-dark);
+    box-shadow: none;
   }
   .nx-kp-display {
     flex: 1;
@@ -87,14 +143,46 @@ const NX_FORM_CSS = `
     width: 100%;
     margin: 0 auto;
   }
+  .nx-kp-cta {
+    width: 100%;
+    height: 52px;
+    border-radius: var(--rounded-full);
+    border: 0;
+    background-color: var(--ink);
+    color: var(--canvas-light);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.12s ease;
+  }
+  .dark .nx-kp-cta {
+    background-color: var(--canvas-light);
+    color: var(--canvas-dark);
+  }
+  .nx-kp-cta:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .nx-kp-cta:active:not(:disabled) {
+    transform: scale(0.98);
+  }
   .nx-kp-dock {
-    background-color: var(--surface-elevated);
+    background-color: #E5E7EB;
     padding-bottom: calc(var(--sp-md) + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(11, 11, 13, 0.08);
+  }
+  .dark .nx-kp-dock {
+    background-color: var(--surface-elevated);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
   .nx-kp-ops {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
+    background-color: var(--surface-soft);
+    border-bottom: 1px solid rgba(11, 11, 13, 0.08);
+  }
+  .dark .nx-kp-ops {
     background-color: var(--canvas-dark);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
@@ -102,12 +190,18 @@ const NX_FORM_CSS = `
     height: 40px;
     border: 0;
     background: transparent;
-    color: var(--on-dark);
+    color: var(--ink);
     font-size: 18px;
     font-weight: 400;
     cursor: pointer;
   }
+  .dark .nx-kp-ops button {
+    color: var(--on-dark);
+  }
   .nx-kp-ops button:active {
+    background: rgba(11, 11, 13, 0.06);
+  }
+  .dark .nx-kp-ops button:active {
     background: var(--surface-elevated);
   }
   .nx-kp-keys {
@@ -122,8 +216,9 @@ const NX_FORM_CSS = `
     height: 54px;
     border-radius: var(--rounded-md);
     border: 0;
-    background-color: #242428;
-    color: var(--on-dark);
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -131,10 +226,19 @@ const NX_FORM_CSS = `
     cursor: pointer;
     touch-action: manipulation;
   }
+  .dark .nx-kp-btn {
+    background-color: #242428;
+    color: var(--on-dark);
+    box-shadow: none;
+  }
   .nx-kp-btn.ghost {
     background: transparent;
+    box-shadow: none;
   }
   .nx-kp-btn:active {
+    background-color: #D1D5DB;
+  }
+  .dark .nx-kp-btn:active {
     background-color: #323238;
   }
   .nx-kp-num {
@@ -147,9 +251,12 @@ const NX_FORM_CSS = `
     font-size: 9px;
     font-weight: 500;
     letter-spacing: 0.24px;
-    color: var(--on-dark-mute);
+    color: var(--text-mute);
     margin-top: 2px;
     height: 10px;
+  }
+  .dark .nx-kp-sub {
+    color: var(--on-dark-mute);
   }
 
   /* PASO 2: ESTRUCTURA DE TARJETAS AGRUPADAS */
@@ -264,6 +371,18 @@ const NX_FORM_CSS = `
   }
   .nx-switch.on .nx-switch-thumb {
     transform: translateX(20px);
+  }
+    .nx-kp-screen .nx-sub-nav-pill {
+    background-color: var(--canvas-light);
+    color: var(--ink);
+    border: 1px solid rgba(11, 11, 13, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  .dark .nx-kp-screen .nx-sub-nav-pill {
+    background-color: var(--surface-elevated);
+    color: var(--on-dark);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: none;
   }
 `;
 
@@ -474,30 +593,19 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
       <style>{NX_FORM_CSS}</style>
 
       {/* PASO 1: TECLADO SOBRE CANVAS DARK (#000000) CON PÍLDORA BLANCA */}
-      {step === 1 && (
+{step === 1 && (
         <div className="nx-kp-screen">
           <div className="nx-kp-header">
             <button
               type="button"
+              className="nx-kp-close"
               onClick={onClose}
               aria-label="Cerrar"
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: 'var(--rounded-full)',
-                border: 0,
-                backgroundColor: 'var(--surface-elevated)',
-                color: 'var(--on-dark)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
             >
               <X size={18} />
             </button>
 
-            <span className="nx-label" style={{ color: 'var(--on-dark)' }}>
+            <span className="nx-label" style={{ color: 'inherit' }}>
               {transaction ? `Editar ${type.toLowerCase()}` : isIncome ? 'Añadir ingreso' : 'Añadir gasto'}
             </span>
 
@@ -505,36 +613,18 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--sp-sm)' }}>
-            <div style={{ display: 'inline-flex', gap: '4px', padding: '4px', borderRadius: 'var(--rounded-full)', backgroundColor: 'var(--surface-elevated)' }}>
+            <div className="nx-kp-seg">
               <button
                 type="button"
+                className={type === 'Gasto' ? 'active' : ''}
                 onClick={() => switchTransactionType('Gasto')}
-                style={{
-                  border: 0,
-                  padding: '6px 16px',
-                  borderRadius: 'var(--rounded-full)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  backgroundColor: type === 'Gasto' ? 'var(--canvas-light)' : 'transparent',
-                  color: type === 'Gasto' ? 'var(--canvas-dark)' : 'var(--on-dark-mute)',
-                }}
               >
                 Gasto
               </button>
               <button
                 type="button"
+                className={type === 'Ingreso' ? 'active' : ''}
                 onClick={() => switchTransactionType('Ingreso')}
-                style={{
-                  border: 0,
-                  padding: '6px 16px',
-                  borderRadius: 'var(--rounded-full)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  backgroundColor: type === 'Ingreso' ? 'var(--canvas-light)' : 'transparent',
-                  color: type === 'Ingreso' ? 'var(--canvas-dark)' : 'var(--on-dark-mute)',
-                }}
               >
                 Ingreso
               </button>
@@ -543,7 +633,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
 
           <div className="nx-kp-display">
             <div className="nx-display" style={{ display: 'flex', alignItems: 'baseline' }}>
-              <span style={{ fontSize: '56px', color: isIncome && isValidAmount ? 'var(--accent-teal)' : 'var(--on-dark)' }}>
+              <span style={{ fontSize: '56px', color: isIncome && isValidAmount ? 'var(--accent-teal)' : 'inherit' }}>
                 {isIncome && isValidAmount ? '+' : ''}€{amount}
               </span>
             </div>
@@ -563,8 +653,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
           <div className="nx-kp-cta-wrap">
             <button
               type="button"
-              className="nx-btn-primary"
-              style={{ width: '100%' }}
+              className="nx-kp-cta"
               disabled={!isValidAmount}
               onClick={goToDetails}
             >
@@ -597,7 +686,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
           </div>
         </div>
       )}
-
       {/* PASO 2: ESTRUCTURA DE TARJETAS AGRUPADAS (rounded: 20px, inputs: 12px/56px) */}
       {step === 2 && (
         <div className="nx-detail-modal">
@@ -952,14 +1040,14 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               {/* TARJETA 4: NOTA */}
               <div className="nx-group-card">
                 <div className="nx-group-row">
-                  <span className="nx-row-label">Nota</span>
+                  <span className="nx-row-label">Descripción</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, justifyContent: 'flex-end' }}>
                     <Pencil size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                     <input
                       type="text"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Añadir nota"
+                      placeholder="Añadir descripción"
                       className="nx-note-input"
                     />
                   </div>

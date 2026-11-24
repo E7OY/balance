@@ -522,14 +522,14 @@ const TransactionItem = ({ transaction }) => {
 
             <div style={detailCardStyle}>
               <div style={detailRowStyle}>
-                <span style={{ color: 'var(--text-mute)' }}>Nota</span>
+                <span style={{ color: 'var(--text-mute)' }}>Descripción</span>
                 {!isEditingNote ? (
                   <button
                     type="button"
                     onClick={() => setIsEditingNote(true)}
                     style={{ background: 'transparent', border: 0, color: 'var(--primary)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                   >
-                    <Pencil size={13} /> {transaction.description || 'Añadir nota'}
+                    <Pencil size={13} /> {transaction.description || 'Añadir descripción'}
                   </button>
                 ) : (
                   <div style={{ display: 'flex', gap: '8px', flex: 1, marginLeft: '16px' }}>

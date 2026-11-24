@@ -504,13 +504,7 @@ const NX_ACCOUNTS_CSS = `
     animation: nx-fade 0.2s ease-out;
   }
   .nx-accounts-dark-screen.colorful {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(38, 18, 128, 0.48) 0%,
-        rgba(28, 22, 72, 0.36) 42%,
-        rgba(32, 34, 42, 0.42) 100%
-      );
+
     backdrop-filter: blur(46px) saturate(180%);
     -webkit-backdrop-filter: blur(46px) saturate(180%);
   }
@@ -550,9 +544,9 @@ const NX_ACCOUNTS_CSS = `
   .nx-accounts-dark-screen.colorful {
     background: linear-gradient(
       180deg,
-      rgba(38, 18, 128, 0.48) 0%,
-      rgba(28, 22, 72, 0.36) 42%,
-      rgba(32, 34, 42, 0.42) 100%
+      rgba(180, 180, 182, 0.48) 0%,
+      rgba(136, 136, 136, 0.36) 42%,
+      rgba(83, 83, 83, 0.42) 100%
     );
     backdrop-filter: blur(46px) saturate(180%);
     -webkit-backdrop-filter: blur(46px) saturate(180%);
@@ -587,7 +581,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
     syncUser,
   } = useFinance();
 
-  const [viewMode, setViewMode] = useState('list');
+  const [viewMode, setViewMode] = useState('detail');
   const [frozenMap, setFrozenMap] = useState(() => readMapStorage('balance-frozen-accounts'));
   const [themeMap, setThemeMap] = useState(() => readMapStorage('balance-account-themes'));
   const [networkMap, setNetworkMap] = useState(() => readMapStorage('balance-account-networks'));
@@ -1000,20 +994,27 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
       )}
 
       {/* PANTALLA 2: DETALLE DE TARJETA CON DESLIZAMIENTO ENTRE CUENTAS */}
+      {/* PANTALLA: DETALLE DE TARJETA CON DESLIZAMIENTO ENTRE CUENTAS */}
       {viewMode === 'detail' && activeAccount && (
         <div
           onTouchStart={handleAccountTouchStart}
           onTouchMove={handleAccountTouchMove}
           onTouchEnd={handleAccountTouchEnd}
           onTouchCancel={resetSwipeState}
-          style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', backgroundColor: 'var(--surface-soft)' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 60,
+            overflowY: 'auto',
+            backgroundColor: 'var(--surface-soft)',
+          }}
         >
           <div className={`nx-card-hero-band ${colorfulHero ? 'colorful' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: 'var(--sp-lg)' }}>
               <button
                 type="button"
-                onClick={() => setViewMode('list')}
-                aria-label="Volver a cuentas"
+                onClick={onClose}
+                aria-label="Volver al inicio"
                 style={{
                   width: '34px',
                   height: '34px',
@@ -1025,12 +1026,45 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  flexShrink: 0,
                 }}
               >
                 <ArrowLeft size={20} strokeWidth={2.2} />
               </button>
 
-              <div className="nx-pills-strip" data-swipe-ignore>
+              <div className="nx-pills-strip" data-swipe-ignore style={{ flex: 1, maxWidth: 'none', alignItems: 'center' }}>
+                {/* BOTÓN AÑADIR CUENTA A LA IZQUIERDA DE LAS PILLS */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setModalError('');
+                    setNewAccountName('');
+                    setNewAccountDate(getTodayIso());
+                    setSelectedCardTheme('revolut-standard');
+                    setSelectedCardNetwork('mastercard');
+                    setJoinCode('');
+                    setJoinName('');
+                    setIsAddModalOpen(true);
+                  }}
+                  aria-label="Añadir cuenta"
+                  style={{
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: 'var(--rounded-full)',
+                    border: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    color: '#FFFFFF',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Plus size={17} strokeWidth={2.4} />
+                </button>
+
                 {accountsData.map((acc) => (
                   <button
                     key={acc.id}
@@ -1050,6 +1084,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                       fontWeight: 500,
                       whiteSpace: 'nowrap',
                       cursor: 'pointer',
+                      flexShrink: 0,
                       backgroundColor: acc.id === activeProfileId
                         ? '#FFFFFF'
                         : 'rgba(255, 255, 255, 0.14)',
@@ -1498,7 +1533,6 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                   deleteActiveProfile()
                     .then(() => {
                       setIsSettingsOpen(false);
-                      setViewMode('list');
                     })
                     .catch((err) => alert(err.message));
                 }}

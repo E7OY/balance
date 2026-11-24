@@ -560,8 +560,8 @@ html, body, #root {
   gap: 2px;
   padding: 5px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(28px) saturate(190%);
+  background: rgba(255, 255, 255, 0.829);
+  backdrop-filter: blur(5px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
   border: 1px solid rgba(11, 11, 13, 0.09);
   box-shadow:
