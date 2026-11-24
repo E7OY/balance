@@ -1,15 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  ArrowDown,
   ArrowLeftRight,
   ArrowRight,
-  ArrowUp,
   BarChart2,
   CreditCard,
   FileText,
   FolderPlus,
-  GitFork,
   Landmark,
   MoreHorizontal,
   Palette,
@@ -21,7 +18,6 @@ import {
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
 import TransactionItem, { getCategoryVisuals } from "./TransactionItem";
-import NexoLogo from "./NexoLogo";
 import HomeThemeModal from "./HomeThemeModal";
 import {
   getSavedHomeBackground,
@@ -33,7 +29,7 @@ import { getFromLocalStorage } from "../utils/localStorage";
 import { triggerHaptic } from "../utils/haptics";
 
 const HOME_TOKENS_CSS = `
-  /* Fondo gris suave (#F3F4F6) en modo claro para que las tarjetas blancas (#FFFFFF) destaquen */
+  /* Fondo gris suave (#F3F4F6) en modo claro para que las tarjetas destaquen */
   .stage:not(.dark),
   .stage:not(.dark) .phone,
   .stage:not(.dark) .screen-content {
@@ -41,7 +37,7 @@ const HOME_TOKENS_CSS = `
   }
 
   /* CAPA DE FONDO INDEPENDIENTE CON DEGRADADO SUAVIZADO */
-.nx-hero-bg-layer {
+  .nx-hero-bg-layer {
     position: absolute;
     top: 0;
     left: 0;
@@ -325,7 +321,7 @@ const HOME_TOKENS_CSS = `
     }
   }
 
-  /* CATALOGUE BAND: SIEMPRE POR ENCIMA DE LA CAPA DE FONDO (z-index: 3 > z-index: 0) */
+  /* CATALOGUE BAND */
   .nx-catalogue-band {
     background-color: transparent;
     padding: 0 var(--sp-lg) var(--sp-xxl);
@@ -352,47 +348,52 @@ const HOME_TOKENS_CSS = `
 
   .nx-widgets-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--sp-md);
   }
+
+  /* WIDGETS LIQUID GLASS */
   .nx-widget-tile {
-    background-color: var(--canvas-light);
-    color: var(--ink);
-    border-radius: var(--rounded-lg);
-    padding: 20px;
-    border: 0;
-    text-align: left;
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 172px;
+    align-items: flex-start;
+    text-align: left;
+    padding: 18px;
+    min-height: 156px;
+    border-radius: 22px;
+    border:none;
+    color: var(--ink);
+    font-family: inherit;
     cursor: pointer;
-    transition: transform 0.14s ease;
-    min-width: 0;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.76) 0%, rgba(255, 255, 255, 0.46) 100%);
+    backdrop-filter: blur(24px) saturate(190%);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+  }
+  .nx-widget-tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: none;
   }
   .dark .nx-widget-tile {
-    background-color: var(--surface-elevated);
     color: var(--on-dark);
-    box-shadow: none;
-  }
-  .nx-widget-tile:active {
-    transform: scale(0.98);
+    background: rgba(24, 27, 34, 0.92);
+  border:none;
   }
 
-  .nx-cat-track {
-    height: 4px;
-    border-radius: var(--rounded-full);
-    background-color: var(--surface-soft);
-    overflow: hidden;
+  button.nx-widget-tile:active {
+    transform: scale(0.975);
   }
-  .dark .nx-cat-track {
-    background-color: #242428;
-  }WW
 `;
 
 const HomeOverview = ({
   initials = "MP",
+  avatar = "",
   colorfulHero = true,
   query = "",
   onQueryChange,
@@ -405,6 +406,7 @@ const HomeOverview = ({
   const {
     transactions,
     investmentRecords = [],
+    monthlyCategoryCaps = {},
     filters,
     activeProfile,
     activeProfileId,
@@ -419,7 +421,6 @@ const HomeOverview = ({
   } = useFinance();
 
   const ACCOUNT_THEME_BGS = {
-    // Oficiales Revolut
     "revolut-standard":
       "linear-gradient(135deg, #2563EB 0%, #7C3AED 52%, #EC4899 100%)",
     "metal-black":
@@ -438,7 +439,6 @@ const HomeOverview = ({
       "linear-gradient(125deg, #3B82F6 0%, #8B5CF6 28%, #EC4899 56%, #F59E0B 82%, #10B981 100%)",
     disposable:
       "linear-gradient(135deg, #FF2E93 0%, #E11D48 55%, #9F1239 100%)",
-    // Extras y anteriores
     standard: "linear-gradient(145deg, #2D2E32 0%, #1C1D20 100%)",
     cobalt: "linear-gradient(145deg, #494FDF 0%, #2D32B8 55%, #1A1E7A 100%)",
     teal: "linear-gradient(145deg, #00A87E 0%, #007558 100%)",
@@ -468,6 +468,7 @@ const HomeOverview = ({
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountError, setNewAccountError] = useState("");
   const [showAllTx, setShowAllTx] = useState(false);
+  const [hoveredCat, setHoveredCat] = useState(null);
 
   const scrollContainerRef = useRef(null);
   const longPressRef = useRef(null);
@@ -614,7 +615,7 @@ const HomeOverview = ({
     });
   }, [profiles, activeProfile]);
 
-  const topCategories = useMemo(() => {
+  const categoryDonut = useMemo(() => {
     const map = {};
     monthlyTransactions
       .filter((tx) => tx.type === "Gasto")
@@ -623,19 +624,56 @@ const HomeOverview = ({
         map[cat] = (map[cat] || 0) + (Number(tx.amount) || 0);
       });
 
-    return Object.entries(map)
-      .map(([name, amount]) => ({
-        name,
-        amount,
-        share:
-          totals.expenses > 0
-            ? Math.min(100, Math.round((amount / totals.expenses) * 100))
-            : 0,
-        color: getCategoryVisuals(name, "Gasto").bg,
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 3);
-  }, [monthlyTransactions, totals.expenses]);
+    const sorted = Object.entries(map)
+      .map(([name, amount]) => {
+        const limit = Number(monthlyCategoryCaps?.[name]) || 0;
+        return {
+          name,
+          amount,
+          limit,
+          isOverLimit: limit > 0 && amount > limit,
+          color: getCategoryVisuals(name, "Gasto").bg,
+        };
+      })
+      .sort((a, b) => b.amount - a.amount);
+
+    const items =
+      sorted.length > 8
+        ? [
+            ...sorted.slice(0, 7),
+            {
+              name: "Otros",
+              amount: sorted.slice(7).reduce((s, i) => s + i.amount, 0),
+              limit: 0,
+              isOverLimit: false,
+              color: "#6B7280",
+            },
+          ]
+        : sorted;
+
+    const r = 68;
+    const strokeWidth = 18;
+    const circumference = 2 * Math.PI * r;
+    const gap = items.length > 1 ? 26 : 0;
+    let offset = 0;
+
+    const segments = items.map((item) => {
+      const share = totals.expenses > 0 ? item.amount / totals.expenses : 0;
+      const rawLength = share * circumference;
+      const dashLength =
+        items.length === 1 ? circumference : Math.max(2, rawLength - gap);
+      const segment = {
+        ...item,
+        share: Math.round(share * 100),
+        dashLength,
+        dashOffset: -offset,
+      };
+      offset += rawLength;
+      return segment;
+    });
+
+    return { items, segments, r, strokeWidth, circumference };
+  }, [monthlyTransactions, totals.expenses, monthlyCategoryCaps]);
 
   const spendWidgetChart = useMemo(() => {
     const daysInMonth = new Date(filters.year, filters.month + 1, 0).getDate();
@@ -741,6 +779,14 @@ const HomeOverview = ({
           maximumFractionDigits: Number.isInteger(val) ? 0 : 2,
         }).format(val);
 
+  const formatDonutTotal = (val) => {
+    if (isAmountsHidden) return "•••• €";
+    if (val >= 1000) {
+      return `${(val / 1000).toFixed(1).replace(".0", "")}K €`;
+    }
+    return displayCompactMoney(val);
+  };
+
   const visibleTransactions = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = monthlyTransactions
@@ -756,17 +802,6 @@ const HomeOverview = ({
       );
     return showAllTx ? list : list.slice(0, 4);
   }, [monthlyTransactions, query, showAllTx]);
-
-  const secondarySpace =
-    profiles.find((p) => p.id !== activeProfile?.id) || activeProfile;
-  const spaceDisplayName = secondarySpace?.name || "Personal";
-  const spaceInitials = spaceDisplayName
-    .split(" ")
-    .filter(Boolean)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
   return (
     <div
@@ -796,7 +831,7 @@ const HomeOverview = ({
           document.body,
         )}
 
-      {/* CAPA DE FONDO INDEPENDIENTE (z-index: 0, NUNCA TAPA LA TARJETA DE MOVIMIENTOS) */}
+      {/* CAPA DE FONDO INDEPENDIENTE */}
       <div className="nx-hero-bg-layer" aria-hidden="true">
         <div
           className="nx-hero-bg-artwork"
@@ -815,6 +850,7 @@ const HomeOverview = ({
             <button
               type="button"
               className="nx-avatar-pill"
+              style={avatar ? { padding: 0, overflow: "visible" } : undefined}
               onPointerDown={() => {
                 didLongPressRef.current = false;
                 longPressRef.current = window.setTimeout(() => {
@@ -833,7 +869,21 @@ const HomeOverview = ({
               }}
               aria-label="Perfil y cuentas"
             >
-              {initials}
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt="Foto de perfil"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "999px",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                initials
+              )}
               {profiles.length > 1 && <span className="nx-avatar-dot" />}
             </button>
 
@@ -1065,7 +1115,7 @@ const HomeOverview = ({
         </div>
       </section>
 
-      {/* BANDA 2: TARJETAS SOBRE FONDO (z-index: 3, POR ENCIMA DE LA CAPA DE FONDO) */}
+      {/* BANDA 2: TARJETAS Y WIDGETS */}
       <div className="nx-catalogue-band">
         <div className="nx-tx-catalogue-card">
           {visibleTransactions.length > 0 ? (
@@ -1129,7 +1179,7 @@ const HomeOverview = ({
             className="nx-widget-tile"
             onClick={onOpenMovements}
           >
-            <div>
+            <div style={{ width: "100%" }}>
               <span
                 className="nx-label"
                 style={{ color: "var(--text-mute)", display: "block" }}
@@ -1215,7 +1265,7 @@ const HomeOverview = ({
             className="nx-widget-tile"
             onClick={onOpenMovements}
           >
-            <div>
+            <div style={{ width: "100%" }}>
               <span
                 className="nx-label"
                 style={{ color: "var(--text-mute)", display: "block" }}
@@ -1289,60 +1339,253 @@ const HomeOverview = ({
             </div>
           </button>
 
-          {/* WIDGET 3: GASTOS POR CATEGORÍA */}
-          <button
-            type="button"
+          {/* WIDGET 3: GASTOS POR CATEGORÍA (VERTICAL 2 FILAS + TOOLTIP + GASTO/TOPE) */}
+          <div
             className="nx-widget-tile"
-            onClick={onOpenLimits}
-            style={{ padding: "18px" }}
+            style={{
+              gridColumn: "2",
+              gridRow: "1 / 3",
+              padding: "18px 16px",
+              cursor: "default",
+            }}
+            onMouseLeave={() => setHoveredCat(null)}
           >
-            <div style={{ width: "100%" }}>
-              <span
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "10px",
+                width: "100%",
+              }}
+            >
+              <span className="nx-label" style={{ color: "var(--text-mute)" }}>
+                Categorías
+              </span>
+              <button
+                type="button"
+                onClick={onOpenLimits}
                 className="nx-label"
                 style={{
-                  color: "var(--text-mute)",
-                  display: "block",
-                  marginBottom: "10px",
+                  background: "transparent",
+                  border: 0,
+                  padding: 0,
+                  color: "var(--primary)",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
                 }}
               >
-                Por categoría
-              </span>
+                Topes
+              </button>
+            </div>
 
-              {topCategories.length > 0 ? (
+            {categoryDonut.items.length > 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: 1,
+                  justifyContent: "center",
+                  gap: "16px",
+                  width: "100%",
+                }}
+              >
+                {/* DONUT + TOOLTIP FLOTANTE */}
+                <div
+                  style={{
+                    position: "relative",
+                    width: "126px",
+                    height: "126px",
+                    margin: "0 auto",
+                  }}
+                >
+                  {hoveredCat && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-10px",
+                        left: "50%",
+                        transform: "translate(-50%, -100%)",
+                        backgroundColor: "rgba(18, 19, 24, 0.94)",
+                        color: "#FFFFFF",
+                        padding: "6px 10px",
+                        borderRadius: "10px",
+                        fontSize: "11px",
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                        boxShadow: "0 8px 20px rgba(0, 0, 0, 0.28)",
+                        zIndex: 10,
+                        pointerEvents: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <i
+                        style={{
+                          width: "7px",
+                          height: "7px",
+                          borderRadius: "50%",
+                          backgroundColor: hoveredCat.color,
+                        }}
+                      />
+                      <span>{hoveredCat.name}</span>
+                      <span style={{ opacity: 0.75 }}>
+                        · {hoveredCat.share}%
+                      </span>
+                    </div>
+                  )}
+
+                  <svg
+                    viewBox="0 0 180 180"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      transform: "rotate(-90deg)",
+                      overflow: "visible",
+                    }}
+                  >
+                    {categoryDonut.segments.map((seg) => {
+                      const isActive = hoveredCat?.name === seg.name;
+                      const isDimmed = hoveredCat && !isActive;
+                      return (
+                        <circle
+                          key={seg.name}
+                          cx="90"
+                          cy="90"
+                          r={categoryDonut.r}
+                          fill="none"
+                          stroke={seg.color}
+                          strokeWidth={
+                            isActive
+                              ? categoryDonut.strokeWidth + 4
+                              : categoryDonut.strokeWidth
+                          }
+                          strokeLinecap="round"
+                          strokeDasharray={`${seg.dashLength} ${categoryDonut.circumference}`}
+                          strokeDashoffset={seg.dashOffset}
+                          style={{
+                            cursor: "pointer",
+                            opacity: isDimmed ? 0.3 : 1,
+                            transition:
+                              "opacity 0.18s ease, stroke-width 0.18s ease",
+                          }}
+                          onMouseEnter={() => setHoveredCat(seg)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerHaptic();
+                            setHoveredCat((prev) =>
+                              prev?.name === seg.name ? null : seg,
+                            );
+                          }}
+                        />
+                      );
+                    })}
+                  </svg>
+
+                  {/* TEXTO CENTRAL (TOTAL O CATEGORÍA ACTIVA CON TOPE) */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
+                      textAlign: "center",
+                      padding: "0 10px",
+                    }}
+                  >
+                    <strong
+                      className="nx-display privacy-sensitive"
+                      style={{
+                        fontSize: hoveredCat ? "16px" : "20px",
+                        fontWeight: 700,
+                        letterSpacing: "-0.03em",
+                        color: hoveredCat?.isOverLimit
+                          ? "var(--danger-red)"
+                          : "var(--text-main)",
+                      }}
+                    >
+                      {hoveredCat
+                        ? displayCompactMoney(hoveredCat.amount)
+                        : formatDonutTotal(totals.expenses)}
+                    </strong>
+                    {hoveredCat && (
+                      <span
+                        className="privacy-sensitive"
+                        style={{
+                          fontSize: "10px",
+                          color: "var(--text-mute)",
+                          marginTop: "2px",
+                          maxWidth: "84px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {hoveredCat.limit > 0
+                          ? `/ ${displayCompactMoney(hoveredCat.limit)}`
+                          : `${hoveredCat.share}%`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* LEYENDA VERTICAL (GASTO / TOPE) */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "9px",
+                    gap: "8px",
                     width: "100%",
                   }}
                 >
-                  {topCategories.map((cat) => (
-                    <div key={cat.name} style={{ width: "100%" }}>
-                      <div
+                  {categoryDonut.segments.slice(0, 5).map((cat) => {
+                    const isActive = hoveredCat?.name === cat.name;
+                    return (
+                      <button
+                        key={cat.name}
+                        type="button"
+                        onMouseEnter={() => setHoveredCat(cat)}
+                        onClick={() => {
+                          triggerHaptic();
+                          setHoveredCat((prev) =>
+                            prev?.name === cat.name ? null : cat,
+                          );
+                        }}
                         style={{
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          gap: "4px",
-                          fontSize: "12px",
-                          marginBottom: "4px",
+                          gap: "6px",
+                          width: "100%",
+                          background: "transparent",
+                          border: 0,
+                          padding: "2px 0",
+                          cursor: "pointer",
+                          opacity: hoveredCat && !isActive ? 0.4 : 1,
+                          transition: "opacity 0.16s ease",
                         }}
                       >
                         <span
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "5px",
+                            gap: "6px",
                             minWidth: 0,
-                            fontWeight: 500,
-                            color: "var(--text-main)",
+                            fontSize: "11.5px",
+                            color: isActive
+                              ? "var(--text-main)"
+                              : "var(--text-mute)",
+                            fontWeight: isActive ? 600 : 400,
                           }}
                         >
                           <i
                             style={{
-                              width: "7px",
-                              height: "7px",
+                              width: "8px",
+                              height: "8px",
                               borderRadius: "50%",
                               backgroundColor: cat.color,
                               flexShrink: 0,
@@ -1361,193 +1604,62 @@ const HomeOverview = ({
                         <span
                           className="privacy-sensitive"
                           style={{
-                            fontSize: "11.5px",
-                            fontWeight: 500,
-                            color: "var(--text-mute)",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            color: cat.isOverLimit
+                              ? "var(--danger-red)"
+                              : "var(--text-main)",
                             fontVariantNumeric: "tabular-nums",
                             flexShrink: 0,
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {displayCompactMoney(cat.amount)}
+                          {cat.limit > 0 && (
+                            <span
+                              style={{
+                                color: "var(--text-mute)",
+                                fontWeight: 400,
+                              }}
+                            >
+                              /{displayCompactMoney(cat.limit)}
+                            </span>
+                          )}
                         </span>
-                      </div>
-                      <div className="nx-cat-track">
-                        <div
-                          style={{
-                            height: "100%",
-                            width: `${cat.share}%`,
-                            borderRadius: "var(--rounded-full)",
-                            backgroundColor: cat.color,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
-              ) : (
-                <div style={{ marginTop: "14px" }}>
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    Sin gastos
-                  </span>
-                  <span
-                    className="nx-label"
-                    style={{
-                      display: "block",
-                      color: "var(--text-mute)",
-                      marginTop: "4px",
-                    }}
-                  >
-                    Toca para ver topes
-                  </span>
-                </div>
-              )}
-            </div>
-          </button>
-
-          {/* WIDGET 4: ESPACIO RÁPIDO CON GLYPH NEXO */}
-          <div
-            className="nx-widget-tile"
-            style={{ alignItems: "center", textAlign: "center" }}
-          >
-            <div
-              onClick={() => {
-                if (profiles.length > 1) onLongPressAvatar?.();
-                else onOpenProfile?.();
-              }}
-              style={{
-                position: "relative",
-                width: "46px",
-                height: "46px",
-                cursor: "pointer",
-              }}
-            >
+              </div>
+            ) : (
               <div
                 style={{
-                  width: "46px",
-                  height: "46px",
-                  borderRadius: "var(--rounded-full)",
-                  backgroundColor: "var(--accent-teal)",
-                  color: "#FFFFFF",
-                  fontSize: "15px",
-                  fontWeight: 500,
+                  flex: 1,
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
+                  textAlign: "center",
+                  width: "100%",
                 }}
               >
-                {spaceInitials}
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Sin gastos
+                </span>
+                <span
+                  className="nx-label"
+                  style={{ color: "var(--text-mute)", marginTop: "4px" }}
+                >
+                  Toca en Topes
+                </span>
               </div>
-              <span
-                style={{
-                  position: "absolute",
-                  right: "-2px",
-                  bottom: "-2px",
-                  width: "18px",
-                  height: "18px",
-                  borderRadius: "var(--rounded-full)",
-                  backgroundColor: "var(--canvas-light)",
-                  color: "var(--primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
-                }}
-              >
-                <NexoLogo size={11} />
-              </span>
-            </div>
-
-            <span
-              onClick={onOpenProfile}
-              className="nx-label"
-              style={{
-                color: "var(--text-main)",
-                margin: "8px 0",
-                maxWidth: "100%",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                cursor: "pointer",
-              }}
-            >
-              {spaceDisplayName}
-            </span>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
-              <button
-                type="button"
-                onClick={onOpenLimits}
-                aria-label="Topes"
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  border: 0,
-                  background: "transparent",
-                  color: "var(--text-mute)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <GitFork size={16} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onQuickAction?.("expense")}
-                aria-label="Añadir gasto"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  border: 0,
-                  background: "rgba(73, 79, 223, 0.14)",
-                  color: "var(--primary)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <ArrowUp size={18} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onQuickAction?.("income")}
-                aria-label="Añadir ingreso"
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  border: 0,
-                  background: "transparent",
-                  color: "var(--text-mute)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <ArrowDown size={16} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
