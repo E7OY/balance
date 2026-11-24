@@ -111,6 +111,49 @@ const getTodayIso = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+  const ACCOUNT_THEME_BGS = {
+    // Oficiales Revolut
+    "revolut-standard":
+      "linear-gradient(135deg, #2563EB 0%, #7C3AED 52%, #EC4899 100%)",
+    "metal-black":
+      "linear-gradient(145deg, #2C2D32 0%, #16171A 52%, #09090B 100%)",
+    "metal-space-grey":
+      "linear-gradient(145deg, #5C606B 0%, #3A3D45 50%, #23252A 100%)",
+    "metal-gold":
+      "linear-gradient(135deg, #C8A45D 0%, #9E7B38 48%, #735723 100%)",
+    "metal-rose-gold":
+      "linear-gradient(135deg, #C98B83 0%, #A46760 50%, #7A4843 100%)",
+    "metal-lavender":
+      "linear-gradient(135deg, #8B7AD9 0%, #6353B5 52%, #44368A 100%)",
+    "ultra-platinum":
+      "linear-gradient(135deg, #9EA4B0 0%, #6C727F 48%, #464B56 100%)",
+    chromatic:
+      "linear-gradient(125deg, #3B82F6 0%, #8B5CF6 28%, #EC4899 56%, #F59E0B 82%, #10B981 100%)",
+    disposable:
+      "linear-gradient(135deg, #FF2E93 0%, #E11D48 55%, #9F1239 100%)",
+    // Extras y anteriores
+    standard: "linear-gradient(145deg, #2D2E32 0%, #1C1D20 100%)",
+    cobalt: "linear-gradient(145deg, #494FDF 0%, #2D32B8 55%, #1A1E7A 100%)",
+    teal: "linear-gradient(145deg, #00A87E 0%, #007558 100%)",
+    emerald: "linear-gradient(145deg, #00A87E 0%, #007558 55%, #024B39 100%)",
+    pink: "linear-gradient(145deg, #E61E49 0%, #A81032 100%)",
+    brown: "linear-gradient(145deg, #936D62 0%, #63473F 100%)",
+    bronze: "linear-gradient(145deg, #936D62 0%, #63473F 55%, #3E2C27 100%)",
+    "midnight-aurora":
+      "linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #0EA5E9 100%)",
+    "sunset-amber":
+      "linear-gradient(135deg, #F97316 0%, #C2410C 52%, #7C2D12 100%)",
+  };
+
+  const FALLBACK_THEME_IDS = [
+    "revolut-standard",
+    "metal-black",
+    "cobalt",
+    "emerald",
+    "disposable",
+    "metal-gold",
+  ];
+
 const toDateInputValue = (isoOrTs) => {
   if (!isoOrTs) return getTodayIso();
   if (/^\d{4}-\d{2}-\d{2}$/.test(isoOrTs)) return isoOrTs;
@@ -561,6 +604,23 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
       theme: themeObj,
     };
   }), [profiles, getTransactionsForProfile, themeMap, frozenMap, networkMap, createdMap]);
+
+  const accountCircles = useMemo(() => {
+    let savedThemes = {};
+    try {
+      savedThemes = JSON.parse(localStorage.getItem('balance-account-themes') || '{}') || {};
+    } catch {}
+
+    const list = profiles.length > 0 ? profiles : (activeProfile ? [activeProfile] : []);
+    return list.map((p, idx) => {
+      const themeId = savedThemes[p.id] || FALLBACK_THEME_IDS[idx % FALLBACK_THEME_IDS.length];
+      return {
+        id: p.id,
+        name: p.name,
+        bg: ACCOUNT_THEME_BGS[themeId] || ACCOUNT_THEME_BGS.standard,
+      };
+    });
+  }, [profiles, activeProfile]);
 
   const activeAccountIndex = Math.max(0, accountsData.findIndex((a) => a.id === activeProfileId));
   const activeAccount = accountsData[activeAccountIndex] || accountsData[0];

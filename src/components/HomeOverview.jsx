@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowDown,
   ArrowLeftRight,
@@ -18,19 +18,19 @@ import {
   Shuffle,
   Trash2,
   X,
-} from 'lucide-react';
-import { useFinance } from '../context/FinanceContext';
-import TransactionItem, { getCategoryVisuals } from './TransactionItem';
-import NexoLogo from './NexoLogo';
-import HomeThemeModal from './HomeThemeModal';
+} from "lucide-react";
+import { useFinance } from "../context/FinanceContext";
+import TransactionItem, { getCategoryVisuals } from "./TransactionItem";
+import NexoLogo from "./NexoLogo";
+import HomeThemeModal from "./HomeThemeModal";
 import {
   getSavedHomeBackground,
   HOME_BG_EVENT,
   resolveBackgroundCss,
-} from '../utils/homeBackgrounds';
-import { useElasticScroll } from '../hooks/useElasticScroll';
-import { getFromLocalStorage } from '../utils/localStorage';
-import { triggerHaptic } from '../utils/haptics';
+} from "../utils/homeBackgrounds";
+import { useElasticScroll } from "../hooks/useElasticScroll";
+import { getFromLocalStorage } from "../utils/localStorage";
+import { triggerHaptic } from "../utils/haptics";
 
 const HOME_TOKENS_CSS = `
   /* Fondo gris suave (#F3F4F6) en modo claro para que las tarjetas blancas (#FFFFFF) destaquen */
@@ -392,9 +392,9 @@ const HOME_TOKENS_CSS = `
 `;
 
 const HomeOverview = ({
-  initials = 'MP',
+  initials = "MP",
   colorfulHero = true,
-  query = '',
+  query = "",
   onQueryChange,
   onOpenLimits,
   onQuickAction,
@@ -418,19 +418,63 @@ const HomeOverview = ({
     exportCsv,
   } = useFinance();
 
+  const ACCOUNT_THEME_BGS = {
+    // Oficiales Revolut
+    "revolut-standard":
+      "linear-gradient(135deg, #2563EB 0%, #7C3AED 52%, #EC4899 100%)",
+    "metal-black":
+      "linear-gradient(145deg, #2C2D32 0%, #16171A 52%, #09090B 100%)",
+    "metal-space-grey":
+      "linear-gradient(145deg, #5C606B 0%, #3A3D45 50%, #23252A 100%)",
+    "metal-gold":
+      "linear-gradient(135deg, #C8A45D 0%, #9E7B38 48%, #735723 100%)",
+    "metal-rose-gold":
+      "linear-gradient(135deg, #C98B83 0%, #A46760 50%, #7A4843 100%)",
+    "metal-lavender":
+      "linear-gradient(135deg, #8B7AD9 0%, #6353B5 52%, #44368A 100%)",
+    "ultra-platinum":
+      "linear-gradient(135deg, #9EA4B0 0%, #6C727F 48%, #464B56 100%)",
+    chromatic:
+      "linear-gradient(125deg, #3B82F6 0%, #8B5CF6 28%, #EC4899 56%, #F59E0B 82%, #10B981 100%)",
+    disposable:
+      "linear-gradient(135deg, #FF2E93 0%, #E11D48 55%, #9F1239 100%)",
+    // Extras y anteriores
+    standard: "linear-gradient(145deg, #2D2E32 0%, #1C1D20 100%)",
+    cobalt: "linear-gradient(145deg, #494FDF 0%, #2D32B8 55%, #1A1E7A 100%)",
+    teal: "linear-gradient(145deg, #00A87E 0%, #007558 100%)",
+    emerald: "linear-gradient(145deg, #00A87E 0%, #007558 55%, #024B39 100%)",
+    pink: "linear-gradient(145deg, #E61E49 0%, #A81032 100%)",
+    brown: "linear-gradient(145deg, #936D62 0%, #63473F 100%)",
+    bronze: "linear-gradient(145deg, #936D62 0%, #63473F 55%, #3E2C27 100%)",
+    "midnight-aurora":
+      "linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #0EA5E9 100%)",
+    "sunset-amber":
+      "linear-gradient(135deg, #F97316 0%, #C2410C 52%, #7C2D12 100%)",
+  };
+
+  const FALLBACK_THEME_IDS = [
+    "revolut-standard",
+    "metal-black",
+    "cobalt",
+    "emerald",
+    "disposable",
+    "metal-gold",
+  ];
+
   const [bgConfig, setBgConfig] = useState(() => getSavedHomeBackground());
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isNewAccountOpen, setIsNewAccountOpen] = useState(false);
-  const [newAccountName, setNewAccountName] = useState('');
-  const [newAccountError, setNewAccountError] = useState('');
+  const [newAccountName, setNewAccountName] = useState("");
+  const [newAccountError, setNewAccountError] = useState("");
   const [showAllTx, setShowAllTx] = useState(false);
 
   const scrollContainerRef = useRef(null);
   const longPressRef = useRef(null);
   const didLongPressRef = useRef(false);
 
-  const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } = useElasticScroll(75, 0.35);
+  const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } =
+    useElasticScroll(75, 0.35);
 
   useEffect(() => {
     const handleBgChanged = (e) => {
@@ -441,65 +485,94 @@ const HomeOverview = ({
   }, []);
 
   const activeBackgroundCss = useMemo(() => {
-    if (!colorfulHero && !bgConfig.customImage && bgConfig.id === 'obsidian-pure') {
-      return '#000000';
+    if (
+      !colorfulHero &&
+      !bgConfig.customImage &&
+      bgConfig.id === "obsidian-pure"
+    ) {
+      return "#000000";
     }
     return resolveBackgroundCss(bgConfig);
   }, [bgConfig, colorfulHero]);
 
-  const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(filters.year, filters.month));
-  const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-  const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
+  const monthName = new Intl.DateTimeFormat("es-ES", { month: "long" }).format(
+    new Date(filters.year, filters.month),
+  );
+  const capitalizedMonth =
+    monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, "0")}`;
 
   const monthlyTransactions = useMemo(
-    () => transactions.filter((tx) => typeof tx.date === 'string' && tx.date.startsWith(monthPrefix)),
+    () =>
+      transactions.filter(
+        (tx) => typeof tx.date === "string" && tx.date.startsWith(monthPrefix),
+      ),
     [transactions, monthPrefix],
   );
 
   const previousMonthExpenses = useMemo(() => {
     const prevDate = new Date(filters.year, filters.month - 1, 1);
-    const prevPrefix = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    const prevPrefix = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
     return transactions
-      .filter((tx) => tx.type === 'Gasto' && typeof tx.date === 'string' && tx.date.startsWith(prevPrefix))
+      .filter(
+        (tx) =>
+          tx.type === "Gasto" &&
+          typeof tx.date === "string" &&
+          tx.date.startsWith(prevPrefix),
+      )
       .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
   }, [transactions, filters.year, filters.month]);
 
-  const totals = useMemo(() => monthlyTransactions.reduce((acc, tx) => {
-    const amt = Number(tx.amount);
-    if (!Number.isFinite(amt) || amt <= 0) return acc;
-    if (tx.type === 'Ingreso') acc.income += amt;
-    if (tx.type === 'Gasto') acc.expenses += amt;
-    return acc;
-  }, { income: 0, expenses: 0 }), [monthlyTransactions]);
+  const totals = useMemo(
+    () =>
+      monthlyTransactions.reduce(
+        (acc, tx) => {
+          const amt = Number(tx.amount);
+          if (!Number.isFinite(amt) || amt <= 0) return acc;
+          if (tx.type === "Ingreso") acc.income += amt;
+          if (tx.type === "Gasto") acc.expenses += amt;
+          return acc;
+        },
+        { income: 0, expenses: 0 },
+      ),
+    [monthlyTransactions],
+  );
 
   const available = totals.income - totals.expenses;
   const expenseDiff = totals.expenses - previousMonthExpenses;
 
   const { totalWealth, allAccountsMonthlyDelta } = useMemo(() => {
-    const accountList = profiles.length > 0 ? profiles : (activeProfile ? [activeProfile] : []);
+    const accountList =
+      profiles.length > 0 ? profiles : activeProfile ? [activeProfile] : [];
     let wealth = 0;
     let monthlyDelta = 0;
 
     accountList.forEach((profile) => {
-      const pTxs = profile.id === activeProfileId
-        ? transactions
-        : (getTransactionsForProfile ? getTransactionsForProfile(profile.id) : []);
+      const pTxs =
+        profile.id === activeProfileId
+          ? transactions
+          : getTransactionsForProfile
+            ? getTransactionsForProfile(profile.id)
+            : [];
 
       (Array.isArray(pTxs) ? pTxs : []).forEach((tx) => {
         const amt = Number(tx.amount) || 0;
         if (!Number.isFinite(amt) || amt <= 0) return;
-        if (tx.type === 'Ingreso') {
+        if (tx.type === "Ingreso") {
           wealth += amt;
-          if (typeof tx.date === 'string' && tx.date.startsWith(monthPrefix)) monthlyDelta += amt;
-        } else if (tx.type === 'Gasto') {
+          if (typeof tx.date === "string" && tx.date.startsWith(monthPrefix))
+            monthlyDelta += amt;
+        } else if (tx.type === "Gasto") {
           wealth -= amt;
-          if (typeof tx.date === 'string' && tx.date.startsWith(monthPrefix)) monthlyDelta -= amt;
+          if (typeof tx.date === "string" && tx.date.startsWith(monthPrefix))
+            monthlyDelta -= amt;
         }
       });
 
-      const pInvs = profile.id === activeProfileId
-        ? investmentRecords
-        : (getFromLocalStorage(`finance:${profile.id}:investments`) || []);
+      const pInvs =
+        profile.id === activeProfileId
+          ? investmentRecords
+          : getFromLocalStorage(`finance:${profile.id}:investments`) || [];
 
       (Array.isArray(pInvs) ? pInvs : []).forEach((rec) => {
         if (!rec?.soldAt) {
@@ -509,14 +582,44 @@ const HomeOverview = ({
     });
 
     return { totalWealth: wealth, allAccountsMonthlyDelta: monthlyDelta };
-  }, [profiles, activeProfile, activeProfileId, transactions, investmentRecords, getTransactionsForProfile, monthPrefix]);
+  }, [
+    profiles,
+    activeProfile,
+    activeProfileId,
+    transactions,
+    investmentRecords,
+    getTransactionsForProfile,
+    monthPrefix,
+  ]);
+
+  const accountCircles = useMemo(() => {
+    let savedThemes = {};
+    try {
+      savedThemes =
+        JSON.parse(localStorage.getItem("balance-account-themes") || "{}") ||
+        {};
+    } catch {}
+
+    const list =
+      profiles.length > 0 ? profiles : activeProfile ? [activeProfile] : [];
+    return list.map((p, idx) => {
+      const themeId =
+        savedThemes[p.id] ||
+        FALLBACK_THEME_IDS[idx % FALLBACK_THEME_IDS.length];
+      return {
+        id: p.id,
+        name: p.name,
+        bg: ACCOUNT_THEME_BGS[themeId] || ACCOUNT_THEME_BGS.standard,
+      };
+    });
+  }, [profiles, activeProfile]);
 
   const topCategories = useMemo(() => {
     const map = {};
     monthlyTransactions
-      .filter((tx) => tx.type === 'Gasto')
+      .filter((tx) => tx.type === "Gasto")
       .forEach((tx) => {
-        const cat = tx.category || 'Otros';
+        const cat = tx.category || "Otros";
         map[cat] = (map[cat] || 0) + (Number(tx.amount) || 0);
       });
 
@@ -524,8 +627,11 @@ const HomeOverview = ({
       .map(([name, amount]) => ({
         name,
         amount,
-        share: totals.expenses > 0 ? Math.min(100, Math.round((amount / totals.expenses) * 100)) : 0,
-        color: getCategoryVisuals(name, 'Gasto').bg,
+        share:
+          totals.expenses > 0
+            ? Math.min(100, Math.round((amount / totals.expenses) * 100))
+            : 0,
+        color: getCategoryVisuals(name, "Gasto").bg,
       }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 3);
@@ -534,17 +640,26 @@ const HomeOverview = ({
   const spendWidgetChart = useMemo(() => {
     const daysInMonth = new Date(filters.year, filters.month + 1, 0).getDate();
     const today = new Date();
-    const isCurrentMonth = filters.year === today.getFullYear() && filters.month === today.getMonth();
-    const isPastMonth = filters.year < today.getFullYear()
-      || (filters.year === today.getFullYear() && filters.month < today.getMonth());
-    const cutoffDay = isCurrentMonth ? Math.min(daysInMonth, Math.max(1, today.getDate())) : isPastMonth ? daysInMonth : 1;
+    const isCurrentMonth =
+      filters.year === today.getFullYear() &&
+      filters.month === today.getMonth();
+    const isPastMonth =
+      filters.year < today.getFullYear() ||
+      (filters.year === today.getFullYear() &&
+        filters.month < today.getMonth());
+    const cutoffDay = isCurrentMonth
+      ? Math.min(daysInMonth, Math.max(1, today.getDate()))
+      : isPastMonth
+        ? daysInMonth
+        : 1;
 
     const daily = Array(daysInMonth).fill(0);
     monthlyTransactions
-      .filter((tx) => tx.type === 'Gasto')
+      .filter((tx) => tx.type === "Gasto")
       .forEach((tx) => {
-        const day = parseInt(tx.date.split('-')[2], 10);
-        if (day >= 1 && day <= daysInMonth) daily[day - 1] += Number(tx.amount) || 0;
+        const day = parseInt(tx.date.split("-")[2], 10);
+        if (day >= 1 && day <= daysInMonth)
+          daily[day - 1] += Number(tx.amount) || 0;
       });
 
     let running = 0;
@@ -554,9 +669,11 @@ const HomeOverview = ({
     });
 
     const currentSpend = cumulative[cutoffDay - 1]?.value || 0;
-    const projectedEnd = isCurrentMonth && cutoffDay < daysInMonth
-      ? currentSpend + (currentSpend / cutoffDay) * (daysInMonth - cutoffDay) * 0.65
-      : currentSpend;
+    const projectedEnd =
+      isCurrentMonth && cutoffDay < daysInMonth
+        ? currentSpend +
+          (currentSpend / cutoffDay) * (daysInMonth - cutoffDay) * 0.65
+        : currentSpend;
     const maxY = Math.max(projectedEnd, currentSpend, 1);
 
     const toCoord = (day, val) => ({
@@ -564,8 +681,15 @@ const HomeOverview = ({
       y: 42 - (val / maxY) * 32,
     });
 
-    const actualPoints = cumulative.slice(0, cutoffDay).map((item) => toCoord(item.day, item.value));
-    const actualPath = actualPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`).join(' ');
+    const actualPoints = cumulative
+      .slice(0, cutoffDay)
+      .map((item) => toCoord(item.day, item.value));
+    const actualPath = actualPoints
+      .map(
+        (pt, i) =>
+          `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`,
+      )
+      .join(" ");
     const lastActual = actualPoints[actualPoints.length - 1] || { x: 0, y: 42 };
     const actualArea = `${actualPath} L${lastActual.x.toFixed(1)} 46 L0 46 Z`;
 
@@ -573,84 +697,119 @@ const HomeOverview = ({
     const hasProjection = cutoffDay < daysInMonth;
     const projectedPath = hasProjection
       ? `M${lastActual.x.toFixed(1)} ${lastActual.y.toFixed(1)} L${endCoord.x.toFixed(1)} ${endCoord.y.toFixed(1)}`
-      : '';
+      : "";
     const projectedArea = hasProjection
       ? `M${lastActual.x.toFixed(1)} ${lastActual.y.toFixed(1)} L${endCoord.x.toFixed(1)} ${endCoord.y.toFixed(1)} L140 46 L${lastActual.x.toFixed(1)} 46 Z`
-      : '';
+      : "";
 
-    return { actualPath, actualArea, projectedPath, projectedArea, hasProjection };
+    return {
+      actualPath,
+      actualArea,
+      projectedPath,
+      projectedArea,
+      hasProjection,
+    };
   }, [monthlyTransactions, filters.year, filters.month]);
 
   const formattedAvailable = isAmountsHidden
-    ? '•••• €'
-    : new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(available);
-  const commaIdx = formattedAvailable.indexOf(',');
-  const intPart = commaIdx === -1 ? formattedAvailable : formattedAvailable.slice(0, commaIdx);
-  const decPart = commaIdx === -1 ? '' : formattedAvailable.slice(commaIdx);
+    ? "•••• €"
+    : new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+      }).format(available);
+  const commaIdx = formattedAvailable.indexOf(",");
+  const intPart =
+    commaIdx === -1
+      ? formattedAvailable
+      : formattedAvailable.slice(0, commaIdx);
+  const decPart = commaIdx === -1 ? "" : formattedAvailable.slice(commaIdx);
 
-  const displayMoney = (val) => (isAmountsHidden
-    ? '•••• €'
-    : new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val));
+  const displayMoney = (val) =>
+    isAmountsHidden
+      ? "•••• €"
+      : new Intl.NumberFormat("es-ES", {
+          style: "currency",
+          currency: "EUR",
+        }).format(val);
 
-  const displayCompactMoney = (val) => (isAmountsHidden
-    ? '•••• €'
-    : new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      maximumFractionDigits: Number.isInteger(val) ? 0 : 2,
-    }).format(val));
+  const displayCompactMoney = (val) =>
+    isAmountsHidden
+      ? "•••• €"
+      : new Intl.NumberFormat("es-ES", {
+          style: "currency",
+          currency: "EUR",
+          maximumFractionDigits: Number.isInteger(val) ? 0 : 2,
+        }).format(val);
 
   const visibleTransactions = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = monthlyTransactions
-      .filter((tx) => `${tx.description || ''} ${tx.category} ${tx.paymentMethod || ''}`.toLowerCase().includes(q))
-      .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+      .filter((tx) =>
+        `${tx.description || ""} ${tx.category} ${tx.paymentMethod || ""}`
+          .toLowerCase()
+          .includes(q),
+      )
+      .sort(
+        (a, b) =>
+          b.date.localeCompare(a.date) ||
+          String(b.id).localeCompare(String(a.id)),
+      );
     return showAllTx ? list : list.slice(0, 4);
   }, [monthlyTransactions, query, showAllTx]);
 
-  const secondarySpace = profiles.find((p) => p.id !== activeProfile?.id) || activeProfile;
-  const spaceDisplayName = secondarySpace?.name || 'Personal';
+  const secondarySpace =
+    profiles.find((p) => p.id !== activeProfile?.id) || activeProfile;
+  const spaceDisplayName = secondarySpace?.name || "Personal";
   const spaceInitials = spaceDisplayName
-    .split(' ')
+    .split(" ")
     .filter(Boolean)
     .map((w) => w[0])
     .slice(0, 2)
-    .join('')
+    .join("")
     .toUpperCase();
 
   return (
     <div
       ref={scrollContainerRef}
-      className={`elastic-scroll-wrapper ${isSnapping ? 'snapping' : ''}`}
+      className={`elastic-scroll-wrapper ${isSnapping ? "snapping" : ""}`}
       style={{
-        position: 'relative',
+        position: "relative",
         transform: pullY ? `translate3d(0, ${pullY}px, 0)` : undefined,
         zIndex: isMoreMenuOpen ? 60 : undefined,
       }}
       onTouchStart={onTouchStart}
-      onTouchMove={(e) => onTouchMove(e, scrollContainerRef.current?.closest('.screen-content'))}
+      onTouchMove={(e) =>
+        onTouchMove(e, scrollContainerRef.current?.closest(".screen-content"))
+      }
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
     >
       <style>{HOME_TOKENS_CSS}</style>
 
-      {isMoreMenuOpen && createPortal(
-        <div
-          className="nx-more-backdrop"
-          onClick={() => setIsMoreMenuOpen(false)}
-          aria-hidden="true"
-        />,
-        document.body,
-      )}
+      {isMoreMenuOpen &&
+        createPortal(
+          <div
+            className="nx-more-backdrop"
+            onClick={() => setIsMoreMenuOpen(false)}
+            aria-hidden="true"
+          />,
+          document.body,
+        )}
 
       {/* CAPA DE FONDO INDEPENDIENTE (z-index: 0, NUNCA TAPA LA TARJETA DE MOVIMIENTOS) */}
       <div className="nx-hero-bg-layer" aria-hidden="true">
-        <div className="nx-hero-bg-artwork" style={{ background: activeBackgroundCss }} />
+        <div
+          className="nx-hero-bg-artwork"
+          style={{ background: activeBackgroundCss }}
+        />
         <div className="nx-hero-bg-fade" />
       </div>
 
       {/* BANDA 1: HERO */}
-      <section className="nx-hero-band" style={{ zIndex: isMoreMenuOpen ? 10 : 2 }}>
+      <section
+        className="nx-hero-band"
+        style={{ zIndex: isMoreMenuOpen ? 10 : 2 }}
+      >
         <div className="nx-hero-inner">
           <div className="nx-top-bar">
             <button
@@ -689,22 +848,38 @@ const HomeOverview = ({
               {query && (
                 <button
                   type="button"
-                  onClick={() => onQueryChange?.('')}
-                  style={{ background: 'transparent', border: 0, color: '#FFFFFF', display: 'flex', padding: 0, cursor: 'pointer' }}
+                  onClick={() => onQueryChange?.("")}
+                  style={{
+                    background: "transparent",
+                    border: 0,
+                    color: "#FFFFFF",
+                    display: "flex",
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
                 >
                   <X size={13} />
                 </button>
               )}
             </div>
 
-            <button type="button" className="nx-icon-circle" onClick={onOpenMovements} aria-label="Cuentas">
+            <button
+              type="button"
+              className="nx-icon-circle"
+              onClick={onOpenMovements}
+              aria-label="Cuentas"
+            >
               <CreditCard size={15} strokeWidth={2} />
             </button>
           </div>
 
           <div className="nx-hero-balance">
-            <span className="nx-label" style={{ color: 'rgba(255, 255, 255, 0.92)', display: 'block' }}>
-              {activeProfile?.name || 'Personal'} · {capitalizedMonth} {filters.year}
+            <span
+              className="nx-label"
+              style={{ color: "rgba(255, 255, 255, 0.92)", display: "block" }}
+            >
+              {activeProfile?.name || "Personal"} · {capitalizedMonth}{" "}
+              {filters.year}
             </span>
 
             <div
@@ -718,7 +893,11 @@ const HomeOverview = ({
               <span className="nx-hero-dec">{decPart}</span>
             </div>
 
-            <button type="button" className="nx-sub-nav-pill" onClick={onOpenMovements}>
+            <button
+              type="button"
+              className="nx-sub-nav-pill"
+              onClick={onOpenMovements}
+            >
               Cuentas
             </button>
           </div>
@@ -726,7 +905,11 @@ const HomeOverview = ({
           {/* 4 BOTONES CIRCULARES + MENÚ DESPLEGABLE EN "MÁS" */}
           <div className="nx-hero-circle-grid">
             {isMoreMenuOpen && (
-              <div className="nx-more-popover" role="menu" aria-label="Más opciones">
+              <div
+                className="nx-more-popover"
+                role="menu"
+                aria-label="Más opciones"
+              >
                 <button
                   type="button"
                   className="nx-more-item"
@@ -792,8 +975,8 @@ const HomeOverview = ({
                   onClick={() => {
                     triggerHaptic();
                     setIsMoreMenuOpen(false);
-                    setNewAccountName('');
-                    setNewAccountError('');
+                    setNewAccountName("");
+                    setNewAccountError("");
                     setIsNewAccountOpen(true);
                   }}
                 >
@@ -809,7 +992,9 @@ const HomeOverview = ({
                     onClick={() => {
                       triggerHaptic();
                       setIsMoreMenuOpen(false);
-                      deleteActiveProfile?.().catch((err) => alert(err.message));
+                      deleteActiveProfile?.().catch((err) =>
+                        alert(err.message),
+                      );
                     }}
                   >
                     <span>Eliminar cuenta</span>
@@ -824,7 +1009,7 @@ const HomeOverview = ({
               className="nx-circle-action"
               onClick={() => {
                 setIsMoreMenuOpen(false);
-                onQuickAction?.('income');
+                onQuickAction?.("income");
               }}
             >
               <span className="nx-circle-disc">
@@ -838,7 +1023,7 @@ const HomeOverview = ({
               className="nx-circle-action"
               onClick={() => {
                 setIsMoreMenuOpen(false);
-                onQuickAction?.('expense');
+                onQuickAction?.("expense");
               }}
             >
               <span className="nx-circle-disc">
@@ -863,7 +1048,7 @@ const HomeOverview = ({
 
             <button
               type="button"
-              className={`nx-circle-action ${isMoreMenuOpen ? 'open' : ''}`}
+              className={`nx-circle-action ${isMoreMenuOpen ? "open" : ""}`}
               onClick={() => {
                 triggerHaptic();
                 setIsMoreMenuOpen((prev) => !prev);
@@ -893,68 +1078,100 @@ const HomeOverview = ({
                   type="button"
                   onClick={() => setShowAllTx((prev) => !prev)}
                   style={{
-                    width: '100%',
-                    background: 'transparent',
+                    width: "100%",
+                    background: "transparent",
                     border: 0,
-                    color: 'var(--text-main)',
-                    fontFamily: 'inherit',
-                    fontSize: '14px',
+                    color: "var(--text-main)",
+                    fontFamily: "inherit",
+                    fontSize: "14px",
                     fontWeight: 500,
-                    padding: '12px 0 4px',
-                    cursor: 'pointer',
-                    textAlign: 'center',
+                    padding: "12px 0 4px",
+                    cursor: "pointer",
+                    textAlign: "center",
                   }}
                 >
-                  {showAllTx ? 'Mostrar menos' : 'Ver todo'}
+                  {showAllTx ? "Mostrar menos" : "Ver todo"}
                 </button>
               )}
             </>
           ) : (
-            <p style={{ fontSize: '13px', color: 'var(--text-mute)', textAlign: 'center', padding: 'var(--sp-xl) 0', margin: 0 }}>
-              Sin movimientos en {monthName}. Desliza hacia los lados para cambiar de mes.
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--text-mute)",
+                textAlign: "center",
+                padding: "var(--sp-xl) 0",
+                margin: 0,
+              }}
+            >
+              Sin movimientos en {monthName}. Desliza hacia los lados para
+              cambiar de mes.
             </p>
           )}
         </div>
 
-        <h2 style={{
-          fontSize: '20px',
-          fontWeight: 500,
-          lineHeight: 1.1,
-          letterSpacing: '-0.03em',
-          margin: '0 0 var(--sp-lg) 4px',
-        }}>
+        <h2
+          style={{
+            fontSize: "20px",
+            fontWeight: 500,
+            lineHeight: 1.1,
+            letterSpacing: "-0.03em",
+            margin: "0 0 var(--sp-lg) 4px",
+          }}
+        >
           Widgets
         </h2>
 
         <div className="nx-widgets-grid">
           {/* WIDGET 1: GASTO ESTE MES */}
-          <button type="button" className="nx-widget-tile" onClick={onOpenMovements}>
+          <button
+            type="button"
+            className="nx-widget-tile"
+            onClick={onOpenMovements}
+          >
             <div>
-              <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block' }}>
+              <span
+                className="nx-label"
+                style={{ color: "var(--text-mute)", display: "block" }}
+              >
                 Gasto este mes
               </span>
               <strong
                 className="nx-display privacy-sensitive"
-                style={{ fontSize: '22px', display: 'block', marginTop: '6px' }}
+                style={{ fontSize: "22px", display: "block", marginTop: "6px" }}
               >
                 {displayMoney(totals.expenses)}
               </strong>
               <span
                 className="nx-label privacy-sensitive"
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  marginTop: '6px',
-                  color: expenseDiff >= 0 ? 'var(--accent-deep-pink)' : 'var(--accent-teal)',
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  marginTop: "6px",
+                  color:
+                    expenseDiff >= 0
+                      ? "var(--accent-deep-pink)"
+                      : "var(--accent-teal)",
                 }}
               >
-                <span style={{ fontSize: '9px' }}>{expenseDiff >= 0 ? '▲' : '▼'}</span>
+                <span style={{ fontSize: "9px" }}>
+                  {expenseDiff >= 0 ? "▲" : "▼"}
+                </span>
                 {displayCompactMoney(Math.abs(expenseDiff))}
               </span>
             </div>
 
-            <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: '100%', height: '46px', marginTop: '12px', overflow: 'visible' }}>
+            <svg
+              viewBox="0 0 140 46"
+              preserveAspectRatio="none"
+              style={{
+                width: "100%",
+                height: "46px",
+                marginTop: "12px",
+                overflow: "visible",
+              }}
+            >
               <defs>
                 <linearGradient id="nxSpendFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#494fdf" stopOpacity="0.28" />
@@ -967,50 +1184,105 @@ const HomeOverview = ({
               </defs>
               {spendWidgetChart.hasProjection && (
                 <>
-                  <path d={spendWidgetChart.projectedArea} fill="url(#nxProjFill)" />
-                  <path d={spendWidgetChart.projectedPath} fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeDasharray="3 3" />
+                  <path
+                    d={spendWidgetChart.projectedArea}
+                    fill="url(#nxProjFill)"
+                  />
+                  <path
+                    d={spendWidgetChart.projectedPath}
+                    fill="none"
+                    stroke="#9CA3AF"
+                    strokeWidth="1.5"
+                    strokeDasharray="3 3"
+                  />
                 </>
               )}
               <path d={spendWidgetChart.actualArea} fill="url(#nxSpendFill)" />
-              <path d={spendWidgetChart.actualPath} fill="none" stroke="#494fdf" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d={spendWidgetChart.actualPath}
+                fill="none"
+                stroke="#494fdf"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
 
           {/* WIDGET 2: PATRIMONIO TOTAL ENTRE TODAS LAS CUENTAS */}
-          <button type="button" className="nx-widget-tile" onClick={onOpenMovements}>
+          <button
+            type="button"
+            className="nx-widget-tile"
+            onClick={onOpenMovements}
+          >
             <div>
-              <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block' }}>
+              <span
+                className="nx-label"
+                style={{ color: "var(--text-mute)", display: "block" }}
+              >
                 Patrimonio total
               </span>
               <strong
                 className="nx-display privacy-sensitive"
-                style={{ fontSize: '22px', display: 'block', marginTop: '6px' }}
+                style={{ fontSize: "22px", display: "block", marginTop: "6px" }}
               >
                 {displayCompactMoney(totalWealth)}
               </strong>
               <span
                 className="nx-label privacy-sensitive"
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  marginTop: '6px',
-                  color: allAccountsMonthlyDelta >= 0 ? 'var(--primary)' : 'var(--danger-red)',
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  marginTop: "6px",
+                  color:
+                    allAccountsMonthlyDelta >= 0
+                      ? "var(--primary)"
+                      : "var(--danger-red)",
                 }}
               >
-                <span style={{ fontSize: '9px' }}>{allAccountsMonthlyDelta >= 0 ? '▲' : '▼'}</span>
+                <span style={{ fontSize: "9px" }}>
+                  {allAccountsMonthlyDelta >= 0 ? "▲" : "▼"}
+                </span>
                 {displayCompactMoney(Math.abs(allAccountsMonthlyDelta))}
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">
-                <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-light-blue)', border: '2.5px solid var(--canvas-light)', zIndex: 3 }} />
-                <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-brown)', border: '2.5px solid var(--canvas-light)', marginLeft: '-8px', zIndex: 2 }} />
-                <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent-teal)', border: '2.5px solid var(--canvas-light)', marginLeft: '-8px', zIndex: 1 }} />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "16px",
+                width: "100%",
+              }}
+            >
+              <div
+                style={{ display: "flex", alignItems: "center" }}
+                aria-hidden="true"
+              >
+                {accountCircles.map((acc, idx) => (
+                  <span
+                    key={acc.id}
+                    title={acc.name}
+                    style={{
+                      width: "30px",
+                      height: "30px",
+                      borderRadius: "50%",
+                      background: acc.bg,
+                      border: "2.5px solid var(--bg-card)",
+                      marginLeft: idx === 0 ? 0 : "-10px",
+                      zIndex: accountCircles.length - idx,
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
               </div>
               {profiles.length > 1 && (
-                <span className="nx-label" style={{ color: 'var(--text-mute)', fontSize: '11px' }}>
+                <span
+                  className="nx-label"
+                  style={{ color: "var(--text-mute)", fontSize: "11px" }}
+                >
                   {profiles.length} cuentas
                 </span>
               )}
@@ -1022,61 +1294,116 @@ const HomeOverview = ({
             type="button"
             className="nx-widget-tile"
             onClick={onOpenLimits}
-            style={{ padding: '18px' }}
+            style={{ padding: "18px" }}
           >
-            <div style={{ width: '100%' }}>
-              <span className="nx-label" style={{ color: 'var(--text-mute)', display: 'block', marginBottom: '10px' }}>
+            <div style={{ width: "100%" }}>
+              <span
+                className="nx-label"
+                style={{
+                  color: "var(--text-mute)",
+                  display: "block",
+                  marginBottom: "10px",
+                }}
+              >
                 Por categoría
               </span>
 
               {topCategories.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', width: '100%' }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "9px",
+                    width: "100%",
+                  }}
+                >
                   {topCategories.map((cat) => (
-                    <div key={cat.name} style={{ width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', fontSize: '12px', marginBottom: '4px' }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          minWidth: 0,
-                          fontWeight: 500,
-                          color: 'var(--text-main)',
-                        }}>
-                          <i style={{
-                            width: '7px',
-                            height: '7px',
-                            borderRadius: '50%',
-                            backgroundColor: cat.color,
-                            flexShrink: 0,
-                          }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div key={cat.name} style={{ width: "100%" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "4px",
+                          fontSize: "12px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            minWidth: 0,
+                            fontWeight: 500,
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          <i
+                            style={{
+                              width: "7px",
+                              height: "7px",
+                              borderRadius: "50%",
+                              backgroundColor: cat.color,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
                             {cat.name}
                           </span>
                         </span>
                         <span
                           className="privacy-sensitive"
-                          style={{ fontSize: '11.5px', fontWeight: 500, color: 'var(--text-mute)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}
+                          style={{
+                            fontSize: "11.5px",
+                            fontWeight: 500,
+                            color: "var(--text-mute)",
+                            fontVariantNumeric: "tabular-nums",
+                            flexShrink: 0,
+                          }}
                         >
                           {displayCompactMoney(cat.amount)}
                         </span>
                       </div>
                       <div className="nx-cat-track">
-                        <div style={{
-                          height: '100%',
-                          width: `${cat.share}%`,
-                          borderRadius: 'var(--rounded-full)',
-                          backgroundColor: cat.color,
-                        }} />
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${cat.share}%`,
+                            borderRadius: "var(--rounded-full)",
+                            backgroundColor: cat.color,
+                          }}
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ marginTop: '14px' }}>
-                  <span style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-main)' }}>
+                <div style={{ marginTop: "14px" }}>
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "var(--text-main)",
+                    }}
+                  >
                     Sin gastos
                   </span>
-                  <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '4px' }}>
+                  <span
+                    className="nx-label"
+                    style={{
+                      display: "block",
+                      color: "var(--text-mute)",
+                      marginTop: "4px",
+                    }}
+                  >
                     Toca para ver topes
                   </span>
                 </div>
@@ -1085,42 +1412,54 @@ const HomeOverview = ({
           </button>
 
           {/* WIDGET 4: ESPACIO RÁPIDO CON GLYPH NEXO */}
-          <div className="nx-widget-tile" style={{ alignItems: 'center', textAlign: 'center' }}>
+          <div
+            className="nx-widget-tile"
+            style={{ alignItems: "center", textAlign: "center" }}
+          >
             <div
               onClick={() => {
                 if (profiles.length > 1) onLongPressAvatar?.();
                 else onOpenProfile?.();
               }}
-              style={{ position: 'relative', width: '46px', height: '46px', cursor: 'pointer' }}
+              style={{
+                position: "relative",
+                width: "46px",
+                height: "46px",
+                cursor: "pointer",
+              }}
             >
-              <div style={{
-                width: '46px',
-                height: '46px',
-                borderRadius: 'var(--rounded-full)',
-                backgroundColor: 'var(--accent-teal)',
-                color: '#FFFFFF',
-                fontSize: '15px',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
+              <div
+                style={{
+                  width: "46px",
+                  height: "46px",
+                  borderRadius: "var(--rounded-full)",
+                  backgroundColor: "var(--accent-teal)",
+                  color: "#FFFFFF",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 {spaceInitials}
               </div>
-              <span style={{
-                position: 'absolute',
-                right: '-2px',
-                bottom: '-2px',
-                width: '18px',
-                height: '18px',
-                borderRadius: 'var(--rounded-full)',
-                backgroundColor: 'var(--canvas-light)',
-                color: 'var(--primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
-              }}>
+              <span
+                style={{
+                  position: "absolute",
+                  right: "-2px",
+                  bottom: "-2px",
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "var(--rounded-full)",
+                  backgroundColor: "var(--canvas-light)",
+                  color: "var(--primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+                }}
+              >
                 <NexoLogo size={11} />
               </span>
             </div>
@@ -1129,42 +1468,82 @@ const HomeOverview = ({
               onClick={onOpenProfile}
               className="nx-label"
               style={{
-                color: 'var(--text-main)',
-                margin: '8px 0',
-                maxWidth: '100%',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
+                color: "var(--text-main)",
+                margin: "8px 0",
+                maxWidth: "100%",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                cursor: "pointer",
               }}
             >
               {spaceDisplayName}
             </span>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
               <button
                 type="button"
                 onClick={onOpenLimits}
                 aria-label="Topes"
-                style={{ width: '34px', height: '34px', borderRadius: '50%', border: 0, background: 'transparent', color: 'var(--text-mute)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "50%",
+                  border: 0,
+                  background: "transparent",
+                  color: "var(--text-mute)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
               >
                 <GitFork size={16} />
               </button>
 
               <button
                 type="button"
-                onClick={() => onQuickAction?.('expense')}
+                onClick={() => onQuickAction?.("expense")}
                 aria-label="Añadir gasto"
-                style={{ width: '40px', height: '40px', borderRadius: '50%', border: 0, background: 'rgba(73, 79, 223, 0.14)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  border: 0,
+                  background: "rgba(73, 79, 223, 0.14)",
+                  color: "var(--primary)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
               >
                 <ArrowUp size={18} />
               </button>
 
               <button
                 type="button"
-                onClick={() => onQuickAction?.('income')}
+                onClick={() => onQuickAction?.("income")}
                 aria-label="Añadir ingreso"
-                style={{ width: '34px', height: '34px', borderRadius: '50%', border: 0, background: 'transparent', color: 'var(--text-mute)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "50%",
+                  border: 0,
+                  background: "transparent",
+                  color: "var(--text-mute)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
               >
                 <ArrowDown size={16} />
               </button>
@@ -1174,57 +1553,97 @@ const HomeOverview = ({
       </div>
 
       {/* MODAL CREAR NUEVA CUENTA DESDE EL MENÚ MÁS */}
-      {isNewAccountOpen && createPortal(
-        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsNewAccountOpen(false)}>
-          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Nueva cuenta</h2>
-              <button type="button" className="sheet-close" onClick={() => setIsNewAccountOpen(false)}>
-                <X size={17} />
-              </button>
-            </div>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              setNewAccountError('');
-              try {
-                addProfile(newAccountName);
-                triggerHaptic();
-                setNewAccountName('');
-                setIsNewAccountOpen(false);
-              } catch (err) {
-                setNewAccountError(err.message);
-              }
-            }}>
-              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '16px' }}>
-                Nombre de la cuenta
-                <input
-                  required
-                  autoFocus
-                  value={newAccountName}
-                  onChange={(e) => setNewAccountName(e.target.value)}
-                  placeholder="Ej. Ahorro, Viajes, Trabajo..."
-                />
-              </label>
-              {newAccountError && (
-                <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: '10px' }}>
-                  {newAccountError}
-                </p>
-              )}
-              <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
-                Crear cuenta <ArrowRight size={16} />
-              </button>
-            </form>
-          </section>
-        </div>,
-        document.body,
-      )}
+      {isNewAccountOpen &&
+        createPortal(
+          <div
+            className="sheet-layer"
+            style={{ zIndex: 110 }}
+            onMouseDown={() => setIsNewAccountOpen(false)}
+          >
+            <section
+              className="bottom-sheet"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div className="sheet-handle" />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "14px",
+                }}
+              >
+                <h2 style={{ fontSize: "20px", fontWeight: 500, margin: 0 }}>
+                  Nueva cuenta
+                </h2>
+                <button
+                  type="button"
+                  className="sheet-close"
+                  onClick={() => setIsNewAccountOpen(false)}
+                >
+                  <X size={17} />
+                </button>
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setNewAccountError("");
+                  try {
+                    addProfile(newAccountName);
+                    triggerHaptic();
+                    setNewAccountName("");
+                    setIsNewAccountOpen(false);
+                  } catch (err) {
+                    setNewAccountError(err.message);
+                  }
+                }}
+              >
+                <label
+                  className="nx-label"
+                  style={{
+                    display: "block",
+                    color: "var(--text-mute)",
+                    marginBottom: "16px",
+                  }}
+                >
+                  Nombre de la cuenta
+                  <input
+                    required
+                    autoFocus
+                    value={newAccountName}
+                    onChange={(e) => setNewAccountName(e.target.value)}
+                    placeholder="Ej. Ahorro, Viajes, Trabajo..."
+                  />
+                </label>
+                {newAccountError && (
+                  <p
+                    style={{
+                      color: "var(--danger-red)",
+                      fontSize: "12px",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    {newAccountError}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  className="nx-btn-dark"
+                  style={{ width: "100%" }}
+                >
+                  Crear cuenta <ArrowRight size={16} />
+                </button>
+              </form>
+            </section>
+          </div>,
+          document.body,
+        )}
 
       {/* MODAL SELECTOR DE TEMA Y FONDO ESTILO REVOLUT */}
       <HomeThemeModal
         open={isThemeModalOpen}
         onClose={() => setIsThemeModalOpen(false)}
-        accountLabel={`${activeProfile?.name || 'Personal'} · EUR`}
+        accountLabel={`${activeProfile?.name || "Personal"} · EUR`}
         balanceDisplay={formattedAvailable}
         onApplied={(nextConfig) => setBgConfig(nextConfig)}
       />
