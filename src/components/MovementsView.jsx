@@ -22,19 +22,214 @@ import TransactionItem from './TransactionItem';
 import { triggerHaptic } from '../utils/haptics';
 
 const CARD_THEMES = [
-  { id: 'standard', label: 'Negro Estándar', bg: 'linear-gradient(145deg, #2D2E32 0%, #1C1D20 100%)' },
-  { id: 'cobalt', label: 'Azul Cobalto', bg: 'linear-gradient(145deg, #494fdf 0%, #2D32B8 100%)' },
-  { id: 'teal', label: 'Verde Azulado', bg: 'linear-gradient(145deg, #00a87e 0%, #007558 100%)' },
-  { id: 'pink', label: 'Rosa Intenso', bg: 'linear-gradient(145deg, #e61e49 0%, #A81032 100%)' },
-  { id: 'brown', label: 'Bronce', bg: 'linear-gradient(145deg, #936d62 0%, #63473F 100%)' },
+  // OFICIALES DE REVOLUT
+  {
+    id: 'revolut-standard',
+    label: 'Revolut Standard',
+    bg: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 52%, #EC4899 100%)',
+  },
+  {
+    id: 'metal-black',
+    label: 'Metal Black',
+    bg: 'linear-gradient(145deg, #2C2D32 0%, #16171A 52%, #09090B 100%)',
+  },
+  {
+    id: 'metal-space-grey',
+    label: 'Space Grey',
+    bg: 'linear-gradient(145deg, #5C606B 0%, #3A3D45 50%, #23252A 100%)',
+  },
+  {
+    id: 'metal-gold',
+    label: 'Metal Gold',
+    bg: 'linear-gradient(135deg, #C8A45D 0%, #9E7B38 48%, #735723 100%)',
+  },
+  {
+    id: 'metal-rose-gold',
+    label: 'Rose Gold',
+    bg: 'linear-gradient(135deg, #C98B83 0%, #A46760 50%, #7A4843 100%)',
+  },
+  {
+    id: 'metal-lavender',
+    label: 'Metal Lavender',
+    bg: 'linear-gradient(135deg, #8B7AD9 0%, #6353B5 52%, #44368A 100%)',
+  },
+  {
+    id: 'ultra-platinum',
+    label: 'Ultra Platinum',
+    bg: 'linear-gradient(135deg, #9EA4B0 0%, #6C727F 48%, #464B56 100%)',
+  },
+  {
+    id: 'chromatic',
+    label: 'Chromatic',
+    bg: 'linear-gradient(125deg, #3B82F6 0%, #8B5CF6 28%, #EC4899 56%, #F59E0B 82%, #10B981 100%)',
+  },
+  {
+    id: 'disposable',
+    label: 'Desechable',
+    bg: 'linear-gradient(135deg, #FF2E93 0%, #E11D48 55%, #9F1239 100%)',
+  },
+
+  // EXTRAS
+  {
+    id: 'cobalt',
+    label: 'Azul Cobalto',
+    bg: 'linear-gradient(145deg, #494FDF 0%, #2D32B8 55%, #1A1E7A 100%)',
+  },
+  {
+    id: 'emerald',
+    label: 'Esmeralda',
+    bg: 'linear-gradient(145deg, #00A87E 0%, #007558 55%, #024B39 100%)',
+  },
+  {
+    id: 'midnight-aurora',
+    label: 'Aurora',
+    bg: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #0EA5E9 100%)',
+  },
+  {
+    id: 'sunset-amber',
+    label: 'Ámbar',
+    bg: 'linear-gradient(135deg, #F97316 0%, #C2410C 52%, #7C2D12 100%)',
+  },
+  {
+    id: 'bronze',
+    label: 'Bronce',
+    bg: 'linear-gradient(145deg, #936D62 0%, #63473F 55%, #3E2C27 100%)',
+  },
 ];
 
-const getMaskedDigits = (id = '') => {
-  let hash = 0;
-  for (let i = 0; i < id.length; i += 1) {
-    hash = (hash * 31 + id.charCodeAt(i)) % 9000;
+const CARD_NETWORKS = [
+  { id: 'mastercard', label: 'Mastercard' },
+  { id: 'mastercard-color', label: 'MC Color' },
+  { id: 'visa', label: 'Visa' },
+  { id: 'amex', label: 'Amex' },
+  { id: 'none', label: 'Sin logo' },
+
+];
+
+const getTodayIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const toDateInputValue = (isoOrTs) => {
+  if (!isoOrTs) return getTodayIso();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoOrTs)) return isoOrTs;
+  const d = new Date(isoOrTs);
+  if (Number.isNaN(d.getTime())) return getTodayIso();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const formatCreationDate = (isoOrTs) => {
+  const raw = isoOrTs || getTodayIso();
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00`) : new Date(raw);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+};
+
+const CardNetworkLogo = ({ network = 'mastercard', mini = false }) => {
+  if (network === 'none') return null;
+
+  if (network === 'visa') {
+    return (
+      <span
+        style={{
+          fontSize: mini ? '7px' : '18px',
+          fontWeight: 800,
+          fontStyle: 'italic',
+          letterSpacing: '-0.04em',
+          color: 'rgba(255, 255, 255, 0.92)',
+          lineHeight: 1,
+        }}
+      >
+        VISA
+      </span>
+    );
   }
-  return String(1000 + hash);
+
+  if (network === 'amex') {
+    return (
+      <span
+        style={{
+          fontSize: mini ? '6px' : '12px',
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          padding: mini ? '1px 2px' : '3px 6px',
+          borderRadius: '4px',
+          border: '1px solid rgba(255, 255, 255, 0.55)',
+          color: 'rgba(255, 255, 255, 0.92)',
+          lineHeight: 1,
+        }}
+      >
+        AMEX
+      </span>
+    );
+  }
+
+  const isColor = network === 'mastercard-color';
+
+  if (mini) {
+    return (
+      <span style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: isColor ? '#EB001B' : 'rgba(255,255,255,0.45)' }} />
+        <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: isColor ? '#F79E1B' : 'rgba(255,255,255,0.75)', marginLeft: '-2px' }} />
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }} aria-label="Mastercard">
+      <svg width="56" height="34" viewBox="0 0 56 34" fill="none">
+        <defs>
+          <linearGradient id="mcHoloRing" x1="0" y1="0" x2="56" y2="34" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#A8D8FF" stopOpacity="0.9" />
+            <stop offset="35%" stopColor="#F5C2FF" stopOpacity="0.85" />
+            <stop offset="70%" stopColor="#FFE599" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#9DF2D5" stopOpacity="0.9" />
+          </linearGradient>
+          <linearGradient id="mcLeftDark" x1="4" y1="4" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#4A4B50" />
+            <stop offset="100%" stopColor="#26272B" />
+          </linearGradient>
+          <linearGradient id="mcRightSilver" x1="26" y1="4" x2="52" y2="30" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#C4C6CC" />
+            <stop offset="100%" stopColor="#8E9096" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx="20"
+          cy="17"
+          r="15"
+          fill={isColor ? '#EB001B' : 'url(#mcLeftDark)'}
+          stroke={isColor ? 'none' : 'url(#mcHoloRing)'}
+          strokeWidth={isColor ? 0 : 1}
+        />
+        <circle
+          cx="36"
+          cy="17"
+          r="15"
+          fill={isColor ? '#F79E1B' : 'url(#mcRightSilver)'}
+          fillOpacity={isColor ? 0.88 : 0.82}
+          stroke={isColor ? 'none' : 'url(#mcHoloRing)'}
+          strokeWidth={isColor ? 0 : 1}
+        />
+      </svg>
+      <span
+        style={{
+          fontSize: '9.5px',
+          fontWeight: 500,
+          letterSpacing: '0.02em',
+          color: 'rgba(255, 255, 255, 0.82)',
+          lineHeight: 1,
+        }}
+      >
+        mastercard
+      </span>
+    </div>
+  );
 };
 
 const readMapStorage = (key) => {
@@ -73,7 +268,6 @@ const NX_ACCOUNTS_CSS = `
   }
   .nx-elevated-group {
     background-color: var(--surface-elevated);
-    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--rounded-lg);
     padding: var(--sp-xs) var(--sp-xl);
     margin-bottom: var(--sp-lg);
@@ -82,7 +276,6 @@ const NX_ACCOUNTS_CSS = `
     background: rgba(255, 255, 255, 0.085);
     backdrop-filter: blur(28px) saturate(165%);
     -webkit-backdrop-filter: blur(28px) saturate(165%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
   .nx-account-row {
@@ -149,7 +342,7 @@ const NX_ACCOUNTS_CSS = `
   .nx-pills-strip::-webkit-scrollbar {
     display: none;
   }
-.nx-card-stage-3d {
+  .nx-card-stage-3d {
     perspective: 1000px;
   }
   .nx-physical-card {
@@ -282,23 +475,27 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   const [viewMode, setViewMode] = useState('list');
   const [frozenMap, setFrozenMap] = useState(() => readMapStorage('balance-frozen-accounts'));
   const [themeMap, setThemeMap] = useState(() => readMapStorage('balance-account-themes'));
+  const [networkMap, setNetworkMap] = useState(() => readMapStorage('balance-account-networks'));
+  const [createdMap, setCreatedMap] = useState(() => readMapStorage('balance-account-created-dates'));
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addTab, setAddTab] = useState('create');
   const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountDate, setNewAccountDate] = useState(() => getTodayIso());
   const [selectedCardTheme, setSelectedCardTheme] = useState('standard');
+  const [selectedCardNetwork, setSelectedCardNetwork] = useState('mastercard');
   const [joinCode, setJoinCode] = useState('');
   const [joinName, setJoinName] = useState('');
   const [modalError, setModalError] = useState('');
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editDate, setEditDate] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
 
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [showAllCardTx, setShowAllCardTx] = useState(false);
 
-  // Estado y referencias para deslizar entre cuentas
   const [cardDragX, setCardDragX] = useState(0);
   const [isSwipingCard, setIsSwipingCard] = useState(false);
   const [cardTilt, setCardTilt] = useState({
@@ -315,8 +512,8 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
 
-    const rx = (0.5 - py) * 16; // Inclinación vertical (±8°)
-    const ry = (px - 0.5) * 20; // Inclinación horizontal (±10°)
+    const rx = (0.5 - py) * 16;
+    const ry = (px - 0.5) * 20;
 
     setCardTilt({
       rx,
@@ -330,6 +527,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   const handleCardMouseLeave = () => {
     setCardTilt({ rx: 0, ry: 0, glareX: 50, glareY: 50, active: false });
   };
+
   const swipeStateRef = useRef({
     active: false,
     startX: 0,
@@ -351,15 +549,18 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
     }, 0);
     const themeId = themeMap[p.id] || CARD_THEMES[idx % CARD_THEMES.length].id;
     const themeObj = CARD_THEMES.find((t) => t.id === themeId) || CARD_THEMES[0];
+    const rawDate = createdMap[p.id] || p.createdAt || getTodayIso();
     return {
       ...p,
       balance,
-      digits: getMaskedDigits(p.id),
+      createdDateRaw: toDateInputValue(rawDate),
+      createdDateLabel: formatCreationDate(rawDate),
+      network: networkMap[p.id] || 'mastercard',
       isFrozen: Boolean(frozenMap[p.id]),
       isShared: p.id.includes('___'),
       theme: themeObj,
     };
-  }), [profiles, getTransactionsForProfile, themeMap, frozenMap]);
+  }), [profiles, getTransactionsForProfile, themeMap, frozenMap, networkMap, createdMap]);
 
   const activeAccountIndex = Math.max(0, accountsData.findIndex((a) => a.id === activeProfileId));
   const activeAccount = accountsData[activeAccountIndex] || accountsData[0];
@@ -369,6 +570,21 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
     const activePill = pillRefs.current[activeProfileId];
     activePill?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [activeProfileId, viewMode]);
+
+  useEffect(() => {
+    let changed = false;
+    const next = { ...createdMap };
+    profiles.forEach((p) => {
+      if (!next[p.id]) {
+        next[p.id] = toDateInputValue(p.createdAt || getTodayIso());
+        changed = true;
+      }
+    });
+    if (changed) {
+      setCreatedMap(next);
+      writeMapStorage('balance-account-created-dates', next);
+    }
+  }, [profiles]);
 
   const handleAccountTouchStart = (e) => {
     if (accountsData.length <= 1 || e.touches.length !== 1) return;
@@ -455,9 +671,24 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   };
 
   const changeAccountTheme = (profileId, themeId) => {
+    triggerHaptic();
     const next = { ...themeMap, [profileId]: themeId };
     setThemeMap(next);
     writeMapStorage('balance-account-themes', next);
+  };
+
+  const changeAccountNetwork = (profileId, networkId) => {
+    triggerHaptic();
+    const next = { ...networkMap, [profileId]: networkId };
+    setNetworkMap(next);
+    writeMapStorage('balance-account-networks', next);
+  };
+
+  const changeAccountCreatedDate = (profileId, dateIso) => {
+    if (!dateIso) return;
+    const next = { ...createdMap, [profileId]: dateIso };
+    setCreatedMap(next);
+    writeMapStorage('balance-account-created-dates', next);
   };
 
   const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, '0')}`;
@@ -550,8 +781,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                   <span className="nx-mini-thumb" style={{ background: acc.theme.bg }}>
                     <span style={{ fontSize: '6px', fontWeight: 500, letterSpacing: '0.24px' }}>NEXO</span>
                     <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
-                      <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-orange)', marginLeft: '-2px' }} />
+                      <CardNetworkLogo mini network={acc.network} />
                     </span>
                     {acc.isFrozen && (
                       <span style={{ position: 'absolute', inset: 0, background: 'rgba(210, 235, 255, 0.45)', backdropFilter: 'blur(2px)' }} />
@@ -564,7 +794,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                       {acc.isFrozen && <span className="nx-badge-feature">Congelada</span>}
                     </span>
                     <span className="nx-label privacy-sensitive" style={{ display: 'block', color: 'rgba(255,255,255,0.75)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
-                      ••• {acc.digits} · {displayMoney(acc.balance)}
+                      {acc.createdDateLabel} · {displayMoney(acc.balance)}
                     </span>
                   </span>
 
@@ -686,6 +916,9 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
             onClick={() => {
               setModalError('');
               setNewAccountName('');
+              setNewAccountDate(getTodayIso());
+              setSelectedCardTheme('standard');
+              setSelectedCardNetwork('mastercard');
               setJoinCode('');
               setJoinName('');
               setIsAddModalOpen(true);
@@ -757,7 +990,8 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 ))}
               </div>
             </div>
-<div className="nx-card-stage-3d">
+
+            <div className="nx-card-stage-3d">
               <div
                 className="nx-physical-card"
                 onMouseMove={handleCardMouseMove}
@@ -775,8 +1009,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                       : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease',
                 }}
               >
-                {/* Brillo metálico dinámico al pasar el ratón */}
-        <div
+                <div
                   className="nx-card-glare"
                   style={{
                     opacity: cardTilt.active ? 1 : 0,
@@ -801,15 +1034,12 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                     <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
                       {activeAccount.name}
                     </span>
-                    <span style={{ fontSize: '14px', fontWeight: 500, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
-                      •• {activeAccount.digits}
+                    <span style={{ fontSize: '13.5px', fontWeight: 500, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
+                      {activeAccount.createdDateLabel}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">
-                    <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.38)' }} />
-                    <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', marginLeft: '-10px' }} />
-                  </div>
+                  <CardNetworkLogo network={activeAccount.network} />
                 </div>
               </div>
             </div>
@@ -867,6 +1097,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 type="button"
                 onClick={() => {
                   setEditName(activeAccount.name);
+                  setEditDate(activeAccount.createdDateRaw);
                   setCopiedCode(false);
                   setIsSettingsOpen(true);
                 }}
@@ -879,7 +1110,39 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
               </button>
             </div>
 
-            
+            <div className="nx-detail-white-card" style={{ padding: '10px 18px 14px', marginBottom: 'var(--sp-md)' }}>
+              {recentAccountTxs.length > 0 ? (
+                <>
+                  {recentAccountTxs.map((tx) => (
+                    <TransactionItem key={tx.id} transaction={tx} />
+                  ))}
+                  {transactions.length > 4 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllCardTx((prev) => !prev)}
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: 0,
+                        color: 'var(--text-main)',
+                        fontFamily: 'inherit',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        padding: '12px 0 4px',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {showAllCardTx ? 'Mostrar menos' : 'Ver todo'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p style={{ fontSize: '13px', color: 'var(--text-mute)', textAlign: 'center', padding: 'var(--sp-lg) 0', margin: 0 }}>
+                  Aún no hay movimientos en esta cuenta.
+                </p>
+              )}
+            </div>
 
             <button
               type="button"
@@ -932,13 +1195,15 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 try {
                   const created = addProfile(newAccountName);
                   changeAccountTheme(created.id, selectedCardTheme);
+                  changeAccountNetwork(created.id, selectedCardNetwork);
+                  changeAccountCreatedDate(created.id, newAccountDate || getTodayIso());
                   setIsAddModalOpen(false);
                   setViewMode('detail');
                 } catch (err) {
                   setModalError(err.message);
                 }
               }}>
-                <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-lg)' }}>
+                <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
                   Nombre de la cuenta
                   <input
                     required
@@ -949,10 +1214,20 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                   />
                 </label>
 
+                <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-lg)' }}>
+                  Fecha de creación
+                  <input
+                    type="date"
+                    value={newAccountDate}
+                    onChange={(e) => setNewAccountDate(e.target.value)}
+                    required
+                  />
+                </label>
+
                 <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-sm)' }}>
                   Color de tarjeta
                 </span>
-                <div style={{ display: 'flex', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
+                <div style={{ display: 'flex', gap: 'var(--sp-md)', marginBottom: 'var(--sp-lg)' }}>
                   {CARD_THEMES.map((t) => (
                     <button
                       key={t.id}
@@ -971,6 +1246,32 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                   ))}
                 </div>
 
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-sm)' }}>
+                  Red de pagos
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 'var(--sp-xl)' }}>
+                  {CARD_NETWORKS.map((net) => (
+                    <button
+                      key={net.id}
+                      type="button"
+                      onClick={() => setSelectedCardNetwork(net.id)}
+                      style={{
+                        height: '34px',
+                        padding: '0 14px',
+                        borderRadius: '999px',
+                        border: 0,
+                        fontSize: '12.5px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        backgroundColor: selectedCardNetwork === net.id ? 'var(--primary)' : 'var(--surface-soft)',
+                        color: selectedCardNetwork === net.id ? '#FFFFFF' : 'var(--text-main)',
+                      }}
+                    >
+                      {net.label}
+                    </button>
+                  ))}
+                </div>
+
                 {modalError && <p style={{ color: 'var(--danger-red)', fontSize: '12px', marginBottom: 'var(--sp-md)' }}>{modalError}</p>}
 
                 <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
@@ -984,6 +1285,8 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 try {
                   const joined = joinProfile(joinCode, joinName);
                   changeAccountTheme(joined.id, 'cobalt');
+                  changeAccountNetwork(joined.id, 'mastercard');
+                  changeAccountCreatedDate(joined.id, getTodayIso());
                   setIsAddModalOpen(false);
                   setViewMode('detail');
                 } catch (err) {
@@ -1026,6 +1329,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 e.preventDefault();
                 try {
                   renameProfile(activeAccount.id, editName);
+                  if (editDate) changeAccountCreatedDate(activeAccount.id, editDate);
                   setIsSettingsOpen(false);
                 } catch {}
               }}
@@ -1035,15 +1339,21 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 Nombre de la cuenta
                 <input value={editName} onChange={(e) => setEditName(e.target.value)} required />
               </label>
+
+              <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
+                Fecha de creación
+                <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
+              </label>
+
               <button type="submit" className="nx-btn-dark" style={{ width: '100%' }}>
-                Guardar nombre
+                Guardar cambios
               </button>
             </form>
 
             <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-sm)' }}>
               Color de tarjeta
             </span>
-            <div style={{ display: 'flex', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
+            <div style={{ display: 'flex', gap: 'var(--sp-md)', marginBottom: 'var(--sp-lg)' }}>
               {CARD_THEMES.map((t) => (
                 <button
                   key={t.id}
@@ -1057,7 +1367,34 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                     border: activeAccount.theme.id === t.id ? '3px solid var(--primary)' : '2px solid transparent',
                     cursor: 'pointer',
                   }}
+                  aria-label={t.label}
                 />
+              ))}
+            </div>
+
+            <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-sm)' }}>
+              Red de pagos
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 'var(--sp-xl)' }}>
+              {CARD_NETWORKS.map((net) => (
+                <button
+                  key={net.id}
+                  type="button"
+                  onClick={() => changeAccountNetwork(activeAccount.id, net.id)}
+                  style={{
+                    height: '34px',
+                    padding: '0 14px',
+                    borderRadius: '999px',
+                    border: 0,
+                    fontSize: '12.5px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    backgroundColor: activeAccount.network === net.id ? 'var(--primary)' : 'var(--surface-soft)',
+                    color: activeAccount.network === net.id ? '#FFFFFF' : 'var(--text-main)',
+                  }}
+                >
+                  {net.label}
+                </button>
               ))}
             </div>
 
