@@ -279,6 +279,7 @@ const App = () => {
     profiles,
     switchProfile,
     setFilters,
+    isAmountsHidden,
   } = useFinance();
 
   const [activeTab, setActiveTab] = useState(() => getPreferredHomeTab(activeProfileId));
@@ -299,11 +300,17 @@ const App = () => {
   const [query, setQuery] = useState('');
 
   const monthSwipeStart = useRef(null);
+  const isFirstProfileMount = useRef(true);
 
   const openForm = (type) => {
     setTransactionType(type);
     setIsModalOpen(true);
   };
+
+  useEffect(() => {
+    document.body.classList.toggle('privacy-mode', Boolean(isAmountsHidden));
+    return () => document.body.classList.remove('privacy-mode');
+  }, [isAmountsHidden]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -328,8 +335,6 @@ const App = () => {
     setColorfulHero(enabled);
     localStorage.setItem('nexo-colorful-hero', String(enabled));
   };
-
-const isFirstProfileMount = useRef(true);
 
   useEffect(() => {
     const showInvestments = getInvestmentsEnabled(activeProfileId);
@@ -437,6 +442,8 @@ const isFirstProfileMount = useRef(true);
     triggerHaptic();
   };
 
+  const showBottomNav = isProfileOpen || activeTab !== 'movements';
+
   return (
     <div className={`stage ${theme === 'dark' ? 'dark' : ''}`}>
       <SplashScreen />
@@ -472,10 +479,11 @@ const isFirstProfileMount = useRef(true);
                   onSetupPin={() => setPinFlow('setup')}
                   onChangePin={() => setPinFlow('change')}
                   onRemovePin={() => setPinFlow('remove')}
+                  onClose={() => setIsProfileOpen(false)}
                 />
               ) : (
                 <>
-                  {activeTab === 'expenses' && (
+                  {(activeTab === 'expenses' || activeTab === 'movements') && (
                     <HomeOverview
                       initials={initials}
                       colorfulHero={colorfulHero}
@@ -483,7 +491,10 @@ const isFirstProfileMount = useRef(true);
                       onQueryChange={setQuery}
                       onOpenLimits={() => setIsLimitsOpen(true)}
                       onQuickAction={(type) => openForm(type)}
-                      onOpenProfile={() => selectTab('movements')}
+                      onOpenProfile={() => {
+                        triggerHaptic();
+                        setIsProfileOpen(true);
+                      }}
                       onLongPressAvatar={cycleAccount}
                       onOpenMovements={() => selectTab('movements')}
                     />
@@ -503,60 +514,62 @@ const isFirstProfileMount = useRef(true);
             </main>
 
             {/* MENÚ INFERIOR CON EFECTO LIQUID GLASS */}
-            <nav className="rev-liquid-nav" aria-label="Navegación principal">
-              <button
-                type="button"
-                className={`rev-nav-item ${!isProfileOpen && activeTab === 'expenses' ? 'active' : ''}`}
-                onClick={() => selectTab('expenses')}
-              >
-                <NexoLogo size={19} />
-                <span>Inicio</span>
-              </button>
-
-              <button
-                type="button"
-                className={`rev-nav-item ${!isProfileOpen && activeTab === 'movements' ? 'active' : ''}`}
-                onClick={() => selectTab('movements')}
-              >
-                <CreditCard size={20} strokeWidth={2} />
-                <span>Cuentas</span>
-              </button>
-
-              <button
-                type="button"
-                className="rev-nav-item"
-                onClick={() => {
-                  if (activeTab === 'investments') setIsInvestmentFormOpen(true);
-                  else openForm('expense');
-                }}
-              >
-                <ArrowLeftRight size={20} strokeWidth={2} />
-                <span>{activeTab === 'investments' ? 'Invertir' : 'Añadir'}</span>
-              </button>
-
-              {investmentsEnabled && (
+            {showBottomNav && (
+              <nav className="rev-liquid-nav" aria-label="Navegación principal">
                 <button
                   type="button"
-                  className={`rev-nav-item ${!isProfileOpen && activeTab === 'investments' ? 'active' : ''}`}
-                  onClick={() => selectTab('investments')}
+                  className={`rev-nav-item ${!isProfileOpen && activeTab === 'expenses' ? 'active' : ''}`}
+                  onClick={() => selectTab('expenses')}
                 >
-                  <TrendingUp size={20} strokeWidth={2} />
-                  <span>Cartera</span>
+                  <NexoLogo size={19} />
+                  <span>Inicio</span>
                 </button>
-              )}
 
-              <button
-                type="button"
-                className={`rev-nav-item ${isProfileOpen ? 'active' : ''}`}
-                onClick={() => {
-                  triggerHaptic();
-                  setIsProfileOpen(true);
-                }}
-              >
-                <LayoutGrid size={20} strokeWidth={2} />
-                <span>Perfil</span>
-              </button>
-            </nav>
+                <button
+                  type="button"
+                  className={`rev-nav-item ${!isProfileOpen && activeTab === 'movements' ? 'active' : ''}`}
+                  onClick={() => selectTab('movements')}
+                >
+                  <CreditCard size={20} strokeWidth={2} />
+                  <span>Cuentas</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="rev-nav-item"
+                  onClick={() => {
+                    if (activeTab === 'investments') setIsInvestmentFormOpen(true);
+                    else openForm('expense');
+                  }}
+                >
+                  <ArrowLeftRight size={20} strokeWidth={2} />
+                  <span>{activeTab === 'investments' ? 'Invertir' : 'Añadir'}</span>
+                </button>
+
+                {investmentsEnabled && (
+                  <button
+                    type="button"
+                    className={`rev-nav-item ${!isProfileOpen && activeTab === 'investments' ? 'active' : ''}`}
+                    onClick={() => selectTab('investments')}
+                  >
+                    <TrendingUp size={20} strokeWidth={2} />
+                    <span>Cartera</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className={`rev-nav-item ${isProfileOpen ? 'active' : ''}`}
+                  onClick={() => {
+                    triggerHaptic();
+                    setIsProfileOpen(true);
+                  }}
+                >
+                  <LayoutGrid size={20} strokeWidth={2} />
+                  <span>Perfil</span>
+                </button>
+              </nav>
+            )}
 
             {isLimitsOpen && <CategoryLimitsForm onClose={() => setIsLimitsOpen(false)} />}
             {isInvestmentFormOpen && <InvestmentForm onClose={() => setIsInvestmentFormOpen(false)} />}

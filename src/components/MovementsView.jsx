@@ -303,20 +303,15 @@ const NX_ACCOUNTS_CSS = `
   .nx-accounts-dark-screen.colorful {
     background-color: #16171F;
     background-image:
-      radial-gradient(125% 62% at 82% 4%, rgba(92, 62, 242, 0.56) 0%, rgba(56, 32, 168, 0.24) 46%, transparent 76%),
+      radial-gradient(125% 62% at 82% 4%, rgba(92, 62, 242, 0.56) 0%, rgba(56, 32, 168, 0.24) 46%, transparent 96%),
       radial-gradient(110% 58% at 14% 16%, rgba(64, 41, 186, 0.42) 0%, transparent 68%),
       radial-gradient(85% 44% at 24% 88%, rgba(132, 102, 92, 0.16) 0%, transparent 66%),
       radial-gradient(85% 44% at 78% 86%, rgba(88, 96, 134, 0.18) 0%, transparent 66%),
       linear-gradient(180deg, #21115E 0%, #1A153B 34%, #171822 68%, #1D1E26 100%);
   }
-  .nx-elevated-group {
-    background-color: var(--surface-elevated);
-    border-radius: var(--rounded-lg);
-    padding: var(--sp-xs) var(--sp-xl);
-    margin-bottom: var(--sp-lg);
-  }
-  .nx-accounts-dark-screen.colorful .nx-elevated-group {
-    background: rgba(255, 255, 255, 0.085);
+
+  .nx-accounts-dark-screen.colorful  {
+    background: rgba(255, 255, 255, 0.59);
     backdrop-filter: blur(28px) saturate(165%);
     -webkit-backdrop-filter: blur(28px) saturate(165%);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -493,6 +488,83 @@ const NX_ACCOUNTS_CSS = `
     background-color: var(--surface-elevated);
     color: var(--on-dark);
     box-shadow: none;
+  }
+    .nx-accounts-dark-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    overflow-y: auto;
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) calc(110px + env(safe-area-inset-bottom, 0px));
+    background: rgba(16, 16, 22, 0.52);
+    backdrop-filter: blur(44px) saturate(170%);
+    -webkit-backdrop-filter: blur(44px) saturate(170%);
+    color: var(--on-dark);
+    display: flex;
+    flex-direction: column;
+    animation: nx-fade 0.2s ease-out;
+  }
+  .nx-accounts-dark-screen.colorful {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(38, 18, 128, 0.48) 0%,
+        rgba(28, 22, 72, 0.36) 42%,
+        rgba(32, 34, 42, 0.42) 100%
+      );
+    backdrop-filter: blur(46px) saturate(180%);
+    -webkit-backdrop-filter: blur(46px) saturate(180%);
+  }
+
+  .nx-elevated-group {
+    background: rgba(224, 224, 224, 0.42);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border-radius: 20px;
+    padding: 4px var(--sp-xl);
+    margin-bottom: var(--sp-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+  .nx-add-account-float {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+    transform: translateX(-50%);
+    z-index: 65;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  }
+    .nx-accounts-dark-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    margin: 0;
+    overflow-y: auto;
+    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) calc(110px + env(safe-area-inset-bottom, 0px));
+    background: rgba(16, 16, 22, 0.52);
+    backdrop-filter: blur(44px) saturate(170%);
+    -webkit-backdrop-filter: blur(44px) saturate(170%);
+    color: var(--on-dark);
+    display: flex;
+    flex-direction: column;
+    animation: nx-fade 0.2s ease-out;
+  }
+  .nx-accounts-dark-screen.colorful {
+    background: linear-gradient(
+      180deg,
+      rgba(38, 18, 128, 0.48) 0%,
+      rgba(28, 22, 72, 0.36) 42%,
+      rgba(32, 34, 42, 0.42) 100%
+    );
+    backdrop-filter: blur(46px) saturate(180%);
+    -webkit-backdrop-filter: blur(46px) saturate(180%);
+  }
+
+  .nx-add-account-float {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 65;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   }
 `;
 
@@ -788,32 +860,32 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
 
       {/* PANTALLA 1: LISTA DE CUENTAS */}
       {viewMode === 'list' && (
-        <div
-          className={`nx-accounts-dark-screen ${colorfulHero ? 'colorful' : ''}`}
-          onTouchStart={handleAccountTouchStart}
-          onTouchMove={handleAccountTouchMove}
-          onTouchEnd={handleAccountTouchEnd}
-          onTouchCancel={resetSwipeState}
-        >
+<div
+            className={`nx-accounts-dark-screen ${colorfulHero ? 'colorful' : ''}`}
+            onTouchStart={handleAccountTouchStart}
+            onTouchMove={handleAccountTouchMove}
+            onTouchEnd={handleAccountTouchEnd}
+            onTouchCancel={resetSwipeState}
+          >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
-            <button
+<button
               type="button"
               onClick={onClose}
               aria-label="Volver al inicio"
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: 'var(--rounded-full)',
+                width: '34px',
+                height: '34px',
                 border: 0,
-                backgroundColor: colorfulHero ? 'rgba(255, 255, 255, 0.16)' : 'var(--surface-elevated)',
-                color: 'var(--on-dark)',
+                padding: 0,
+                background: 'transparent',
+                color: '#FFFFFF',
                 display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
                 cursor: 'pointer',
               }}
             >
-              <X size={18} />
+              <X size={22} strokeWidth={2.2} />
             </button>
           </div>
 
@@ -907,77 +979,15 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
             </button>
           </div>
 
-          {/* TARJETA DE PRIVACIDAD */}
-          <div
-            className="nx-elevated-group"
-            onClick={() => {
-              triggerHaptic();
-              setIsAmountsHidden?.((prev) => !prev);
-            }}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerHaptic();
-                setIsAmountsHidden?.((prev) => !prev);
-              }
-            }}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="nx-account-row">
-              <span
-                className="nx-mini-thumb"
-                style={{
-                  backgroundColor: '#141416',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                }}
-                aria-hidden="true"
-              >
-                <span style={{ fontSize: '6px', fontWeight: 600, letterSpacing: '0.24px', color: '#FFFFFF' }}>NEXO</span>
-                <span style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                  <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-deep-pink)' }} />
-                  <i style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-orange)', marginLeft: '-2px' }} />
-                </span>
-              </span>
 
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
-                  {isAmountsHidden ? 'Saldos ocultos' : 'Privacidad'}
-                </span>
-                <span className="nx-label" style={{ display: 'block', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>
-                  {isAmountsHidden ? 'Toca para mostrar tus importes' : 'Ocultar importes en todas las cuentas'}
-                </span>
-              </span>
-
-              <span
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: 'var(--rounded-full)',
-                  backgroundColor: isAmountsHidden ? 'var(--canvas-light)' : 'rgba(255, 255, 255, 0.18)',
-                  color: isAmountsHidden ? 'var(--canvas-dark)' : '#FFFFFF',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all 0.15s ease',
-                }}
-                aria-label={isAmountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
-              >
-                {isAmountsHidden ? <EyeOff size={18} /> : <Eye size={18} />}
-              </span>
-            </div>
-          </div>
-
-          <button
+<button
             type="button"
             className="nx-btn-primary nx-add-account-float"
             onClick={() => {
               setModalError('');
               setNewAccountName('');
               setNewAccountDate(getTodayIso());
-              setSelectedCardTheme('standard');
+              setSelectedCardTheme('revolut-standard');
               setSelectedCardNetwork('mastercard');
               setJoinCode('');
               setJoinName('');
@@ -996,6 +1006,7 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
           onTouchMove={handleAccountTouchMove}
           onTouchEnd={handleAccountTouchEnd}
           onTouchCancel={resetSwipeState}
+          style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', backgroundColor: 'var(--surface-soft)' }}
         >
           <div className={`nx-card-hero-band ${colorfulHero ? 'colorful' : ''}`}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-lg)' }}>
