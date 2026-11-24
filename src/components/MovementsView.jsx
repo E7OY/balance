@@ -149,6 +149,9 @@ const NX_ACCOUNTS_CSS = `
   .nx-pills-strip::-webkit-scrollbar {
     display: none;
   }
+.nx-card-stage-3d {
+    perspective: 1000px;
+  }
   .nx-physical-card {
     position: relative;
     width: 100%;
@@ -162,7 +165,17 @@ const NX_ACCOUNTS_CSS = `
     border: 1px solid rgba(255, 255, 255, 0.14);
     overflow: hidden;
     will-change: transform;
+    transform-style: preserve-3d;
     user-select: none;
+    cursor: pointer;
+  }
+  .nx-card-glare {
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.25s ease;
   }
   .nx-card-dots {
     display: flex;
@@ -288,6 +301,35 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
   // Estado y referencias para deslizar entre cuentas
   const [cardDragX, setCardDragX] = useState(0);
   const [isSwipingCard, setIsSwipingCard] = useState(false);
+  const [cardTilt, setCardTilt] = useState({
+    rx: 0,
+    ry: 0,
+    glareX: 50,
+    glareY: 50,
+    active: false,
+  });
+
+  const handleCardMouseMove = (e) => {
+    if (isSwipingCard) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+
+    const rx = (0.5 - py) * 16; // Inclinación vertical (±8°)
+    const ry = (px - 0.5) * 20; // Inclinación horizontal (±10°)
+
+    setCardTilt({
+      rx,
+      ry,
+      glareX: Math.round(px * 100),
+      glareY: Math.round(py * 100),
+      active: true,
+    });
+  };
+
+  const handleCardMouseLeave = () => {
+    setCardTilt({ rx: 0, ry: 0, glareX: 50, glareY: 50, active: false });
+  };
   const swipeStateRef = useRef({
     active: false,
     startX: 0,
@@ -715,39 +757,59 @@ const MovementsView = ({ colorfulHero = true, onClose, onOpenLimits }) => {
                 ))}
               </div>
             </div>
+<div className="nx-card-stage-3d">
+              <div
+                className="nx-physical-card"
+                onMouseMove={handleCardMouseMove}
+                onMouseLeave={handleCardMouseLeave}
+                style={{
+                  background: activeAccount.theme.bg,
+                  transform: `translate3d(${cardDragX}px, 0, 0) rotateX(${cardTilt.rx}deg) rotateY(${cardTilt.ry}deg) scale3d(${cardTilt.active ? 1.025 : 1}, ${cardTilt.active ? 1.025 : 1}, 1)`,
+                  boxShadow: cardTilt.active
+                    ? `${-cardTilt.ry * 1.4}px ${cardTilt.rx * 1.4 + 20}px 42px rgba(0, 0, 0, 0.42)`
+                    : '0 14px 32px rgba(0, 0, 0, 0.28)',
+                  transition: isSwipingCard
+                    ? 'none'
+                    : cardTilt.active
+                      ? 'transform 0.08s ease-out, box-shadow 0.08s ease-out'
+                      : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease',
+                }}
+              >
+                {/* Brillo metálico dinámico al pasar el ratón */}
+        <div
+                  className="nx-card-glare"
+                  style={{
+                    opacity: cardTilt.active ? 1 : 0,
+                    mixBlendMode: 'soft-light',
+                    background: `radial-gradient(circle at ${cardTilt.glareX}% ${cardTilt.glareY}%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 38%, transparent 70%)`,
+                  }}
+                />
 
-            <div
-              className="nx-physical-card"
-              style={{
-                background: activeAccount.theme.bg,
-                transform: `translate3d(${cardDragX}px, 0, 0)`,
-                transition: isSwipingCard ? 'none' : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
-              }}
-            >
-              {activeAccount.isFrozen && <div className="nx-frost-overlay" />}
+                {activeAccount.isFrozen && <div className="nx-frost-overlay" />}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 3 }}>
-                <span style={{ fontSize: '15px', fontWeight: 500, color: 'rgba(255,255,255,0.92)' }}>
-                  {activeAccount.isShared ? 'Compartida' : 'Estándar'}
-                </span>
-                <span className="nx-display privacy-sensitive" style={{ fontSize: '20px' }}>
-                  {displayMoney(activeAccount.balance)}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 3 }}>
-                <div>
-                  <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
-                    {activeAccount.name}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 3 }}>
+                  <span style={{ fontSize: '15px', fontWeight: 500, color: 'rgba(255,255,255,0.92)' }}>
+                    {activeAccount.isShared ? 'Compartida' : 'Estándar'}
                   </span>
-                  <span style={{ fontSize: '14px', fontWeight: 500, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
-                    •• {activeAccount.digits}
+                  <span className="nx-display privacy-sensitive" style={{ fontSize: '20px' }}>
+                    {displayMoney(activeAccount.balance)}
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.38)' }} />
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', marginLeft: '-10px' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 3 }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
+                      {activeAccount.name}
+                    </span>
+                    <span style={{ fontSize: '14px', fontWeight: 500, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
+                      •• {activeAccount.digits}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">
+                    <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.38)' }} />
+                    <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', marginLeft: '-10px' }} />
+                  </div>
                 </div>
               </div>
             </div>

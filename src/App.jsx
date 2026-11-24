@@ -531,7 +531,7 @@ const isFirstProfileMount = useRef(true);
                 }}
               >
                 <ArrowLeftRight size={20} strokeWidth={2} />
-                <span>{activeTab === 'investments' ? 'Invertir' : 'Mover'}</span>
+                <span>{activeTab === 'investments' ? 'Invertir' : 'Añadir'}</span>
               </button>
 
               {investmentsEnabled && (
