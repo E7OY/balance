@@ -357,7 +357,7 @@ html, body, #root {
   left: 50%;
   bottom: 0;
   transform: translateX(-50%);
-  width: 100%;
+  width: 80%;
   max-width: 460px;
   min-height: 64px;
   display: flex;
@@ -551,7 +551,7 @@ html, body, #root {
   left: 50%;
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  width: calc(100% - 28px);
+  width: calc(80% - 28px);
   max-width: 432px;
   height: 64px;
   display: flex;

@@ -528,8 +528,8 @@ const App = () => {
                   <NexoLogo size={19} />
                   <span>Inicio</span>
                 </button>
-
-                <button
+              {/*
+                <button 
                   type="button"
                   className={`rev-nav-item ${!isProfileOpen && activeTab === 'movements' ? 'active' : ''}`}
                   onClick={() => selectTab('movements')}
@@ -537,7 +537,7 @@ const App = () => {
                   <CreditCard size={20} strokeWidth={2} />
                   <span>Cuentas</span>
                 </button>
-
+                */}
                 <button
                   type="button"
                   className="rev-nav-item"

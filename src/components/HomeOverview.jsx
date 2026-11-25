@@ -163,7 +163,8 @@ const HOME_WALLET_CSS = `
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 14px;
+    margin: 30px 0px;
+    margin-top: 20px !important;
   }
   .nx-wh-circle-btn {
     width: 40px;
