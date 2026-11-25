@@ -37,12 +37,13 @@ const HOME_TOKENS_CSS = `
   }
 
   /* CAPA DE FONDO INDEPENDIENTE CON DEGRADADO SUAVIZADO */
+  /* CAPA DE FONDO INDEPENDIENTE CON FUNDIDO ORGÁNICO SIN CORTES */
   .nx-hero-bg-layer {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: calc(430px + env(safe-area-inset-top, 0px));
+    height: calc(500px + env(safe-area-inset-top, 0px));
     pointer-events: none;
     z-index: 0;
     overflow: hidden;
@@ -55,6 +56,23 @@ const HOME_TOKENS_CSS = `
     background-size: cover;
     background-repeat: no-repeat;
     transition: background 0.3s ease;
+    /* Disuelve el propio gradiente hacia transparente antes de tocar el borde inferior */
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000000 0%,
+      #000000 50%,
+      rgba(0, 0, 0, 0.55) 72%,
+      rgba(0, 0, 0, 0.14) 88%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      #000000 0%,
+      #000000 50%,
+      rgba(0, 0, 0, 0.55) 72%,
+      rgba(0, 0, 0, 0.14) 88%,
+      transparent 100%
+    );
   }
 
   .nx-hero-bg-fade {
@@ -62,18 +80,19 @@ const HOME_TOKENS_CSS = `
     inset: 0;
     background: linear-gradient(
       180deg,
-      rgba(0, 0, 0, 0.18) 0%,
-      rgba(0, 0, 0, 0.1) 46%,
-      rgba(243, 244, 246, 0.72) 80%,
+      rgba(0, 0, 0, 0.16) 0%,
+      rgba(0, 0, 0, 0.06) 38%,
+      rgba(243, 244, 246, 0.45) 68%,
+      rgba(243, 244, 246, 0.88) 86%,
       var(--surface-soft) 100%
     );
   }
   .dark .nx-hero-bg-fade {
     background: linear-gradient(
       180deg,
-      rgba(0, 0, 0, 0.24) 0%,
-      rgba(0, 0, 0, 0.12) 46%,
-      rgba(0, 0, 0, 0.78) 80%,
+      rgba(0, 0, 0, 0.22) 0%,
+      rgba(0, 0, 0, 0.1) 42%,
+      rgba(0, 0, 0, 0.68) 76%,
       var(--canvas-dark) 100%
     );
   }

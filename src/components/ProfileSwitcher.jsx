@@ -287,6 +287,128 @@ const SETTINGS_REVOLUT_CSS = `
   .rev-switch.on .rev-switch-thumb {
     transform: translateX(20px);
   }
+    /* WALLET CARD CON TARJETAS EN ABANICO + BOLSILLO LIQUID GLASS */
+  .rev-wallet-outer {
+    width: 100%;
+    padding: 7px;
+    border-radius: 34px;
+    background: rgba(73, 79, 223, 0.08);
+    border: 1px solid rgba(73, 79, 223, 0.12);
+    margin-bottom: 14px;
+    box-sizing: border-box;
+  }
+  .dark .rev-wallet-outer {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .rev-wallet-card {
+    position: relative;
+    width: 100%;
+    height: 224px;
+    border-radius: 28px;
+    background: linear-gradient(180deg, #1E1F24 0%, #141519 100%);
+    overflow: hidden;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    display: block;
+    text-align: center;
+    font-family: inherit;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16);
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .dark .rev-wallet-card {
+    background: linear-gradient(180deg, #1A1B20 0%, #101115 100%);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
+  }
+  .rev-wallet-card:active {
+    transform: scale(0.985);
+  }
+  .rev-wallet-card:hover .rev-wallet-mini-card {
+    transform: translateY(calc(var(--ty) - 6px)) rotate(var(--rot));
+  }
+  .rev-wallet-title {
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: rgba(255, 255, 255, 0.56);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .rev-wallet-stack {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .rev-wallet-mini-card {
+    position: absolute;
+    left: 50%;
+    width: 78%;
+    height: 124px;
+    margin-left: -39%;
+    border-radius: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.92);
+    padding: 12px 15px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    color: #FFFFFF;
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.28);
+    transform: translateY(var(--ty)) rotate(var(--rot));
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .rev-wallet-pocket {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    height: 126px;
+    border-radius: 23px;
+    z-index: 4;
+    background: linear-gradient(
+      180deg,
+      rgba(120, 125, 138, 0.46) 0%,
+      rgba(56, 59, 68, 0.68) 55%,
+      rgba(28, 30, 36, 0.88) 100%
+    );
+    backdrop-filter: blur(22px) saturate(185%);
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    border-top: 1px solid rgba(255, 255, 255, 0.38);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.34),
+      inset 0 -10px 22px rgba(0, 0, 0, 0.42),
+      0 -8px 24px rgba(0, 0, 0, 0.28);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 10px;
+  }
+  .rev-wallet-balance-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.72);
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+  .rev-wallet-balance-val {
+    font-size: 31px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #FFFFFF;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+  .rev-wallet-balance-dec {
+    color: rgba(255, 255, 255, 0.48);
+    font-weight: 600;
+  }
 `;
 
 const ProfileSwitcher = ({
@@ -306,6 +428,7 @@ const ProfileSwitcher = ({
   onSetupPin,
   onChangePin,
   onRemovePin,
+  getTransactionsForProfile,
   onClose,
 }) => {
   const {
@@ -380,11 +503,96 @@ const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     ? activeProfileId
     : (syncUser ? `${syncUser.uid}___${activeProfileId}` : null);
 
-  const totalWealth = transactions.reduce((acc, tx) => (
-    tx.type === 'Ingreso' ? acc + Number(tx.amount) : tx.type === 'Gasto' ? acc - Number(tx.amount) : acc
-  ), 0) + investmentRecords.reduce((acc, rec) => (
+const WALLET_CARD_BGS = {
+    'revolut-standard': 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 52%, #EC4899 100%)',
+    'metal-black': 'linear-gradient(145deg, #3A3C44 0%, #1B1C20 55%, #09090B 100%)',
+    'metal-space-grey': 'linear-gradient(145deg, #6B7280 0%, #3F434C 55%, #23252A 100%)',
+    'metal-gold': 'linear-gradient(135deg, #DFBD69 0%, #A8823A 52%, #735723 100%)',
+    'metal-rose-gold': 'linear-gradient(135deg, #F4A29E 0%, #C97A74 52%, #884A45 100%)',
+    'metal-lavender': 'linear-gradient(135deg, #A78BFA 0%, #7C3AED 52%, #4C1D95 100%)',
+    'ultra-platinum': 'linear-gradient(135deg, #E2E8F0 0%, #94A3B8 52%, #475569 100%)',
+    chromatic: 'linear-gradient(125deg, #60A5FA 0%, #A78BFA 32%, #F472B6 65%, #FBBF24 100%)',
+    disposable: 'linear-gradient(135deg, #FB7185 0%, #E11D48 55%, #9F1239 100%)',
+    cobalt: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1D4ED8 100%)',
+    emerald: 'linear-gradient(135deg, #34D399 0%, #059669 55%, #064E3B 100%)',
+    'midnight-aurora': 'linear-gradient(135deg, #38BDF8 0%, #2563EB 52%, #1E1B4B 100%)',
+    'sunset-amber': 'linear-gradient(135deg, #FDBA74 0%, #F97316 52%, #9A3412 100%)',
+    bronze: 'linear-gradient(135deg, #D6A89A 0%, #936D62 55%, #4A352F 100%)',
+  };
+
+  const totalWealth = profiles.reduce((sum, p) => {
+    const pTxs = p.id === activeProfileId
+      ? transactions
+      : (getTransactionsForProfile ? getTransactionsForProfile(p.id) : []);
+    const txBal = (Array.isArray(pTxs) ? pTxs : []).reduce((acc, tx) => (
+      tx.type === 'Ingreso' ? acc + (Number(tx.amount) || 0) : tx.type === 'Gasto' ? acc - (Number(tx.amount) || 0) : acc
+    ), 0);
+    return sum + txBal;
+  }, 0) + investmentRecords.reduce((acc, rec) => (
     rec.soldAt ? acc : acc + (Number(rec.currentValue) || 0)
   ), 0);
+
+  const walletCards = (() => {
+    let savedThemes = {};
+    let savedNets = {};
+    try {
+      savedThemes = JSON.parse(localStorage.getItem('balance-account-themes') || '{}') || {};
+      savedNets = JSON.parse(localStorage.getItem('balance-account-networks') || '{}') || {};
+    } catch {}
+
+    // Ordenamos para que la cuenta activa quede siempre la última (al frente del bolsillo)
+    const orderedProfiles = [
+      ...profiles.filter((p) => p.id !== activeProfileId),
+      ...profiles.filter((p) => p.id === activeProfileId),
+    ].slice(-4);
+
+    const themeKeys = Object.keys(WALLET_CARD_BGS);
+
+    const posesByCount = {
+      1: [{ ty: '60px', rot: '0deg' }],
+      2: [
+        { ty: '42px', rot: '-6deg' },
+        { ty: '66px', rot: '0deg' },
+      ],
+      3: [
+        { ty: '32px', rot: '10deg' },
+        { ty: '48px', rot: '-5deg' },
+        { ty: '68px', rot: '0deg' },
+      ],
+      4: [
+        { ty: '26px', rot: '-9deg' },
+        { ty: '38px', rot: '9deg' },
+        { ty: '52px', rot: '-4deg' },
+        { ty: '68px', rot: '0deg' },
+      ],
+    };
+
+    const poses = posesByCount[orderedProfiles.length] || posesByCount[1];
+
+    return orderedProfiles.map((p, idx) => {
+      const origIdx = Math.max(0, profiles.findIndex((item) => item.id === p.id));
+      const themeKey = savedThemes[p.id] || themeKeys[origIdx % themeKeys.length];
+      return {
+        id: p.id,
+        name: p.name,
+        bg: WALLET_CARD_BGS[themeKey] || WALLET_CARD_BGS['revolut-standard'],
+        net: savedNets[p.id] || 'mastercard',
+        ...poses[idx],
+      };
+    });
+  })();
+
+  const formattedWealth = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(totalWealth);
+  const wealthCommaIdx = formattedWealth.indexOf(',');
+  const wealthInt = isAmountsHidden
+    ? '•••• €'
+    : (wealthCommaIdx === -1 ? formattedWealth : formattedWealth.slice(0, wealthCommaIdx));
+  const wealthDec = isAmountsHidden || wealthCommaIdx === -1
+    ? ''
+    : formattedWealth.slice(wealthCommaIdx);
 
   const displayMoney = (val) => (isAmountsHidden
     ? '•••• €'
@@ -433,9 +641,8 @@ const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
         </button>
       </div>
 
-      {/* CABECERA CENTRADA: AVATAR + NOMBRE + @USUARIO */}
+      {/* CABECERA CENTRADA: AVATAR + NOMBRE + @USUARIO 
       <div className="rev-settings-hero">
-{/* AVATAR EN PERFIL */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' }}>
         <button
           type="button"
@@ -501,7 +708,7 @@ const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
         </button>
       </div>
 
-      {/* MODAL SELECTOR DE AVATAR DICEBEAR */}
+      {/* MODAL SELECTOR DE AVATAR DICEBEAR 
       {isAvatarModalOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 120 }} onMouseDown={() => setIsAvatarModalOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -633,9 +840,116 @@ const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
           <span>{handleTag}</span>
           <QrCode size={14} />
         </button>
-      </div>
+
+      </div>*/}
 
       {/* DOS TARJETAS SUPERIORES (ESTILO ULTRA / INVITE FRIENDS) */}
+
+      {/* WALLET CARD ARRIBA CON ABANICO DE TARJETAS + PATRIMONIO TOTAL */}
+      <div className="rev-wallet-outer">
+        <button
+          type="button"
+          className="rev-wallet-card"
+          onClick={() => {
+            triggerHaptic();
+            setIsSpacesSheetOpen(true);
+          }}
+          aria-label="Ver cuentas y patrimonio total"
+        >
+          <span className="rev-wallet-title">Wallet</span>
+
+          <div className="rev-wallet-stack" aria-hidden="true">
+            {walletCards.map((card) => {
+              const isLightCard = card.bg.includes('#E2E8F0');
+              return (
+                <div
+                  key={card.id}
+                  className="rev-wallet-mini-card"
+                  style={{
+                    background: card.bg,
+                    '--ty': card.ty,
+                    '--rot': card.rot,
+                  }}
+                >
+                  {card.net === 'none' ? (
+                    <span />
+                  ) : card.net === 'visa' ? (
+                    <span
+                      style={{
+                        fontSize: '15px',
+                        fontWeight: 800,
+                        fontStyle: 'italic',
+                        letterSpacing: '-0.04em',
+                        color: isLightCard ? '#1E3A8A' : '#FFFFFF',
+                      }}
+                    >
+                      VISA
+                    </span>
+                  ) : card.net === 'amex' ? (
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        letterSpacing: '0.06em',
+                        padding: '2px 5px',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(255, 255, 255, 0.6)',
+                        color: isLightCard ? '#0F172A' : '#FFFFFF',
+                      }}
+                    >
+                      AMEX
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <i
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          background: card.net === 'mastercard-color' ? '#EB001B' : '#3A3B40',
+                          border: '1px solid rgba(255,255,255,0.35)',
+                          display: 'inline-block',
+                        }}
+                      />
+                      <i
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          background: card.net === 'mastercard-color' ? '#F79E1B' : '#B4B6BE',
+                          border: '1px solid rgba(255,255,255,0.35)',
+                          marginLeft: '-7px',
+                          opacity: 0.9,
+                          display: 'inline-block',
+                        }}
+                      />
+                    </span>
+                  )}
+
+                  <span
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      color: isLightCard ? 'rgba(15, 23, 42, 0.78)' : 'rgba(255, 255, 255, 0.9)',
+                    }}
+                  >
+                    {card.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="rev-wallet-pocket">
+            <span className="rev-wallet-balance-label">Patrimonio total</span>
+            <strong className="rev-wallet-balance-val privacy-sensitive">
+              {wealthInt}
+              {wealthDec && <span className="rev-wallet-balance-dec">{wealthDec}</span>}
+            </strong>
+          </div>
+        </button>
+      </div>
+
       <div className="rev-bento-duo">
         <button
           type="button"
