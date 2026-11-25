@@ -662,13 +662,13 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
           </div>
 
           <div className="nx-kp-dock">
-            <div className="nx-kp-ops">
+            {/*<div className="nx-kp-ops">
               {['+', '−', '×', '÷', '='].map((op) => (
                 <button key={op} type="button" onClick={() => handleOperator(op)}>
                   {op}
                 </button>
               ))}
-            </div>
+            </div>*/}
 
             <div className="nx-kp-keys">
               {KEYPAD_GRID.map(({ key, sub }) => (
