@@ -19,7 +19,6 @@ import {
   Moon,
   Palette,
   Plus,
-  QrCode,
   Share2,
   Shield,
   Trash2,
@@ -35,12 +34,8 @@ import { getPushNotificationsEnabled, setPushNotificationsEnabled } from '../uti
 import { triggerHaptic } from '../utils/haptics';
 import HomeThemeModal from './HomeThemeModal';
 import { getSavedHomeBackground, HOME_BACKGROUNDS } from '../utils/homeBackgrounds';
-import { Camera, Shuffle } from 'lucide-react';
 import {
   DICEBEAR_SEEDS,
-  getDiceBearAvatar,
-  getRandomSeeds,
-  processAvatarFile,
 } from '../utils/avatar';
 const SETTINGS_REVOLUT_CSS = `
   .rev-settings-page {

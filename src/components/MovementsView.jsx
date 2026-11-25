@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowLeft,
   ArrowRight,
   Check,
   ChevronRight,
@@ -236,23 +235,153 @@ const writeMapStorage = (key, value) => {
 };
 
 const NX_ACCOUNTS_CSS = `
-  .nx-accounts-detail-screen {
+  /* =========================================================
+     ANIMACIONES FLUIDAS ESTILO APPLE iOS / REVOLUT SHEET
+     ========================================================= */
+  @keyframes nx-acc-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes nx-acc-backdrop-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  @keyframes nx-acc-sheet-in {
+    0% {
+      opacity: 0.55;
+      transform: translate3d(0, 104%, 0) scale(0.965);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes nx-acc-sheet-out {
+    0% {
+      opacity: 1;
+      transform: translate3d(0, var(--drag-y, 0px), 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(0, 105%, 0) scale(0.975);
+    }
+  }
+
+  .nx-accounts-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 60;
-    overflow-y: auto;
-    background: linear-gradient(180deg, #E8EEFF 0%, #F2F4F8 42%, #F3F4F6 100%);
-    color: #0B0B0D;
+    z-index: 9990;
+    background: rgba(8, 10, 18, 0.46);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: nx-acc-backdrop-in 0.36s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
-  .dark .nx-accounts-detail-screen {
-    background: linear-gradient(180deg, #090E23 0%, #070B19 46%, #05060A 100%);
+  .nx-accounts-backdrop.closing {
+    animation: nx-acc-backdrop-out 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    pointer-events: none;
+  }
+
+  /* POPUP SHEET DE CUENTAS (LIQUID GLASS + AZUL REVOLUT EN DARK) */
+  .nx-accounts-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    height: min(92dvh, 840px);
+    max-width: 460px;
+    margin: 0 auto;
+    z-index: 9991;
+    display: flex;
+    flex-direction: column;
+    border-radius: 34px 34px 0 0;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 70% at 15% 0%, rgba(255, 255, 255, 0.9) 0%, transparent 58%),
+      linear-gradient(180deg, rgba(232, 238, 255, 0.88) 0%, rgba(242, 244, 248, 0.88) 44%, rgba(243, 244, 246, 0.92) 100%);
+    backdrop-filter: blur(38px) saturate(200%);
+    -webkit-backdrop-filter: blur(38px) saturate(200%);
+    border-top: 1px solid rgba(255, 255, 255, 0.94);
+    box-shadow:
+      0 -20px 54px rgba(15, 23, 42, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    color: #0B0B0D;
+    will-change: transform, opacity;
+    transform-origin: bottom center;
+    animation: nx-acc-sheet-in 0.46s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+  .dark .nx-accounts-sheet {
+    background:
+      radial-gradient(120% 65% at 20% 0%, rgba(59, 130, 246, 0.16) 0%, transparent 56%),
+      linear-gradient(180deg, rgba(9, 14, 35, 0.9) 0%, rgba(7, 11, 25, 0.92) 48%, rgba(5, 6, 10, 0.95) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow:
+      0 -22px 60px rgba(0, 0, 0, 0.65),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
     color: #FFFFFF;
   }
 
-  /* ZONA SUPERIOR TRANSPARENTE SOBRE EL FONDO CONTINUO */
+  .nx-accounts-sheet.dragging {
+    animation: none !important;
+    transition: none !important;
+  }
+  .nx-accounts-sheet.snapping {
+    animation: none !important;
+    transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1) !important;
+  }
+  .nx-accounts-sheet.closing {
+    animation: nx-acc-sheet-out 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
+    pointer-events: none;
+  }
+
+  /* BARRITA SUPERIOR INTERACTIVA ESTILO APPLE */
+  .nx-acc-grabber-zone {
+    width: 100%;
+    padding: 10px 0 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .nx-acc-grabber-zone:active {
+    cursor: grabbing;
+  }
+  .nx-acc-grabber-pill {
+    width: 40px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.2);
+    transition: width 0.18s ease, background-color 0.18s ease;
+  }
+  .nx-acc-grabber-zone:active .nx-acc-grabber-pill {
+    width: 48px;
+    background: rgba(15, 23, 42, 0.34);
+  }
+  .dark .nx-acc-grabber-pill {
+    background: rgba(255, 255, 255, 0.28);
+  }
+  .dark .nx-acc-grabber-zone:active .nx-acc-grabber-pill {
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  /* CONTENEDOR DE SCROLL INTERNO DEL POPUP */
+  .nx-accounts-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .nx-card-hero-band {
     background: transparent !important;
-    padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-xl) 4px;
+    padding: 6px var(--sp-xl) 4px;
     overflow: visible;
   }
 
@@ -260,16 +389,22 @@ const NX_ACCOUNTS_CSS = `
     width: 34px;
     height: 34px;
     border-radius: 999px;
-    border: 0;
-    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(11, 11, 13, 0.06);
     color: #0B0B0D;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
+    transition: transform 0.12s ease;
+  }
+  .nx-hero-back-btn:active {
+    transform: scale(0.92);
   }
   .dark .nx-hero-back-btn {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.1);
     color: #FFFFFF;
   }
 
@@ -315,6 +450,7 @@ const NX_ACCOUNTS_CSS = `
     flex-shrink: 0;
     background: rgba(11, 11, 13, 0.08);
     color: #0B0B0D;
+    transition: background-color 0.16s ease, color 0.16s ease;
   }
   .nx-hero-pill.active {
     background: #0B0B0D;
@@ -329,8 +465,8 @@ const NX_ACCOUNTS_CSS = `
     color: #0B0B0D;
   }
 
-  /* CARRUSEL NATIVO CON SCROLL-SNAP ESTILO REVOLUT */
-.nx-card-carousel {
+  /* CARRUSEL NATIVO CON SCROLL-SNAP Y ESPACIO PARA LA SOMBRA */
+  .nx-card-carousel {
     display: flex;
     gap: 12px;
     overflow-x: auto;
@@ -363,15 +499,16 @@ const NX_ACCOUNTS_CSS = `
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     overflow: hidden;
     will-change: transform;
     transform-style: preserve-3d;
     user-select: none;
     cursor: pointer;
   }
-    .dark .nx-physical-card {
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.34);
+  .dark .nx-physical-card {
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.36);
   }
   .nx-card-glare {
     position: absolute;
@@ -381,7 +518,7 @@ box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);    border: 1px solid rgba(255, 2
     z-index: 1;
     transition: opacity 0.25s ease;
   }
-.nx-card-dots {
+  .nx-card-dots {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -425,12 +562,10 @@ box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);    border: 1px solid rgba(255, 2
     z-index: 2;
   }
 
-  /* CONTENIDO INFERIOR INTEGRADO EN EL MISMO FONDO */
+  /* CONTENIDO INFERIOR INTEGRADO */
   .nx-card-detail-sheet {
     position: relative;
     z-index: 3;
-    margin-top: 0;
-    border-radius: 0;
     background: transparent !important;
     padding: 14px var(--sp-lg) calc(var(--sp-xxl) + env(safe-area-inset-bottom, 0px));
   }
@@ -438,34 +573,41 @@ box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);    border: 1px solid rgba(255, 2
     width: 50px;
     height: 50px;
     border-radius: var(--rounded-full);
-    background-color: var(--canvas-light);
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.9);
     color: var(--ink);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.12s ease, background-color 0.15s ease;
   }
   .dark .nx-detail-circle-btn {
-    background-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     color: #FFFFFF;
     box-shadow: none;
   }
   .nx-detail-circle-btn.frozen {
-    background-color: var(--primary);
+    background: var(--primary);
+    border-color: var(--primary);
     color: #FFFFFF;
   }
   .nx-detail-white-card {
-    background-color: var(--canvas-light);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     color: var(--ink);
     border-radius: 20px;
     padding: var(--sp-xl);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.92);
   }
   .dark .nx-detail-white-card {
-    background-color: #16171B;
+    background: rgba(22, 23, 29, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.11);
     color: var(--on-dark);
-    box-shadow: none;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 `;
 
@@ -510,6 +652,48 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
 
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [showAllCardTx, setShowAllCardTx] = useState(false);
+
+  // Estados para animación de cierre y arrastre estilo Apple Sheet
+  const [isClosing, setIsClosing] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSnapping, setIsSnapping] = useState(false);
+  const dragStartYRef = useRef(0);
+
+  const requestClose = () => {
+    if (isClosing) return;
+    triggerHaptic();
+    setIsClosing(true);
+    window.setTimeout(() => {
+      onClose?.();
+    }, 270);
+  };
+
+  const handleDragPointerDown = (e) => {
+    if (isClosing) return;
+    dragStartYRef.current = e.clientY;
+    setIsDragging(true);
+    setIsSnapping(false);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const handleDragPointerMove = (e) => {
+    if (!isDragging) return;
+    const delta = e.clientY - dragStartYRef.current;
+    setDragY(delta > 0 ? delta : delta * 0.18);
+  };
+
+  const handleDragPointerUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (dragY > 115) {
+      requestClose();
+    } else {
+      setIsSnapping(true);
+      setDragY(0);
+      window.setTimeout(() => setIsSnapping(false), 360);
+    }
+  };
 
   const [cardTilt, setCardTilt] = useState({
     rx: 0,
@@ -688,261 +872,296 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
 
   if (!activeAccount) return null;
 
-  return (
+  const sheetClasses = [
+    'nx-accounts-sheet',
+    isDragging ? 'dragging' : '',
+    isSnapping ? 'snapping' : '',
+    isClosing ? 'closing' : '',
+  ].filter(Boolean).join(' ');
+
+  return createPortal(
     <>
       <style>{NX_ACCOUNTS_CSS}</style>
 
-      <div className="nx-accounts-detail-screen">
-        <div className="nx-card-hero-band">
-          {/* BARRA SUPERIOR: VOLVER + BOTÓN AÑADIR + PILLS DE CUENTAS */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: 'var(--sp-lg)' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Volver al inicio"
-              className="nx-hero-back-btn"
-            >
-              <ArrowLeft size={20} strokeWidth={2.2} />
-            </button>
+      {/* BACKDROP OSCURECIDO CON BLUR */}
+      <div
+        className={`nx-accounts-backdrop ${isClosing ? 'closing' : ''}`}
+        onClick={requestClose}
+        aria-hidden="true"
+      />
 
-            <div className="nx-pills-strip">
+      {/* POPUP SHEET PRINCIPAL */}
+      <div
+        className={sheetClasses}
+        role="dialog"
+        aria-modal="true"
+        style={{
+          '--drag-y': `${Math.max(0, dragY)}px`,
+          transform: isDragging || isSnapping ? `translate3d(0, ${dragY}px, 0)` : undefined,
+        }}
+      >
+        {/* BARRITA SUPERIOR ESTILO APPLE CON GESTO DRAG-TO-DISMISS */}
+        <div
+          className="nx-acc-grabber-zone"
+          onPointerDown={handleDragPointerDown}
+          onPointerMove={handleDragPointerMove}
+          onPointerUp={handleDragPointerUp}
+          onPointerCancel={handleDragPointerUp}
+        >
+          <span className="nx-acc-grabber-pill" />
+        </div>
+
+        <div className="nx-accounts-scroll">
+          <div className="nx-card-hero-band">
+            {/* BARRA SUPERIOR: CERRAR + BOTÓN AÑADIR + PILLS DE CUENTAS */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: 'var(--sp-lg)' }}>
               <button
                 type="button"
-                className="nx-hero-add-pill"
-                onClick={() => {
-                  triggerHaptic();
-                  setModalError('');
-                  setNewAccountName('');
-                  setNewAccountDate(getTodayIso());
-                  setSelectedCardTheme('revolut-standard');
-                  setSelectedCardNetwork('mastercard');
-                  setJoinCode('');
-                  setJoinName('');
-                  setIsAddModalOpen(true);
-                }}
-                aria-label="Añadir cuenta"
+                onClick={requestClose}
+                aria-label="Cerrar cuentas"
+                className="nx-hero-back-btn"
               >
-                <Plus size={17} strokeWidth={2.4} />
+                <X size={18} strokeWidth={2.3} />
               </button>
 
-              {accountsData.map((acc) => (
+              <div className="nx-pills-strip">
                 <button
-                  key={acc.id}
-                  ref={(el) => { pillRefs.current[acc.id] = el; }}
                   type="button"
-                  className={`nx-hero-pill ${acc.id === activeProfileId ? 'active' : ''}`}
+                  className="nx-hero-add-pill"
                   onClick={() => {
                     triggerHaptic();
-                    setShowAllCardTx(false);
-                    switchProfile(acc.id);
+                    setModalError('');
+                    setNewAccountName('');
+                    setNewAccountDate(getTodayIso());
+                    setSelectedCardTheme('revolut-standard');
+                    setSelectedCardNetwork('mastercard');
+                    setJoinCode('');
+                    setJoinName('');
+                    setIsAddModalOpen(true);
                   }}
+                  aria-label="Añadir cuenta"
                 >
-                  {acc.name}
+                  <Plus size={17} strokeWidth={2.4} />
                 </button>
-              ))}
-            </div>
-          </div>
 
-          {/* CARRUSEL DE TARJETAS CON SCROLL-SNAP NATIVO */}
-          <div
-            ref={carouselRef}
-            className="nx-card-carousel"
-            onScroll={handleCarouselScroll}
-          >
-            {accountsData.map((acc) => {
-              const isActive = acc.id === activeProfileId;
-              return (
-                <div
-                  key={acc.id}
-                  className="nx-card-slide"
-                  onClick={() => {
-                    if (!isActive) {
+                {accountsData.map((acc) => (
+                  <button
+                    key={acc.id}
+                    ref={(el) => { pillRefs.current[acc.id] = el; }}
+                    type="button"
+                    className={`nx-hero-pill ${acc.id === activeProfileId ? 'active' : ''}`}
+                    onClick={() => {
                       triggerHaptic();
                       setShowAllCardTx(false);
                       switchProfile(acc.id);
-                    }
-                  }}
-                >
-                  <div
-                    className="nx-physical-card"
-                    onMouseMove={isActive ? handleCardMouseMove : undefined}
-                    onMouseLeave={isActive ? handleCardMouseLeave : undefined}
-                    style={{
-                      background: acc.theme.bg,
-                      transform: isActive && cardTilt.active
-                        ? `rotateX(${cardTilt.rx}deg) rotateY(${cardTilt.ry}deg) scale3d(1.015, 1.015, 1)`
-                        : 'none',
-                      boxShadow: isActive && cardTilt.active
-                        ? `${-cardTilt.ry * 1.4}px ${cardTilt.rx * 1.4 + 20}px 42px rgba(0, 0, 0, 0.42)`
-                        : '0 14px 32px rgba(0, 0, 0, 0.22)',
-                      transition: isActive && cardTilt.active
-                        ? 'transform 0.08s ease-out, box-shadow 0.08s ease-out'
-                        : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease',
                     }}
                   >
-                    {isActive && (
-                      <div
-                        className="nx-card-glare"
-                        style={{
-                          opacity: cardTilt.active ? 1 : 0,
-                          mixBlendMode: 'soft-light',
-                          background: `radial-gradient(circle at ${cardTilt.glareX}% ${cardTilt.glareY}%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 38%, transparent 70%)`,
-                        }}
-                      />
-                    )}
+                    {acc.name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                    {acc.isFrozen && <div className="nx-frost-overlay" />}
+            {/* CARRUSEL DE TARJETAS CON SCROLL-SNAP NATIVO */}
+            <div
+              ref={carouselRef}
+              className="nx-card-carousel"
+              onScroll={handleCarouselScroll}
+            >
+              {accountsData.map((acc) => {
+                const isActive = acc.id === activeProfileId;
+                return (
+                  <div
+                    key={acc.id}
+                    className="nx-card-slide"
+                    onClick={() => {
+                      if (!isActive) {
+                        triggerHaptic();
+                        setShowAllCardTx(false);
+                        switchProfile(acc.id);
+                      }
+                    }}
+                  >
+                    <div
+                      className="nx-physical-card"
+                      onMouseMove={isActive ? handleCardMouseMove : undefined}
+                      onMouseLeave={isActive ? handleCardMouseLeave : undefined}
+                      style={{
+                        background: acc.theme.bg,
+                        transform: isActive && cardTilt.active
+                          ? `rotateX(${cardTilt.rx}deg) rotateY(${cardTilt.ry}deg) scale3d(1.015, 1.015, 1)`
+                          : 'none',
+                        boxShadow: isActive && cardTilt.active
+                          ? `${-cardTilt.ry * 1.4}px ${cardTilt.rx * 1.4 + 20}px 42px rgba(0, 0, 0, 0.42)`
+                          : undefined,
+                        transition: isActive && cardTilt.active
+                          ? 'transform 0.08s ease-out, box-shadow 0.08s ease-out'
+                          : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease',
+                      }}
+                    >
+                      {isActive && (
+                        <div
+                          className="nx-card-glare"
+                          style={{
+                            opacity: cardTilt.active ? 1 : 0,
+                            mixBlendMode: 'soft-light',
+                            background: `radial-gradient(circle at ${cardTilt.glareX}% ${cardTilt.glareY}%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 38%, transparent 70%)`,
+                          }}
+                        />
+                      )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 3 }}>
-                      <span style={{ fontSize: '15px', fontWeight: 500, color: 'rgba(255,255,255,0.92)' }}>
-                        {acc.isShared ? 'Compartida' : 'Estándar'}
-                      </span>
-                      <span className="nx-display privacy-sensitive" style={{ fontSize: '20px' }}>
-                        {displayMoney(acc.balance)}
-                      </span>
-                    </div>
+                      {acc.isFrozen && <div className="nx-frost-overlay" />}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 3 }}>
-                      <div>
-                        <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
-                          {acc.name}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 3 }}>
+                        <span style={{ fontSize: '15px', fontWeight: 500, color: 'rgba(255,255,255,0.92)' }}>
+                          {acc.isShared ? 'Compartida' : 'Estándar'}
                         </span>
-                        <span style={{ fontSize: '13.5px', fontWeight: 500, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
-                          {acc.createdDateLabel}
+                        <span className="nx-display privacy-sensitive" style={{ fontSize: '20px' }}>
+                          {displayMoney(acc.balance)}
                         </span>
                       </div>
 
-                      <CardNetworkLogo network={acc.network} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 3 }}>
+                        <div>
+                          <span style={{ display: 'block', fontSize: '15px', fontWeight: 500 }}>
+                            {acc.name}
+                          </span>
+                          <span style={{ fontSize: '13.5px', fontWeight: 500, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
+                            {acc.createdDateLabel}
+                          </span>
+                        </div>
+
+                        <CardNetworkLogo network={acc.network} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {accountsData.length > 1 && (
-            <div className="nx-card-dots" aria-label="Selector de cuenta">
-              {accountsData.map((acc) => (
-                <button
-                  key={acc.id}
-                  type="button"
-                  className={`nx-card-dot ${acc.id === activeProfileId ? 'active' : ''}`}
-                  onClick={() => {
-                    triggerHaptic();
-                    setShowAllCardTx(false);
-                    switchProfile(acc.id);
-                  }}
-                  aria-label={`Cambiar a ${acc.name}`}
-                />
-              ))}
+                );
+              })}
             </div>
-          )}
-        </div>
 
-        {/* CONTENIDO INFERIOR CON ACCIONES Y MOVIMIENTOS */}
-        <div className="nx-card-detail-sheet">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic();
-                setIsAmountsHidden?.((prev) => !prev);
-              }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text-main)' }}
-            >
-              <span className="nx-detail-circle-btn">
-                {isAmountsHidden ? <EyeOff size={20} /> : <Eye size={20} />}
-              </span>
-              <span className="nx-label">{isAmountsHidden ? 'Mostrar' : 'Ocultar'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleFreeze(activeAccount.id)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: activeAccount.isFrozen ? 'var(--primary)' : 'var(--text-main)' }}
-            >
-              <span className={`nx-detail-circle-btn ${activeAccount.isFrozen ? 'frozen' : ''}`}>
-                <Snowflake size={20} />
-              </span>
-              <span className="nx-label">{activeAccount.isFrozen ? 'Descongelar' : 'Congelar'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEditName(activeAccount.name);
-                setEditDate(activeAccount.createdDateRaw);
-                setCopiedCode(false);
-                setIsSettingsOpen(true);
-              }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text-main)' }}
-            >
-              <span className="nx-detail-circle-btn">
-                <Settings size={20} />
-              </span>
-              <span className="nx-label">Ajustes</span>
-            </button>
-          </div>
-
-          <div className="nx-detail-white-card" style={{ padding: '10px 18px 14px', marginBottom: 'var(--sp-md)' }}>
-            {recentAccountTxs.length > 0 ? (
-              <>
-                {recentAccountTxs.map((tx) => (
-                  <TransactionItem key={tx.id} transaction={tx} />
-                ))}
-                {transactions.length > 4 && (
+            {accountsData.length > 1 && (
+              <div className="nx-card-dots" aria-label="Selector de cuenta">
+                {accountsData.map((acc) => (
                   <button
+                    key={acc.id}
                     type="button"
-                    onClick={() => setShowAllCardTx((prev) => !prev)}
-                    style={{
-                      width: '100%',
-                      background: 'transparent',
-                      border: 0,
-                      color: 'var(--text-main)',
-                      fontFamily: 'inherit',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      padding: '12px 0 4px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
+                    className={`nx-card-dot ${acc.id === activeProfileId ? 'active' : ''}`}
+                    onClick={() => {
+                      triggerHaptic();
+                      setShowAllCardTx(false);
+                      switchProfile(acc.id);
                     }}
-                  >
-                    {showAllCardTx ? 'Mostrar menos' : 'Ver todo'}
-                  </button>
-                )}
-              </>
-            ) : (
-              <p style={{ fontSize: '13px', color: 'var(--text-mute)', textAlign: 'center', padding: 'var(--sp-lg) 0', margin: 0 }}>
-                Aún no hay movimientos en esta cuenta.
-              </p>
+                    aria-label={`Cambiar a ${acc.name}`}
+                  />
+                ))}
+              </div>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsAnalyticsOpen(true)}
-            className="nx-detail-white-card"
-            style={{
-              width: '100%',
-              border: 0,
-              padding: '16px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            <span>Ver análisis mensual y categorías</span>
-            <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
-          </button>
+          {/* CONTENIDO INFERIOR CON ACCIONES Y MOVIMIENTOS */}
+          <div className="nx-card-detail-sheet">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  setIsAmountsHidden?.((prev) => !prev);
+                }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'inherit' }}
+              >
+                <span className="nx-detail-circle-btn">
+                  {isAmountsHidden ? <EyeOff size={20} /> : <Eye size={20} />}
+                </span>
+                <span className="nx-label">{isAmountsHidden ? 'Mostrar' : 'Ocultar'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleFreeze(activeAccount.id)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: activeAccount.isFrozen ? 'var(--primary)' : 'inherit' }}
+              >
+                <span className={`nx-detail-circle-btn ${activeAccount.isFrozen ? 'frozen' : ''}`}>
+                  <Snowflake size={20} />
+                </span>
+                <span className="nx-label">{activeAccount.isFrozen ? 'Descongelar' : 'Congelar'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditName(activeAccount.name);
+                  setEditDate(activeAccount.createdDateRaw);
+                  setCopiedCode(false);
+                  setIsSettingsOpen(true);
+                }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 0, cursor: 'pointer', color: 'inherit' }}
+              >
+                <span className="nx-detail-circle-btn">
+                  <Settings size={20} />
+                </span>
+                <span className="nx-label">Ajustes</span>
+              </button>
+            </div>
+
+            <div className="nx-detail-white-card" style={{ padding: '10px 18px 14px', marginBottom: 'var(--sp-md)' }}>
+              {recentAccountTxs.length > 0 ? (
+                <>
+                  {recentAccountTxs.map((tx) => (
+                    <TransactionItem key={tx.id} transaction={tx} />
+                  ))}
+                  {transactions.length > 4 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllCardTx((prev) => !prev)}
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: 0,
+                        color: 'var(--text-main)',
+                        fontFamily: 'inherit',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        padding: '12px 0 4px',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {showAllCardTx ? 'Mostrar menos' : 'Ver todo'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p style={{ fontSize: '13px', color: 'var(--text-mute)', textAlign: 'center', padding: 'var(--sp-lg) 0', margin: 0 }}>
+                  Aún no hay movimientos en esta cuenta.
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsAnalyticsOpen(true)}
+              className="nx-detail-white-card"
+              style={{
+                width: '100%',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              <span>Ver análisis mensual y categorías</span>
+              <ChevronRight size={17} style={{ color: 'var(--text-mute)' }} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* MODAL + AÑADIR O VINCULAR CUENTA */}
-      {isAddModalOpen && createPortal(
-        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsAddModalOpen(false)}>
+      {/* SUB-MODAL + AÑADIR O VINCULAR CUENTA */}
+      {isAddModalOpen && (
+        <div className="sheet-layer" style={{ zIndex: 10010 }} onMouseDown={() => setIsAddModalOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-md)' }}>
@@ -1079,13 +1298,12 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               </form>
             )}
           </section>
-        </div>,
-        document.body,
+        </div>
       )}
 
-      {/* MODAL AJUSTES DE LA CUENTA */}
-      {isSettingsOpen && createPortal(
-        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsSettingsOpen(false)}>
+      {/* SUB-MODAL AJUSTES DE LA CUENTA */}
+      {isSettingsOpen && (
+        <div className="sheet-layer" style={{ zIndex: 10010 }} onMouseDown={() => setIsSettingsOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-lg)' }}>
@@ -1208,13 +1426,12 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               </button>
             )}
           </section>
-        </div>,
-        document.body,
+        </div>
       )}
 
-      {/* MODAL ANÁLISIS MENSUAL */}
-      {isAnalyticsOpen && createPortal(
-        <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsAnalyticsOpen(false)}>
+      {/* SUB-MODAL ANÁLISIS MENSUAL */}
+      {isAnalyticsOpen && (
+        <div className="sheet-layer" style={{ zIndex: 10010 }} onMouseDown={() => setIsAnalyticsOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-lg)' }}>
@@ -1250,7 +1467,8 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
                   style={{ color: 'var(--primary)' }}
                   onClick={() => {
                     setIsAnalyticsOpen(false);
-                    onOpenLimits?.();
+                    requestClose();
+                    window.setTimeout(() => onOpenLimits?.(), 280);
                   }}
                 >
                   Editar topes
@@ -1292,10 +1510,10 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               Cerrar
             </button>
           </section>
-        </div>,
-        document.body,
+        </div>
       )}
-    </>
+    </>,
+    document.body,
   );
 };
 
