@@ -284,7 +284,7 @@ const NX_ACCOUNTS_CSS = `
     pointer-events: none;
   }
 
-  /* POPUP SHEET DE CUENTAS (LIQUID GLASS + AZUL REVOLUT EN DARK) */
+  /* POPUP SHEET DE CUENTAS LIMPIO */
   .nx-accounts-sheet {
     position: fixed;
     left: 0;
@@ -337,7 +337,7 @@ const NX_ACCOUNTS_CSS = `
     pointer-events: none;
   }
 
-  /* BARRITA SUPERIOR INTERACTIVA ESTILO APPLE */
+  /* BARRITA SUPERIOR INTERACTIVA */
   .nx-acc-grabber-zone {
     width: 100%;
     padding: 10px 0 4px;
@@ -370,7 +370,6 @@ const NX_ACCOUNTS_CSS = `
     background: rgba(255, 255, 255, 0.45);
   }
 
-  /* CONTENEDOR DE SCROLL INTERNO DEL POPUP */
   .nx-accounts-scroll {
     flex: 1;
     min-height: 0;
@@ -465,7 +464,9 @@ const NX_ACCOUNTS_CSS = `
     color: #0B0B0D;
   }
 
-  /* CARRUSEL NATIVO CON SCROLL-SNAP Y ESPACIO PARA LA SOMBRA */
+  /* =========================================================
+     BORDE GLASEADO EXCLUSIVO EN LAS MINIATURAS DE TARJETAS
+     ========================================================= */
   .nx-card-carousel {
     display: flex;
     gap: 12px;
@@ -487,13 +488,22 @@ const NX_ACCOUNTS_CSS = `
     scroll-snap-align: center;
     scroll-snap-stop: always;
     perspective: 1000px;
+    padding: 6px;
+    border-radius: 25px;
+    background: rgba(73, 79, 223, 0.08);
+    border: 1px solid rgba(73, 79, 223, 0.12);
+    box-sizing: border-box;
+  }
+  .dark .nx-card-slide {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .nx-physical-card {
     position: relative;
     width: 100%;
     aspect-ratio: 1.586 / 1;
-    border-radius: 18px;
+    border-radius: 19px;
     padding: var(--sp-xl);
     color: #FFFFFF;
     display: flex;
@@ -513,11 +523,12 @@ const NX_ACCOUNTS_CSS = `
   .nx-card-glare {
     position: absolute;
     inset: 0;
-    border-radius: 18px;
+    border-radius: 19px;
     pointer-events: none;
     z-index: 1;
     transition: opacity 0.25s ease;
   }
+
   .nx-card-dots {
     display: flex;
     align-items: center;
@@ -557,12 +568,14 @@ const NX_ACCOUNTS_CSS = `
       linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(190, 225, 255, 0.16) 100%);
     backdrop-filter: blur(6px) saturate(130%);
     -webkit-backdrop-filter: blur(6px) saturate(130%);
-    border-radius: 18px;
+    border-radius: 19px;
     pointer-events: none;
     z-index: 2;
   }
 
-  /* CONTENIDO INFERIOR INTEGRADO */
+  /* =========================================================
+     CONTENIDO INFERIOR LIMPIO (SIN GLASEADO)
+     ========================================================= */
   .nx-card-detail-sheet {
     position: relative;
     z-index: 3;
@@ -573,41 +586,35 @@ const NX_ACCOUNTS_CSS = `
     width: 50px;
     height: 50px;
     border-radius: var(--rounded-full);
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    background-color: var(--canvas-light);
     color: var(--ink);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.12s ease, background-color 0.15s ease;
   }
   .dark .nx-detail-circle-btn {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background-color: rgba(255, 255, 255, 0.14);
     color: #FFFFFF;
     box-shadow: none;
   }
   .nx-detail-circle-btn.frozen {
-    background: var(--primary);
-    border-color: var(--primary);
+    background-color: var(--primary);
     color: #FFFFFF;
   }
   .nx-detail-white-card {
-    background: rgba(255, 255, 255, 0.74);
-    border: 1px solid rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background-color: var(--canvas-light);
     color: var(--ink);
     border-radius: 20px;
     padding: var(--sp-xl);
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
   }
   .dark .nx-detail-white-card {
-    background: rgba(22, 23, 29, 0.78);
-    border: 1px solid rgba(255, 255, 255, 0.11);
+    background-color: #16171B;
     color: var(--on-dark);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: none;
   }
 `;
 
@@ -653,7 +660,6 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [showAllCardTx, setShowAllCardTx] = useState(false);
 
-  // Estados para animación de cierre y arrastre estilo Apple Sheet
   const [isClosing, setIsClosing] = useState(false);
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -900,7 +906,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
           transform: isDragging || isSnapping ? `translate3d(0, ${dragY}px, 0)` : undefined,
         }}
       >
-        {/* BARRITA SUPERIOR ESTILO APPLE CON GESTO DRAG-TO-DISMISS */}
+        {/* BARRITA SUPERIOR INTERACTIVA */}
         <div
           className="nx-acc-grabber-zone"
           onPointerDown={handleDragPointerDown}
@@ -913,7 +919,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
 
         <div className="nx-accounts-scroll">
           <div className="nx-card-hero-band">
-            {/* BARRA SUPERIOR: CERRAR + BOTÓN AÑADIR + PILLS DE CUENTAS */}
+            {/* BARRA SUPERIOR: CERRAR + BOTÓN AÑADIR + PILLS */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: 'var(--sp-lg)' }}>
               <button
                 type="button"
@@ -962,7 +968,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               </div>
             </div>
 
-            {/* CARRUSEL DE TARJETAS CON SCROLL-SNAP NATIVO */}
+            {/* CARRUSEL DE TARJETAS CON BORDE GLASEADO */}
             <div
               ref={carouselRef}
               className="nx-card-carousel"
@@ -1058,7 +1064,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
             )}
           </div>
 
-          {/* CONTENIDO INFERIOR CON ACCIONES Y MOVIMIENTOS */}
+          {/* ACCIONES Y CONTENIDO INFERIOR LIMPIO */}
           <div className="nx-card-detail-sheet">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-md)', marginBottom: 'var(--sp-xl)' }}>
               <button
@@ -1143,6 +1149,7 @@ const MovementsView = ({ onClose, onOpenLimits }) => {
               className="nx-detail-white-card"
               style={{
                 width: '100%',
+                border: 0,
                 padding: '16px 20px',
                 display: 'flex',
                 alignItems: 'center',
