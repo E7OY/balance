@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BarChart2,
   Check,
+  Copy,
   Eye,
   EyeOff,
   FileText,
@@ -15,7 +16,10 @@ import {
   Palette,
   Plus,
   Search,
+  Settings,
+  Share2,
   Shuffle,
+  Snowflake,
   Trash2,
   X,
 } from "lucide-react";
@@ -87,7 +91,7 @@ const HOME_WALLET_CSS = `
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin: 34px 0 !important;
+    margin-bottom: 14px;
   }
   .nx-wh-circle-btn {
     width: 40px;
@@ -146,7 +150,7 @@ const HOME_WALLET_CSS = `
     border-radius: 999px;
     background: #ECEEF2;
     color: #6B7280;
-    margin-bottom: 26px;
+    margin-bottom: 16px;
   }
   .dark .nx-wh-search {
     background: rgba(255, 255, 255, 0.08);
@@ -167,14 +171,14 @@ const HOME_WALLET_CSS = `
   }
 
   /* =========================================================
-     CARTERA DE PIEL CON IMAGEN PNG — TAMAÑO COMPACTO Y FIJO
+     CARTERA DE PIEL CON IMAGEN PNG — TAMAÑO COMPACTO Y LIMPIO
      ========================================================= */
-.nx-leather-stage {
+  .nx-leather-stage {
     position: relative;
     width: 100%;
     max-width: 340px;
     height: 212px;
-    margin: 0 auto 38px;
+    margin: 0 auto 18px;
     user-select: none;
     overflow: visible;
   }
@@ -203,7 +207,7 @@ const HOME_WALLET_CSS = `
     position: absolute;
     left: 18px;
     right: 18px;
-    top: -10px;
+    top: 6px;
     height: 136px;
     z-index: 1;
   }
@@ -235,7 +239,7 @@ const HOME_WALLET_CSS = `
     transform: translateY(calc(var(--ty) - 5px));
   }
 
-.nx-leather-pouch {
+  .nx-leather-pouch {
     position: absolute;
     left: 0;
     right: 0;
@@ -250,7 +254,7 @@ const HOME_WALLET_CSS = `
     cursor: pointer;
   }
 
-.nx-leather-pouch-img {
+  .nx-leather-pouch-img {
     position: absolute;
     width: 119%;
     max-width: none;
@@ -267,8 +271,7 @@ const HOME_WALLET_CSS = `
     font-weight: 400;
     color: rgba(255, 244, 232, 0.78);
     display: block;
-    margin-bottom: 18px;
-    margin-left: 10px;
+    margin-bottom: 3px;
     position: relative;
     z-index: 2;
   }
@@ -283,8 +286,6 @@ const HOME_WALLET_CSS = `
     position: relative;
     z-index: 2;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-    bottom: 15px;
-    left: 10px;
   }
 
   .nx-leather-eye-btn {
@@ -307,7 +308,6 @@ const HOME_WALLET_CSS = `
     z-index: 2;
     flex-shrink: 0;
     transition: transform 0.12s ease;
-    margin-bottom: 15px;
   }
   .nx-leather-eye-btn:active {
     transform: scale(0.93);
@@ -464,14 +464,15 @@ const HOME_WALLET_CSS = `
   }
   .nx-picker-carousel {
     display: flex;
-    gap: 12px;
+    gap: 14px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    margin: 0 -18px 14px;
-    padding: 4px 24px 8px;
+    margin: 0 -18px 8px;
+    padding: 6px 24px 20px;
+    background: transparent;
   }
   .nx-picker-carousel::-webkit-scrollbar {
     display: none;
@@ -480,8 +481,11 @@ const HOME_WALLET_CSS = `
     flex: 0 0 calc(100% - 16px);
     scroll-snap-align: center;
     scroll-snap-stop: always;
+    background: transparent;
   }
   .nx-picker-card {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     aspect-ratio: 1.65 / 1;
     border-radius: 22px;
@@ -491,8 +495,79 @@ const HOME_WALLET_CSS = `
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+    border: 0;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
   }
+  .dark .nx-picker-card {
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+  }
+
+  /* EFECTO HIELO EN TARJETA CONGELADA */
+  .nx-picker-frost {
+    position: absolute;
+    inset: 0;
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.42) 0%, transparent 45%),
+      radial-gradient(circle at 80% 30%, rgba(210, 235, 255, 0.36) 0%, transparent 50%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(190, 225, 255, 0.16) 100%);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ACCIONES DE CUENTA DENTRO DEL POPUP DE TARJETAS */
+  .nx-picker-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 0 0 16px;
+  }
+  .nx-picker-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+  }
+  .nx-picker-action-circle {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    background: #FFFFFF;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    color: #0F172A;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s ease, background-color 0.15s ease;
+  }
+  .nx-picker-action-btn:active .nx-picker-action-circle {
+    transform: scale(0.92);
+  }
+  .dark .nx-picker-action-circle {
+    background: rgba(255, 255, 255, 0.11);
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #FFFFFF;
+    box-shadow: none;
+  }
+  .nx-picker-action-circle.frozen {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #FFFFFF;
+  }
+  .nx-picker-action-lbl {
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
   .nx-picker-tx-box {
     background: #FFFFFF;
     border-radius: 20px;
@@ -589,9 +664,11 @@ const HomeOverview = ({
     setIsAmountsHidden,
     addProfile,
     joinProfile,
+    renameProfile,
     deleteActiveProfile,
     exportPdf,
     exportCsv,
+    syncUser,
   } = useFinance();
 
   const [, setBgConfig] = useState(() => getSavedHomeBackground());
@@ -613,9 +690,18 @@ const HomeOverview = ({
   const [showAllTx, setShowAllTx] = useState(false);
   const [hoveredCat, setHoveredCat] = useState(null);
 
-  // Popup deslizable de tarjetas/cuentas
+  // Popup deslizable de tarjetas/cuentas + acciones
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [previewAccountId, setPreviewAccountId] = useState(activeProfileId);
+  const [frozenMap, setFrozenMap] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("balance-frozen-accounts") || "{}") || {}; } catch { return {}; }
+  });
+  const [metaVersion, setMetaVersion] = useState(0);
+
+  // Sub-modal de ajustes de la tarjeta en vista previa
+  const [isPickerSettingsOpen, setIsPickerSettingsOpen] = useState(false);
+  const [editAccName, setEditAccName] = useState("");
+  const [copiedAccCode, setCopiedAccCode] = useState(false);
 
   const scrollContainerRef = useRef(null);
   const pickerCarouselRef = useRef(null);
@@ -648,6 +734,24 @@ const HomeOverview = ({
       localStorage.setItem("balance-account-networks", JSON.stringify(nets));
       localStorage.setItem("balance-account-created-dates", JSON.stringify(dates));
     } catch {}
+    setMetaVersion((v) => v + 1);
+  };
+
+  const toggleFreezeAccount = (profileId) => {
+    triggerHaptic();
+    const next = { ...frozenMap, [profileId]: !frozenMap[profileId] };
+    setFrozenMap(next);
+    try { localStorage.setItem("balance-frozen-accounts", JSON.stringify(next)); } catch {}
+  };
+
+  const updateAccountTheme = (profileId, themeId) => {
+    triggerHaptic();
+    saveAccountMeta(profileId, { themeId });
+  };
+
+  const updateAccountNetwork = (profileId, networkId) => {
+    triggerHaptic();
+    saveAccountMeta(profileId, { networkId });
   };
 
   const openAddAccountModal = () => {
@@ -688,11 +792,17 @@ const HomeOverview = ({
         ...p,
         balance: bal,
         txs: Array.isArray(pTxs) ? pTxs : [],
+        themeId,
         bg: CARD_THEME_BGS[themeId] || CARD_THEME_BGS["revolut-standard"],
         net: savedNets[p.id] || (idx % 2 === 0 ? "mastercard" : "visa"),
       };
     });
-  }, [profiles, activeProfile, activeProfileId, transactions, getTransactionsForProfile]);
+  }, [profiles, activeProfile, activeProfileId, transactions, getTransactionsForProfile, metaVersion]);
+
+  const activeAccount = useMemo(
+    () => accountsWithCards.find((a) => a.id === activeProfileId) || accountsWithCards[0],
+    [accountsWithCards, activeProfileId],
+  );
 
   const openPickerAt = (profileId) => {
     triggerHaptic();
@@ -777,7 +887,7 @@ const HomeOverview = ({
     [monthlyTransactions],
   );
 
-  const available = totals.income - totals.expenses;
+  const walletBalance = activeAccount ? activeAccount.balance : (totals.income - totals.expenses);
   const expenseDiff = totals.expenses - previousMonthExpenses;
 
   const { totalWealth, allAccountsMonthlyDelta } = useMemo(() => {
@@ -1093,7 +1203,7 @@ const HomeOverview = ({
                 Balance · {activeProfile?.name || "Personal"}
               </span>
               <strong className="nx-leather-balance-val privacy-sensitive">
-                {displayMoney(available)}
+                {displayMoney(walletBalance)}
               </strong>
             </div>
 
@@ -1387,7 +1497,7 @@ const HomeOverview = ({
         </div>
       </div>
 
-      {/* POPUP DESLIZABLE DE TARJETAS + MOVIMIENTOS ARRIBA + BOTÓN SELECCIONAR ABAJO */}
+      {/* POPUP DESLIZABLE DE TARJETAS + ACCIONES + MOVIMIENTOS + SELECCIONAR */}
       {isPickerOpen && previewAccount && createPortal(
         <div
           className="nx-card-picker-backdrop"
@@ -1426,32 +1536,84 @@ const HomeOverview = ({
               className="nx-picker-carousel"
               onScroll={handlePickerScroll}
             >
-              {accountsWithCards.map((acc) => (
-                <div key={acc.id} className="nx-picker-slide">
-                  <div className="nx-picker-card" style={{ background: acc.bg }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "14px", fontWeight: 600 }}>{acc.name}</span>
-                      <span className="privacy-sensitive" style={{ fontSize: "18px", fontWeight: 700 }}>
-                        {displayMoney(acc.balance)}
-                      </span>
-                    </div>
+              {accountsWithCards.map((acc) => {
+                const isFrozen = Boolean(frozenMap[acc.id]);
+                return (
+                  <div key={acc.id} className="nx-picker-slide">
+                    <div className="nx-picker-card" style={{ background: acc.bg }}>
+                      {isFrozen && <div className="nx-picker-frost" />}
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                      <span style={{ fontSize: "12px", opacity: 0.85 }}>
-                        {acc.txs.length} {acc.txs.length === 1 ? "movimiento" : "movimientos"}
-                      </span>
-                      {acc.net === "visa" ? (
-                        <span style={{ fontSize: "16px", fontWeight: 800, fontStyle: "italic" }}>VISA</span>
-                      ) : acc.net === "none" ? null : (
-                        <span style={{ display: "inline-flex", alignItems: "center" }}>
-                          <i style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#EB001B", display: "inline-block" }} />
-                          <i style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#F79E1B", marginLeft: "-7px", display: "inline-block" }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 2 }}>
+                        <span style={{ fontSize: "14px", fontWeight: 600 }}>{acc.name}</span>
+                        <span className="privacy-sensitive" style={{ fontSize: "18px", fontWeight: 700 }}>
+                          {displayMoney(acc.balance)}
                         </span>
-                      )}
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative", zIndex: 2 }}>
+                        <span style={{ fontSize: "12px", opacity: 0.85 }}>
+                          {isFrozen ? "Tarjeta congelada" : `${acc.txs.length} ${acc.txs.length === 1 ? "movimiento" : "movimientos"}`}
+                        </span>
+                        {acc.net === "visa" ? (
+                          <span style={{ fontSize: "16px", fontWeight: 800, fontStyle: "italic" }}>VISA</span>
+                        ) : acc.net === "none" ? null : (
+                          <span style={{ display: "inline-flex", alignItems: "center" }}>
+                            <i style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#EB001B", display: "inline-block" }} />
+                            <i style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#F79E1B", marginLeft: "-7px", display: "inline-block" }} />
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+
+            {/* 3 ACCIONES DE LA TARJETA: OCULTAR, CONGELAR, AJUSTES */}
+            <div className="nx-picker-actions">
+              <button
+                type="button"
+                className="nx-picker-action-btn"
+                onClick={() => {
+                  triggerHaptic();
+                  setIsAmountsHidden?.((prev) => !prev);
+                }}
+              >
+                <span className="nx-picker-action-circle">
+                  {isAmountsHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+                </span>
+                <span className="nx-picker-action-lbl">{isAmountsHidden ? "Mostrar" : "Ocultar"}</span>
+              </button>
+
+              <button
+                type="button"
+                className="nx-picker-action-btn"
+                style={{ color: frozenMap[previewAccount.id] ? "var(--primary)" : "inherit" }}
+                onClick={() => toggleFreezeAccount(previewAccount.id)}
+              >
+                <span className={`nx-picker-action-circle ${frozenMap[previewAccount.id] ? "frozen" : ""}`}>
+                  <Snowflake size={18} />
+                </span>
+                <span className="nx-picker-action-lbl">
+                  {frozenMap[previewAccount.id] ? "Descongelar" : "Congelar"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="nx-picker-action-btn"
+                onClick={() => {
+                  triggerHaptic();
+                  setEditAccName(previewAccount.name);
+                  setCopiedAccCode(false);
+                  setIsPickerSettingsOpen(true);
+                }}
+              >
+                <span className="nx-picker-action-circle">
+                  <Settings size={18} />
+                </span>
+                <span className="nx-picker-action-lbl">Ajustes</span>
+              </button>
             </div>
 
             <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#7A7F8E", margin: "0 0 6px 4px" }}>
@@ -1484,6 +1646,144 @@ const HomeOverview = ({
               </span>
             </button>
           </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* SUB-MODAL AJUSTES DE LA TARJETA DESDE EL POPUP */}
+      {isPickerSettingsOpen && previewAccount && createPortal(
+        <div className="sheet-layer" style={{ zIndex: 10040 }} onMouseDown={() => setIsPickerSettingsOpen(false)}>
+          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ fontSize: "20px", fontWeight: 500, margin: 0 }}>Ajustes · {previewAccount.name}</h2>
+              <button type="button" className="sheet-close" onClick={() => setIsPickerSettingsOpen(false)}>
+                <X size={17} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                try {
+                  renameProfile?.(previewAccount.id, editAccName);
+                  triggerHaptic();
+                  setIsPickerSettingsOpen(false);
+                } catch {}
+              }}
+              style={{ marginBottom: "18px" }}
+            >
+              <label className="nx-label" style={{ display: "block", color: "var(--text-mute)", marginBottom: "12px" }}>
+                Nombre de la cuenta
+                <input value={editAccName} onChange={(e) => setEditAccName(e.target.value)} required />
+              </label>
+              <button type="submit" className="nx-btn-dark" style={{ width: "100%" }}>
+                Guardar nombre
+              </button>
+            </form>
+
+            <span className="nx-label" style={{ display: "block", color: "var(--text-mute)", marginBottom: "8px" }}>
+              Color de tarjeta
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "16px" }}>
+              {HOME_CARD_THEMES.map((t) => {
+                const isSelected = previewAccount.themeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => updateAccountTheme(previewAccount.id, t.id)}
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "var(--rounded-full)",
+                      background: t.bg,
+                      border: isSelected ? "3px solid var(--primary)" : "2px solid transparent",
+                      boxShadow: isSelected ? "0 0 0 2px rgba(73, 79, 223, 0.25)" : "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#FFFFFF",
+                      cursor: "pointer",
+                      padding: 0,
+                    }}
+                    aria-label={t.label}
+                  >
+                    {isSelected && <Check size={15} strokeWidth={3} />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <span className="nx-label" style={{ display: "block", color: "var(--text-mute)", marginBottom: "8px" }}>
+              Red de pagos
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "18px" }}>
+              {HOME_CARD_NETWORKS.map((net) => (
+                <button
+                  key={net.id}
+                  type="button"
+                  onClick={() => updateAccountNetwork(previewAccount.id, net.id)}
+                  style={{
+                    height: "34px",
+                    padding: "0 14px",
+                    borderRadius: "999px",
+                    border: 0,
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    backgroundColor: previewAccount.net === net.id ? "var(--primary)" : "var(--surface-soft)",
+                    color: previewAccount.net === net.id ? "#FFFFFF" : "var(--text-main)",
+                  }}
+                >
+                  {net.label}
+                </button>
+              ))}
+            </div>
+
+            {(previewAccount.id.includes("___") || syncUser) && (
+              <div className="nx-card" style={{ padding: "14px", marginBottom: "14px" }}>
+                <span className="nx-label" style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-mute)", marginBottom: "6px" }}>
+                  <Share2 size={13} /> Código para compartir
+                </span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                  <code style={{ fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {previewAccount.id.includes("___") ? previewAccount.id : `${syncUser.uid}___${previewAccount.id}`}
+                  </code>
+                  <button
+                    type="button"
+                    className="nx-btn-pill-sm"
+                    style={{ color: "var(--primary)" }}
+                    onClick={() => {
+                      const code = previewAccount.id.includes("___") ? previewAccount.id : `${syncUser.uid}___${previewAccount.id}`;
+                      navigator.clipboard?.writeText(code);
+                      setCopiedAccCode(true);
+                    }}
+                  >
+                    {copiedAccCode ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar</>}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {profiles.length > 1 && previewAccount.id === activeProfileId && (
+              <button
+                type="button"
+                onClick={() => {
+                  deleteActiveProfile?.()
+                    .then(() => {
+                      setIsPickerSettingsOpen(false);
+                      setIsPickerOpen(false);
+                    })
+                    .catch((err) => alert(err.message));
+                }}
+                className="nx-btn-soft"
+                style={{ width: "100%", color: "var(--danger-red)" }}
+              >
+                <Trash2 size={15} /> {previewAccount.id.includes("___") ? "Desvincular cuenta" : "Eliminar cuenta"}
+              </button>
+            )}
+          </section>
         </div>,
         document.body,
       )}
@@ -1564,22 +1864,32 @@ const HomeOverview = ({
                   Color de tarjeta
                 </span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "16px" }}>
-                  {HOME_CARD_THEMES.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setSelectedCardTheme(t.id)}
-                      style={{
-                        width: "34px",
-                        height: "34px",
-                        borderRadius: "var(--rounded-full)",
-                        background: t.bg,
-                        border: selectedCardTheme === t.id ? "3px solid var(--primary)" : "2px solid transparent",
-                        cursor: "pointer",
-                      }}
-                      aria-label={t.label}
-                    />
-                  ))}
+                  {HOME_CARD_THEMES.map((t) => {
+                    const isSelected = selectedCardTheme === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setSelectedCardTheme(t.id)}
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "var(--rounded-full)",
+                          background: t.bg,
+                          border: isSelected ? "3px solid var(--primary)" : "2px solid transparent",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#FFFFFF",
+                          cursor: "pointer",
+                          padding: 0,
+                        }}
+                        aria-label={t.label}
+                      >
+                        {isSelected && <Check size={15} strokeWidth={3} />}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <span className="nx-label" style={{ display: "block", color: "var(--text-mute)", marginBottom: "8px" }}>
@@ -1664,7 +1974,7 @@ const HomeOverview = ({
         open={isThemeModalOpen}
         onClose={() => setIsThemeModalOpen(false)}
         accountLabel={`${activeProfile?.name || "Personal"} · EUR`}
-        balanceDisplay={displayMoney(available)}
+        balanceDisplay={displayMoney(walletBalance)}
         onApplied={(nextConfig) => setBgConfig(nextConfig)}
       />
     </div>
