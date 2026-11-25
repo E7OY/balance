@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BarChart2,
   Check,
+  ChevronRight,
   Copy,
   Eye,
   EyeOff,
@@ -24,7 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
-import TransactionItem, { getCategoryVisuals } from "./TransactionItem";
+import { getCategoryVisuals } from "./TransactionItem";
 import HomeThemeModal from "./HomeThemeModal";
 import {
   getSavedHomeBackground,
@@ -66,12 +67,83 @@ const getTodayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+const formatTxDateMeta = (dateStr) => {
+  if (!dateStr || typeof dateStr !== "string") return "";
+  const today = getTodayStr();
+  const yestDate = new Date();
+  yestDate.setDate(yestDate.getDate() - 1);
+  const yesterday = `${yestDate.getFullYear()}-${String(yestDate.getMonth() + 1).padStart(2, "0")}-${String(yestDate.getDate()).padStart(2, "0")}`;
+
+  if (dateStr === today) return "Hoy";
+  if (dateStr === yesterday) return "Ayer";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+  return dateStr;
+};
+
+const WalletTxRow = ({ transaction, isAmountsHidden, onClick }) => {
+  const isExpense = transaction.type === "Gasto";
+  const isIncome = transaction.type === "Ingreso";
+  const visuals = getCategoryVisuals(transaction.category, transaction.type);
+  const IconComp = visuals?.icon;
+  const title = (transaction.description || "").trim() || transaction.category || "Movimiento";
+  const categoryLabel = transaction.category || (isIncome ? "Ingreso" : "Gasto");
+  const dateLabel = formatTxDateMeta(transaction.date);
+  const timeLabel = transaction.time ? `${transaction.time} · ` : "";
+
+  const amt = Math.abs(Number(transaction.amount) || 0);
+  const formattedAmt = isAmountsHidden
+    ? "•••• €"
+    : new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amt);
+
+  const sign = isExpense ? "- " : isIncome ? "+ " : "";
+
+  return (
+    <div className="nx-wtx-row" onClick={onClick} role="button" tabIndex={0}>
+      <div
+        className="nx-wtx-avatar"
+        style={{ backgroundColor: visuals?.bg || "#ECEEF2", color: "#FFFFFF" }}
+      >
+        {React.isValidElement(IconComp)
+          ? React.cloneElement(IconComp, { size: 18, strokeWidth: 2.1 })
+          : typeof IconComp === "function"
+            ? <IconComp size={18} strokeWidth={2.1} />
+            : title.charAt(0).toUpperCase()}
+      </div>
+
+      <div className="nx-wtx-main">
+        <span className="nx-wtx-title">{title}</span>
+        <span className="nx-wtx-sub">
+          {timeLabel}
+          {dateLabel}
+        </span>
+      </div>
+
+      <div className="nx-wtx-right">
+        <span
+          className={`nx-wtx-amount privacy-sensitive ${isExpense ? "expense" : "income"}`}
+        >
+          {isAmountsHidden ? "•••• €" : `${sign}${formattedAmt}`}
+        </span>
+        <span className="nx-wtx-cat">{categoryLabel}</span>
+      </div>
+
+      <ChevronRight size={15} className="nx-wtx-chevron" />
+    </div>
+  );
+};
+
 const HOME_WALLET_CSS = `
   .stage:not(.dark),
   .stage:not(.dark) .phone,
   .stage:not(.dark) .screen-content {
-    background-color: #F5F6F8;
-    color: #0F172A;
+    background-color: #FAFAFB;
+    color: #111827;
   }
   .dark .stage,
   .dark .phone,
@@ -97,9 +169,9 @@ const HOME_WALLET_CSS = `
     width: 40px;
     height: 40px;
     border-radius: 999px;
-    border: 0;
-    background: #ECEEF2;
-    color: #0F172A;
+    border: 1px solid #EAECEF;
+    background: #FFFFFF;
+    color: #111827;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -111,7 +183,8 @@ const HOME_WALLET_CSS = `
     transform: scale(0.93);
   }
   .dark .nx-wh-circle-btn {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
     color: #FFFFFF;
   }
   .nx-wh-title-wrap {
@@ -125,7 +198,7 @@ const HOME_WALLET_CSS = `
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.15;
-    color: #0F172A;
+    color: #111827;
   }
   .dark .nx-wh-title {
     color: #FFFFFF;
@@ -134,10 +207,10 @@ const HOME_WALLET_CSS = `
     margin: 2px 0 0;
     font-size: 11.5px;
     font-weight: 500;
-    color: #717684;
+    color: #8E929B;
   }
   .dark .nx-wh-subtitle {
-    color: rgba(255, 255, 255, 0.58);
+    color: rgba(255, 255, 255, 0.56);
   }
 
   /* BUSCADOR SUTIL */
@@ -145,15 +218,17 @@ const HOME_WALLET_CSS = `
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 36px;
+    height: 38px;
     padding: 0 14px;
     border-radius: 999px;
-    background: #ECEEF2;
-    color: #6B7280;
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
+    color: #8E929B;
     margin-bottom: 16px;
   }
   .dark .nx-wh-search {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.6);
   }
   .nx-wh-search input {
@@ -163,7 +238,7 @@ const HOME_WALLET_CSS = `
     outline: none;
     font-family: inherit;
     font-size: 13px;
-    color: #0F172A;
+    color: #111827;
     min-width: 0;
   }
   .dark .nx-wh-search input {
@@ -313,86 +388,191 @@ const HOME_WALLET_CSS = `
     transform: scale(0.93);
   }
 
-  /* ACCIONES RÁPIDAS DISCRETAS */
+  /* =========================================================
+     ACCIONES RÁPIDAS — ESTILO PLANO Y NÍTIDO (1px #EAECEF)
+     ========================================================= */
   .nx-wh-actions {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 22px;
     position: relative;
   }
   .nx-wh-action-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     background: transparent;
     border: 0;
     padding: 0;
     cursor: pointer;
     font-family: inherit;
-    color: #0F172A;
+    color: #111827;
   }
   .dark .nx-wh-action-btn {
     color: #FFFFFF;
   }
   .nx-wh-action-icon {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
     background: #FFFFFF;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    border: 1px solid #EAECEF;
+    color: #111827;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    transition: transform 0.12s ease, background-color 0.15s ease;
+  }
+  .nx-wh-action-btn:active .nx-wh-action-icon {
+    transform: scale(0.93);
+    background: #F3F4F6;
   }
   .dark .nx-wh-action-icon {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: none;
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
   }
   .nx-wh-action-lbl {
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 500;
+    color: #6B7280;
+  }
+  .dark .nx-wh-action-lbl {
+    color: rgba(255, 255, 255, 0.72);
   }
 
-  /* TRANSACCIONES AGRUPADAS POR MES */
+  /* =========================================================
+     LISTA DE MOVIMIENTOS — CALCADA A LA REFERENCIA
+     ========================================================= */
   .nx-wh-section-heading {
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 700;
     letter-spacing: -0.025em;
-    margin: 0 0 10px 2px;
-    color: #0F172A;
+    margin: 0 0 8px 2px;
+    color: #111827;
   }
   .dark .nx-wh-section-heading {
     color: #FFFFFF;
   }
   .nx-wh-month-label {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
-    color: #7A7F8E;
-    margin: 0 0 8px 4px;
+    color: #9CA3AF;
+    margin: 0 0 10px 2px;
     text-transform: capitalize;
   }
   .dark .nx-wh-month-label {
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.52);
   }
   .nx-wh-tx-card {
     background: #FFFFFF;
-    border-radius: 20px;
-    padding: 4px 16px;
+    border-radius: 18px;
     margin-bottom: 18px;
-    border: 1px solid rgba(15, 23, 42, 0.05);
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+    border: 1px solid #EAECEF;
+    overflow: hidden;
   }
   .dark .nx-wh-tx-card {
     background: #16171C;
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.09);
   }
 
-  /* WIDGETS DEBAJO */
+  .nx-wtx-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    cursor: pointer;
+    transition: background-color 0.14s ease;
+  }
+  .nx-wtx-row + .nx-wtx-row {
+    border-top: 1px solid #F1F3F5;
+  }
+  .nx-wtx-row:active {
+    background-color: #F9FAFB;
+  }
+  .dark .nx-wtx-row + .nx-wtx-row {
+    border-top-color: rgba(255, 255, 255, 0.07);
+  }
+  .dark .nx-wtx-row:active {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+
+  .nx-wtx-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .nx-wtx-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .nx-wtx-title {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dark .nx-wtx-title {
+    color: #FFFFFF;
+  }
+  .nx-wtx-sub {
+    font-size: 12px;
+    font-weight: 400;
+    color: #9CA3AF;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nx-wtx-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .nx-wtx-amount {
+    font-size: 14.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .nx-wtx-amount.expense {
+    color: #D93829;
+  }
+  .nx-wtx-amount.income {
+    color: #111827;
+  }
+  .dark .nx-wtx-amount.income {
+    color: #FFFFFF;
+  }
+  .nx-wtx-cat {
+    font-size: 11.5px;
+    font-weight: 400;
+    color: #9CA3AF;
+  }
+
+  .nx-wtx-chevron {
+    color: #9CA3AF;
+    flex-shrink: 0;
+    margin-left: 2px;
+  }
+
+  /* =========================================================
+     WIDGETS — MISMA ESTÉTICA LIMPIA (1px #EAECEF, SIN SOMBRAS)
+     ========================================================= */
   .nx-wh-widgets-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -400,23 +580,45 @@ const HOME_WALLET_CSS = `
   }
   .nx-wh-widget {
     background: #FFFFFF;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    border-radius: 20px;
+    border: 1px solid #EAECEF;
+    border-radius: 18px;
     padding: 16px;
     text-align: left;
     font-family: inherit;
-    color: #0F172A;
+    color: #111827;
     cursor: pointer;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    transition: background-color 0.14s ease, transform 0.12s ease;
+  }
+  button.nx-wh-widget:active {
+    transform: scale(0.985);
+    background-color: #F9FAFB;
   }
   .dark .nx-wh-widget {
     background: #16171C;
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.09);
     color: #FFFFFF;
-    box-shadow: none;
+  }
+  .nx-wh-cat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 9px 0;
+    cursor: pointer;
+    color: inherit;
+    font-family: inherit;
+  }
+  .nx-wh-cat-row + .nx-wh-cat-row {
+    border-top: 1px solid #F1F3F5;
+  }
+  .dark .nx-wh-cat-row + .nx-wh-cat-row {
+    border-top-color: rgba(255, 255, 255, 0.07);
   }
 
   /* POPUP DESLIZABLE PARA ELEGIR TARJETA / CUENTA */
@@ -437,8 +639,8 @@ const HOME_WALLET_CSS = `
     max-height: 90dvh;
     overflow-y: auto;
     border-radius: 30px 30px 0 0;
-    background: #F5F6F8;
-    color: #0F172A;
+    background: #FAFAFB;
+    color: #111827;
     padding: 10px 18px calc(24px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -16px 44px rgba(0, 0, 0, 0.25);
     animation: nx-picker-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
@@ -537,13 +739,12 @@ const HOME_WALLET_CSS = `
     color: inherit;
   }
   .nx-picker-action-circle {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
     background: #FFFFFF;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
-    color: #0F172A;
+    border: 1px solid #EAECEF;
+    color: #111827;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -553,10 +754,9 @@ const HOME_WALLET_CSS = `
     transform: scale(0.92);
   }
   .dark .nx-picker-action-circle {
-    background: rgba(255, 255, 255, 0.11);
-    border-color: rgba(255, 255, 255, 0.14);
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.12);
     color: #FFFFFF;
-    box-shadow: none;
   }
   .nx-picker-action-circle.frozen {
     background: var(--primary);
@@ -566,25 +766,29 @@ const HOME_WALLET_CSS = `
   .nx-picker-action-lbl {
     font-size: 11.5px;
     font-weight: 500;
+    color: #6B7280;
+  }
+  .dark .nx-picker-action-lbl {
+    color: rgba(255, 255, 255, 0.72);
   }
 
   .nx-picker-tx-box {
     background: #FFFFFF;
-    border-radius: 20px;
-    padding: 6px 16px;
+    border-radius: 18px;
     margin-bottom: 14px;
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid #EAECEF;
+    overflow: hidden;
   }
   .dark .nx-picker-tx-box {
     background: #1B1E27;
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.09);
   }
   .nx-picker-select-btn {
     width: 100%;
     height: 50px;
     border-radius: 999px;
     border: 0;
-    background: #0F172A;
+    background: #111827;
     color: #FFFFFF;
     font-family: inherit;
     font-size: 15px;
@@ -597,7 +801,7 @@ const HOME_WALLET_CSS = `
   }
   .dark .nx-picker-select-btn {
     background: #FFFFFF;
-    color: #0F172A;
+    color: #111827;
   }
 
   /* POPOVER MÁS */
@@ -1288,17 +1492,17 @@ const HomeOverview = ({
           )}
 
           <button type="button" className="nx-wh-action-btn" onClick={() => { setIsMoreMenuOpen(false); onQuickAction?.("income"); }}>
-            <span className="nx-wh-action-icon"><Plus size={18} /></span>
+            <span className="nx-wh-action-icon"><Plus size={18} strokeWidth={2.1} /></span>
             <span className="nx-wh-action-lbl">Ingreso</span>
           </button>
 
           <button type="button" className="nx-wh-action-btn" onClick={() => { setIsMoreMenuOpen(false); onQuickAction?.("expense"); }}>
-            <span className="nx-wh-action-icon"><Shuffle size={16} /></span>
+            <span className="nx-wh-action-icon"><Shuffle size={16} strokeWidth={2.1} /></span>
             <span className="nx-wh-action-lbl">Gasto</span>
           </button>
 
           <button type="button" className="nx-wh-action-btn" onClick={() => { setIsMoreMenuOpen(false); onOpenLimits?.(); }}>
-            <span className="nx-wh-action-icon"><Landmark size={16} /></span>
+            <span className="nx-wh-action-icon"><Landmark size={16} strokeWidth={2.1} /></span>
             <span className="nx-wh-action-lbl">Topes</span>
           </button>
 
@@ -1308,12 +1512,12 @@ const HomeOverview = ({
             onClick={() => { triggerHaptic(); setIsMoreMenuOpen((prev) => !prev); }}
             aria-expanded={isMoreMenuOpen}
           >
-            <span className="nx-wh-action-icon"><MoreHorizontal size={18} /></span>
+            <span className="nx-wh-action-icon"><MoreHorizontal size={18} strokeWidth={2.1} /></span>
             <span className="nx-wh-action-lbl">Más</span>
           </button>
         </div>
 
-        {/* MOVIMIENTOS AGRUPADOS POR MES */}
+        {/* MOVIMIENTOS AGRUPADOS POR MES (UI CALCADA) */}
         <h2 className="nx-wh-section-heading">Movimientos</h2>
 
         {groupedMonths.length > 0 ? (
@@ -1323,7 +1527,15 @@ const HomeOverview = ({
                 <div className="nx-wh-month-label">{group.label}</div>
                 <div className="nx-wh-tx-card">
                   {group.items.map((tx) => (
-                    <TransactionItem key={tx.id} transaction={tx} />
+                    <WalletTxRow
+                      key={tx.id}
+                      transaction={tx}
+                      isAmountsHidden={isAmountsHidden}
+                      onClick={() => {
+                        triggerHaptic();
+                        onOpenMovements?.();
+                      }}
+                    />
                   ))}
                 </div>
               </div>
@@ -1337,11 +1549,11 @@ const HomeOverview = ({
                   width: "100%",
                   background: "transparent",
                   border: 0,
-                  color: "inherit",
+                  color: "#6B7280",
                   fontFamily: "inherit",
-                  fontSize: "13.5px",
+                  fontSize: "13px",
                   fontWeight: 600,
-                  padding: "4px 0 18px",
+                  padding: "2px 0 18px",
                   cursor: "pointer",
                 }}
               >
@@ -1351,20 +1563,22 @@ const HomeOverview = ({
           </>
         ) : (
           <div className="nx-wh-tx-card" style={{ padding: "22px 16px", textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: "13px", color: "#7A7F8E" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
               Sin movimientos registrados todavía.
             </p>
           </div>
         )}
 
-        {/* WIDGETS */}
+        {/* WIDGETS ADAPTADOS A LA MISMA UI */}
         <h2 className="nx-wh-section-heading">Resumen</h2>
 
         <div className="nx-wh-widgets-grid">
           <button type="button" className="nx-wh-widget" onClick={onOpenMovements}>
             <div>
-              <span style={{ fontSize: "12px", color: "#7A7F8E", display: "block" }}>Gasto este mes</span>
-              <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px" }}>
+              <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
+                Gasto este mes
+              </span>
+              <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
                 {displayMoney(totals.expenses)}
               </strong>
               <span
@@ -1374,7 +1588,7 @@ const HomeOverview = ({
                   fontWeight: 600,
                   display: "inline-block",
                   marginTop: "6px",
-                  color: expenseDiff >= 0 ? "var(--accent-deep-pink)" : "var(--accent-teal)",
+                  color: expenseDiff >= 0 ? "#D93829" : "#10B981",
                 }}
               >
                 {expenseDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(expenseDiff))}
@@ -1384,19 +1598,21 @@ const HomeOverview = ({
             <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
               <defs>
                 <linearGradient id="nxWhSpendFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#494fdf" stopOpacity="0.26" />
-                  <stop offset="100%" stopColor="#494fdf" stopOpacity="0.02" />
+                  <stop offset="0%" stopColor="#111827" stopOpacity="0.14" />
+                  <stop offset="100%" stopColor="#111827" stopOpacity="0.01" />
                 </linearGradient>
               </defs>
               <path d={spendWidgetChart.actualArea} fill="url(#nxWhSpendFill)" />
-              <path d={spendWidgetChart.actualPath} fill="none" stroke="#494fdf" strokeWidth="2.4" strokeLinecap="round" />
+              <path d={spendWidgetChart.actualPath} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
             </svg>
           </button>
 
           <button type="button" className="nx-wh-widget" onClick={onOpenMovements}>
             <div>
-              <span style={{ fontSize: "12px", color: "#7A7F8E", display: "block" }}>Patrimonio total</span>
-              <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px" }}>
+              <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
+                Patrimonio total
+              </span>
+              <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
                 {displayCompactMoney(totalWealth)}
               </strong>
               <span
@@ -1406,25 +1622,28 @@ const HomeOverview = ({
                   fontWeight: 600,
                   display: "inline-block",
                   marginTop: "6px",
-                  color: allAccountsMonthlyDelta >= 0 ? "var(--primary)" : "var(--danger-red)",
+                  color: allAccountsMonthlyDelta >= 0 ? "#10B981" : "#D93829",
                 }}
               >
                 {allAccountsMonthlyDelta >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(allAccountsMonthlyDelta))}
               </span>
             </div>
 
-            <span style={{ fontSize: "12px", color: "#7A7F8E", marginTop: "14px" }}>
-              {accountsWithCards.length} {accountsWithCards.length === 1 ? "tarjeta" : "tarjetas"}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "14px" }}>
+              <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
+                {accountsWithCards.length} {accountsWithCards.length === 1 ? "tarjeta" : "tarjetas"}
+              </span>
+              <ChevronRight size={14} style={{ color: "#9CA3AF" }} />
+            </div>
           </button>
 
           <div
             className="nx-wh-widget"
-            style={{ gridColumn: "1 / -1", cursor: "default" }}
+            style={{ gridColumn: "1 / -1", cursor: "default", padding: "14px 16px 8px" }}
             onMouseLeave={() => setHoveredCat(null)}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "10px" }}>
-              <span style={{ fontSize: "12px", color: "#7A7F8E" }}>Por categoría</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "6px" }}>
+              <span style={{ fontSize: "12.5px", color: "#9CA3AF", fontWeight: 500 }}>Por categoría</span>
               <button
                 type="button"
                 onClick={onOpenLimits}
@@ -1435,63 +1654,54 @@ const HomeOverview = ({
             </div>
 
             {categoryDonut.items.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
-                  <strong className="privacy-sensitive" style={{ fontSize: "18px", fontWeight: 700 }}>
+              <div style={{ width: "100%" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
+                  <strong className="privacy-sensitive" style={{ fontSize: "19px", fontWeight: 700, letterSpacing: "-0.02em" }}>
                     {hoveredCat ? displayCompactMoney(hoveredCat.amount) : formatDonutTotal(totals.expenses)}
                   </strong>
                   {hoveredCat && (
-                    <span style={{ fontSize: "11.5px", color: "#7A7F8E" }}>
+                    <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
                       {hoveredCat.name} · {hoveredCat.share}%
                     </span>
                   )}
                 </div>
 
-                {categoryDonut.segments.slice(0, 4).map((cat) => (
-                  <button
-                    key={cat.name}
-                    type="button"
-                    onMouseEnter={() => setHoveredCat(cat)}
-                    onClick={() => { triggerHaptic(); setHoveredCat((prev) => (prev?.name === cat.name ? null : cat)); }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "8px",
-                      width: "100%",
-                      background: "transparent",
-                      border: 0,
-                      padding: "2px 0",
-                      cursor: "pointer",
-                      color: "inherit",
-                    }}
-                  >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", minWidth: 0 }}>
-                      <i style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: cat.color, flexShrink: 0 }} />
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.name}</span>
-                    </span>
-                    <span
-                      className="privacy-sensitive"
-                      style={{
-                        fontSize: "11.5px",
-                        fontWeight: 600,
-                        color: cat.isOverLimit ? "var(--danger-red)" : "inherit",
-                        fontVariantNumeric: "tabular-nums",
-                        whiteSpace: "nowrap",
-                      }}
+                <div>
+                  {categoryDonut.segments.slice(0, 4).map((cat) => (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      className="nx-wh-cat-row"
+                      onMouseEnter={() => setHoveredCat(cat)}
+                      onClick={() => { triggerHaptic(); setHoveredCat((prev) => (prev?.name === cat.name ? null : cat)); }}
                     >
-                      {displayCompactMoney(cat.amount)}
-                      {cat.limit > 0 && (
-                        <span style={{ color: "#7A7F8E", fontWeight: 400 }}>
-                          /{displayCompactMoney(cat.limit)}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                ))}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 500, minWidth: 0 }}>
+                        <i style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: cat.color, flexShrink: 0 }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.name}</span>
+                      </span>
+                      <span
+                        className="privacy-sensitive"
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: cat.isOverLimit ? "#D93829" : "inherit",
+                          fontVariantNumeric: "tabular-nums",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {displayCompactMoney(cat.amount)}
+                        {cat.limit > 0 && (
+                          <span style={{ color: "#9CA3AF", fontWeight: 400 }}>
+                            /{displayCompactMoney(cat.limit)}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
-              <span style={{ fontSize: "13px", color: "#7A7F8E" }}>Sin gastos este mes.</span>
+              <span style={{ fontSize: "13px", color: "#9CA3AF", paddingBottom: "8px" }}>Sin gastos este mes.</span>
             )}
           </div>
         </div>
@@ -1518,9 +1728,9 @@ const HomeOverview = ({
                   width: "32px",
                   height: "32px",
                   borderRadius: "999px",
-                  border: 0,
-                  background: "rgba(15, 23, 42, 0.08)",
-                  color: "inherit",
+                  border: "1px solid #EAECEF",
+                  background: "#FFFFFF",
+                  color: "#111827",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1616,14 +1826,20 @@ const HomeOverview = ({
               </button>
             </div>
 
-            <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#7A7F8E", margin: "0 0 6px 4px" }}>
+            <div style={{ fontSize: "12.5px", fontWeight: 500, color: "#9CA3AF", margin: "0 0 8px 4px" }}>
               Últimos movimientos · {previewAccount.name}
             </div>
             <div className="nx-picker-tx-box">
               {previewRecentTxs.length > 0 ? (
-                previewRecentTxs.map((tx) => <TransactionItem key={tx.id} transaction={tx} />)
+                previewRecentTxs.map((tx) => (
+                  <WalletTxRow
+                    key={tx.id}
+                    transaction={tx}
+                    isAmountsHidden={isAmountsHidden}
+                  />
+                ))
               ) : (
-                <p style={{ margin: 0, padding: "14px 0", textAlign: "center", fontSize: "12.5px", color: "#7A7F8E" }}>
+                <p style={{ margin: 0, padding: "16px 0", textAlign: "center", fontSize: "12.5px", color: "#9CA3AF" }}>
                   Sin movimientos en esta tarjeta.
                 </p>
               )}
