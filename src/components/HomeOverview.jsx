@@ -347,7 +347,8 @@ const HOME_WALLET_CSS = `
     font-weight: 400;
     color: rgba(255, 244, 232, 0.78);
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: 8px;
+    margin-left: 6px;
     position: relative;
     z-index: 2;
   }
@@ -362,6 +363,8 @@ const HOME_WALLET_CSS = `
     position: relative;
     z-index: 2;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    margin-bottom: 8px;
+    margin-left: 6px;
   }
 
   .nx-leather-eye-btn {
@@ -384,6 +387,7 @@ const HOME_WALLET_CSS = `
     z-index: 2;
     flex-shrink: 0;
     transition: transform 0.12s ease;
+    margin-bottom: 8px;
   }
   .nx-leather-eye-btn:active {
     transform: scale(0.93);
@@ -1407,7 +1411,7 @@ const HomeOverview = ({
               <span className="nx-leather-balance-lbl">
                 Balance · {activeProfile?.name || "Personal"}
               </span>
-              <strong className="nx-leather-balance-val privacy-sensitive">
+              <strong className="nx-leather-balance-val privacy-sensitive mb-5">
                 {displayMoney(walletBalance)}
               </strong>
             </div>

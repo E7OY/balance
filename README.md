@@ -1,4 +1,4 @@
-# Nexo
+# Wallet
 
 Aplicacion web progresiva (PWA) para la gestion de finanzas personales, cuentas y movimientos.
 

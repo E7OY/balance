@@ -251,7 +251,7 @@ function PinFlow({ mode, pinData, onUnlocked, onSaved, onRemoved, onClose }) {
   };
 
   const copy = step === 'verify'
-    ? { title: 'Introduce tu PIN', subtitle: 'Para desbloquear Nexo.' }
+    ? { title: 'Introduce tu PIN', subtitle: 'Para desbloquear Wallet.' }
     : step === 'create'
       ? { title: 'Elige tu PIN', subtitle: 'Nunca compartas este PIN con nadie.' }
       : { title: 'Confirma tu PIN', subtitle: 'Introdúcelo otra vez para confirmarlo.' };

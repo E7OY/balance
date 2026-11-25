@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Balance | Finanzas personales",
-  "short_name": "Balance",
-  "description": "Controla tus ingresos y gastos personales con Balance.",
+  "name": "Wallet | Finanzas personales",
+  "short_name": "Wallet",
+  "description": "Controla tus ingresos y gastos personales con Wallet.",
   "lang": "es",
   "start_url": "/",
   "scope": "/",
