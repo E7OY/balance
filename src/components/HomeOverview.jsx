@@ -1451,7 +1451,7 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
   };
 
   const openAddAccountModal = () => {
-    triggerHaptic();
+    triggerHaptic("medium");
     setAddAccountTab("create");
     setNewAccountName("");
     setNewAccountDate(getTodayStr());

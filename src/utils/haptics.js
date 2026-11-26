@@ -162,9 +162,7 @@ export const triggerHaptic = (type = "light") => {
 
   const pattern = HAPTIC_PATTERNS[type] ?? HAPTIC_PATTERNS.light;
 
-  // En desarrollo en PC (cuando no es pantalla táctil móvil), mostramos el simulador
-  const isDesktopDev = import.meta.env?.DEV && window.matchMedia?.("(pointer: fine)")?.matches;
-  if (isDesktopDev) {
+  if (import.meta.env?.DEV) {
     simulateHapticInDesktop(type, pattern);
   }
 
