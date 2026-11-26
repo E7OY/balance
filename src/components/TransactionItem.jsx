@@ -187,15 +187,14 @@ const TransactionItem = ({ transaction }) => {
     setPhoneNode(document.querySelector('.phone') || document.body);
   }, []);
 
-  const numericAmount = Math.abs(Number(transaction.amount) || 0);
-  const formatted = isAmountsHidden
-    ? '•••• €'
-    : new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(numericAmount);
+const numericAmount = Math.abs(Number(transaction.amount) || 0);
+  const formattedNumber = new Intl.NumberFormat('es-ES', {
+    useGrouping: 'always',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numericAmount);
+
+  const formatted = isAmountsHidden ? '€••••' : `€${formattedNumber}`;
 
   const titleText = (transaction.description || '').trim() || transaction.category || 'Movimiento';
   const dateLabel = formatSmartDate(transaction.date, transaction.time);
@@ -366,8 +365,7 @@ const TransactionItem = ({ transaction }) => {
             {isSplitting && (
               <div style={{ ...detailCardStyle, padding: 'var(--sp-lg)' }}>
                 <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
-                  Dividir en cuotas ({new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(numericAmount / splitCount)}/mes)
-                </span>
+Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numericAmount / splitCount)}/mes)                </span>
                 <div style={{ display: 'flex', gap: 'var(--sp-xs)', marginBottom: 'var(--sp-md)' }}>
                   {[2, 3, 4, 6, 12].map((n) => (
                     <button

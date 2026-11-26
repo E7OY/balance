@@ -67,6 +67,17 @@ const getTodayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+const formatEuro = (val, { minDecimals = 2, maxDecimals = 2 } = {}) => {
+  const num = Number(val) || 0;
+  const sign = num < 0 ? "-" : "";
+  const formatted = new Intl.NumberFormat("es-ES", {
+    useGrouping: "always",
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
+  }).format(Math.abs(num));
+  return `${sign}€${formatted}`;
+};
+
 const formatTxDateMeta = (dateStr) => {
   if (!dateStr || typeof dateStr !== "string") return "";
   const today = getTodayStr();
@@ -91,15 +102,10 @@ const WalletTxRow = ({ transaction, isAmountsHidden, onClick }) => {
   const dateLabel = formatTxDateMeta(transaction.date);
   const timeLabel = transaction.time ? `${transaction.time} · ` : "";
 
-  const amt = Math.abs(Number(transaction.amount) || 0);
+const amt = Math.abs(Number(transaction.amount) || 0);
   const formattedAmt = isAmountsHidden
-    ? "•••• €"
-    : new Intl.NumberFormat("es-ES", {
-        style: "currency",
-        currency: "EUR",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amt);
+    ? "€••••"
+    : formatEuro(amt, { minDecimals: 2, maxDecimals: 2 });
 
   const sign = isExpense ? "- " : isIncome ? "+ " : "";
 
@@ -128,7 +134,7 @@ const WalletTxRow = ({ transaction, isAmountsHidden, onClick }) => {
         <span
           className={`nx-wtx-amount privacy-sensitive ${isExpense ? "expense" : "income"}`}
         >
-          {isAmountsHidden ? "•••• €" : `${sign}${formattedAmt}`}
+          {isAmountsHidden ? "€••••" : `${sign}${formattedAmt}`}
         </span>
         <span className="nx-wtx-cat">{categoryLabel}</span>
       </div>
@@ -288,6 +294,26 @@ const HOME_WALLET_CSS = `
     z-index: 1;
   }
 
+  @keyframes nxCardTuckIn {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, calc(var(--ty) - 50px), 0) scale(0.95);
+    }
+    25% {
+      opacity: 1;
+    }
+    76% {
+      opacity: 1;
+      /* Cae un pelín más hondo al entrar en el bolsillo */
+      transform: translate3d(0, calc(var(--ty) + 4px), 0) scale(1);
+    }
+    100% {
+      opacity: 1;
+      /* Se asienta suavemente en su posición final */
+      transform: translate3d(0, var(--ty), 0) scale(1);
+    }
+  }
+
   .nx-leather-fan-card {
     position: absolute;
     left: 0;
@@ -308,11 +334,12 @@ const HOME_WALLET_CSS = `
     box-shadow:
       0 -2px 10px rgba(0, 0, 0, 0.22),
       inset 0 1px 0 rgba(255, 255, 255, 0.32);
-    transform: translateY(var(--ty));
-    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translate3d(0, var(--ty), 0);
+    transition: transform .98s cubic-bezier(0.16, 1, 0.3, 1);
+animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    will-change: transform, opacity;
   }
   .nx-leather-fan-card:hover {
-    transform: translateY(calc(var(--ty) - 5px));
+    transform: translate3d(0, calc(var(--ty) - 6px), 0);
   }
 
   .nx-leather-pouch {
@@ -344,10 +371,10 @@ const HOME_WALLET_CSS = `
 
   .nx-leather-balance-lbl {
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 300;
     color: rgba(255, 244, 232, 0.78);
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     margin-left: 6px;
     position: relative;
     z-index: 2;
@@ -356,7 +383,7 @@ const HOME_WALLET_CSS = `
   .nx-leather-balance-val {
     display: block;
     font-size: 28px;
-    font-weight: 600;
+    font-weight:500;
     letter-spacing: -0.025em;
     line-height: 1.05;
     color: #FFFDF9;
@@ -810,7 +837,7 @@ const HOME_WALLET_CSS = `
     color: #111827;
   }
 
-  /* POPOVER MÁS */
+/* POPOVER MÁS: OSCURO EN MODO CLARO / CLARO EN MODO OSCURO */
   .nx-more-backdrop {
     position: fixed;
     inset: 0;
@@ -826,8 +853,9 @@ const HOME_WALLET_CSS = `
     border-radius: 18px;
     background: rgba(24, 26, 33, 0.96);
     backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
     overflow: hidden;
   }
   .nx-more-item {
@@ -841,13 +869,37 @@ const HOME_WALLET_CSS = `
     color: #FFFFFF;
     font-family: inherit;
     font-size: 13.5px;
+    font-weight: 500;
     cursor: pointer;
+    transition: background-color 0.14s ease;
+  }
+  .nx-more-item:active {
+    background: rgba(255, 255, 255, 0.08);
   }
   .nx-more-item + .nx-more-item {
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
   .nx-more-item.danger {
-    color: #EF4444;
+    color: #F87171;
+  }
+
+  /* INVERSIÓN EN MODO OSCURO -> MENÚ BLANCO */
+  .dark .nx-more-popover {
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid #EAECEF;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  }
+  .dark .nx-more-item {
+    color: #111827;
+  }
+  .dark .nx-more-item:active {
+    background: #F3F4F6;
+  }
+  .dark .nx-more-item + .nx-more-item {
+    border-top: 1px solid #F1F3F5;
+  }
+  .dark .nx-more-item.danger {
+    color: #DC2626;
   }
   /* PORCENTAJE AL LADO DEL BALANCE EN LA CARTERA */
   .nx-leather-balance-row {
@@ -1025,6 +1077,18 @@ const HomeOverview = ({
     };
     window.addEventListener(HOME_BG_EVENT, handleBgChanged);
     return () => window.removeEventListener(HOME_BG_EVENT, handleBgChanged);
+  }, []);
+
+  useEffect(() => {
+    // 50ms delay + (2150ms * 0.76) ≈ 1680ms -> instante exacto en que tocan fondo
+    const settleTimer = window.setTimeout(() => {
+      // Solo intentamos vibrar si el navegador ya registra activación del usuario
+      if (!navigator.userActivation || navigator.userActivation.hasBeenActive) {
+        triggerHaptic("cardSettle");
+      }
+    }, 1680);
+
+    return () => window.clearTimeout(settleTimer);
   }, []);
 
   useEffect(() => () => window.clearTimeout(pickerScrollTimerRef.current), []);
@@ -1333,25 +1397,28 @@ const walletBalance = availableThisMonth;
     return { items, segments };
   }, [monthlyTransactions, totals.expenses, monthlyCategoryCaps]);
 
-  const displayMoney = (val) => (
+const displayMoney = (val) => (
     isAmountsHidden
-      ? "•••• €"
-      : new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(val)
+      ? "€••••"
+      : formatEuro(val, { minDecimals: 2, maxDecimals: 2 })
   );
 
-  const displayCompactMoney = (val) => (
-    isAmountsHidden
-      ? "•••• €"
-      : new Intl.NumberFormat("es-ES", {
-          style: "currency",
-          currency: "EUR",
-          maximumFractionDigits: Number.isInteger(val) ? 0 : 2,
-        }).format(val)
-  );
+  const displayCompactMoney = (val) => {
+    if (isAmountsHidden) return "€••••";
+    const num = Number(val) || 0;
+    const isWhole = Number.isInteger(num);
+    return formatEuro(num, {
+      minDecimals: isWhole ? 0 : 2,
+      maxDecimals: 2,
+    });
+  };
 
   const formatDonutTotal = (val) => {
-    if (isAmountsHidden) return "•••• €";
-    if (val >= 1000) return `${(val / 1000).toFixed(1).replace(".0", "")}K €`;
+    if (isAmountsHidden) return "€••••";
+    if (Math.abs(val) >= 1000) {
+      const kVal = (Math.abs(val) / 1000).toFixed(1).replace(".0", "").replace(".", ",");
+      return `${val < 0 ? "-" : ""}€${kVal}K`;
+    }
     return displayCompactMoney(val);
   };
 
@@ -1534,7 +1601,7 @@ const walletBalance = availableThisMonth;
 
 <div>
               <span className="nx-leather-balance-lbl">
-                Balance · {activeProfile?.name || "Personal"}
+                Disponible · {activeProfile?.name || "Personal"}
               </span>
               <div className="nx-leather-balance-row">
                 <strong className="nx-leather-balance-val privacy-sensitive">

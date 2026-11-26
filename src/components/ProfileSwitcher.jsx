@@ -37,100 +37,58 @@ import { getSavedHomeBackground, HOME_BACKGROUNDS } from '../utils/homeBackgroun
 import {
   DICEBEAR_SEEDS,
 } from '../utils/avatar';
+
 const SETTINGS_REVOLUT_CSS = `
   .rev-settings-page {
     min-height: 100dvh;
-    background-color: var(--surface-soft);
-    background-image: radial-gradient(90% 36% at 50% 0%, rgba(73, 79, 223, 0.12) 0%, transparent 100%);
+    background-color: #FAFAFB;
     padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 36px;
-    color: var(--ink);
+    color: #111827;
   }
   .dark .rev-settings-page {
     background-color: var(--canvas-dark);
-    background-image: radial-gradient(95% 38% at 50% 0%, rgba(28, 49, 128, 0.58) 0%, rgba(12, 18, 44, 0.24) 58%, transparent 100%);
-    color: var(--on-dark);
+    color: #FFFFFF;
   }
   .rev-settings-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 6px;
+    margin-bottom: 14px;
   }
   .rev-close-circle {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 999px;
-    border: 0;
-    background: transparent;
-    color: var(--ink);
+    border: 1px solid #EAECEF;
+    background: #FFFFFF;
+    color: #111827;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     padding: 0;
+    transition: transform 0.12s ease, background-color 0.15s ease;
   }
   .dark .rev-close-circle {
-    color: var(--on-dark);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
   }
   .rev-close-circle:active {
-    opacity: 0.65;
-  }
-  .rev-settings-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 2px 0 22px;
-  }
-  .rev-settings-avatar {
-    width: 74px;
-    height: 74px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #3D17EE 0%, #494fdf 100%);
-    color: #FFFFFF;
-    font-size: 25px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 14px;
-    cursor: pointer;
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
-  }
-  .rev-settings-name {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
-    margin: 0;
-  }
-  .rev-settings-handle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
-    background: transparent;
-    border: 0;
-    padding: 2px 6px;
-    color: var(--text-mute);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
+    transform: scale(0.93);
   }
 
-  /* DOS TARJETAS SUPERIORES (PLAN/PATRIMONIO + INVITAR) */
+  /* DOS TARJETAS SUPERIORES (PATRIMONIO + INVITAR) — BORDE #EAECEF IGUAL QUE HOME */
   .rev-bento-duo {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 14px;
   }
   .rev-bento-box {
-    background-color: var(--canvas-light);
-    color: var(--ink);
-    border: 0;
+    background-color: #FFFFFF;
+    color: #111827;
+    border: 1px solid #EAECEF;
     border-radius: 18px;
     padding: 15px 16px;
     min-height: 112px;
@@ -141,20 +99,25 @@ const SETTINGS_REVOLUT_CSS = `
     text-align: left;
     font-family: inherit;
     cursor: pointer;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-    transition: transform 0.12s ease;
+    box-shadow: none;
+    transition: transform 0.12s ease, background-color 0.14s ease;
   }
   .dark .rev-bento-box {
-    background-color: #161618;
-    color: var(--on-dark);
+    background-color: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
     box-shadow: none;
   }
   .rev-bento-box:active {
-    transform: scale(0.97);
+    transform: scale(0.985);
+    background-color: #F9FAFB;
+  }
+  .dark .rev-bento-box:active {
+    background-color: rgba(255, 255, 255, 0.04);
   }
   .rev-bento-title {
     display: block;
-    font-size: 14px;
+    font-size: 14.5px;
     font-weight: 600;
     letter-spacing: -0.01em;
     line-height: 1.25;
@@ -163,30 +126,35 @@ const SETTINGS_REVOLUT_CSS = `
     display: block;
     font-size: 12px;
     font-weight: 400;
-    color: var(--text-mute);
+    color: #9CA3AF;
     margin-top: 2px;
   }
 
-  /* TARJETAS DE LISTA AGRUPADAS ESTILO REVOLUT */
+  /* CAJAS DE LISTA AGRUPADAS CON BORDE FINO #EAECEF Y DIVISORES #F1F3F5 */
   .rev-list-group {
-    background-color: var(--canvas-light);
-    color: var(--ink);
+    background-color: #FFFFFF;
+    color: #111827;
+    border: 1px solid #EAECEF;
     border-radius: 18px;
-    padding: 6px 16px;
+    padding: 0;
     margin-bottom: 14px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+    box-shadow: none;
+    overflow: hidden;
   }
   .dark .rev-list-group {
-    background-color: #161618;
-    color: var(--on-dark);
+    background-color: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
     box-shadow: none;
   }
   .bottom-sheet .rev-list-group {
-    background-color: var(--surface-soft);
+    background-color: #FFFFFF;
+    border: 1px solid #EAECEF;
     box-shadow: none;
   }
   .dark .bottom-sheet .rev-list-group {
-    background-color: #1C1C1F;
+    background-color: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.09);
   }
   .rev-list-row {
     display: flex;
@@ -194,13 +162,26 @@ const SETTINGS_REVOLUT_CSS = `
     justify-content: space-between;
     gap: 14px;
     width: 100%;
-    padding: 13px 2px;
+    padding: 13px 16px;
     background: transparent;
     border: 0;
     color: inherit;
     text-align: left;
     font-family: inherit;
     cursor: pointer;
+    transition: background-color 0.14s ease;
+  }
+  .rev-list-row + .rev-list-row {
+    border-top: 1px solid #F1F3F5;
+  }
+  .dark .rev-list-row + .rev-list-row {
+    border-top-color: rgba(255, 255, 255, 0.07);
+  }
+  button.rev-list-row:active {
+    background-color: #F9FAFB;
+  }
+  .dark button.rev-list-row:active {
+    background-color: rgba(255, 255, 255, 0.04);
   }
   .rev-list-left {
     display: flex;
@@ -215,11 +196,11 @@ const SETTINGS_REVOLUT_CSS = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--ink);
+    color: #111827;
     flex-shrink: 0;
   }
   .dark .rev-list-icon {
-    color: var(--on-dark);
+    color: #FFFFFF;
   }
   .rev-list-label {
     font-size: 14.5px;
@@ -232,7 +213,7 @@ const SETTINGS_REVOLUT_CSS = `
   .rev-list-meta {
     font-size: 12.5px;
     font-weight: 500;
-    color: var(--text-mute);
+    color: #9CA3AF;
     flex-shrink: 0;
   }
   .rev-home-select {
@@ -241,16 +222,17 @@ const SETTINGS_REVOLUT_CSS = `
     height: 32px !important;
     padding: 0 10px !important;
     border-radius: 999px !important;
-    background-color: var(--surface-soft) !important;
-    border: 0 !important;
-    color: var(--ink) !important;
+    background-color: #FAFAFB !important;
+    border: 1px solid #EAECEF !important;
+    color: #111827 !important;
     font-size: 12.5px !important;
     font-weight: 500 !important;
     cursor: pointer;
   }
   .dark .rev-home-select {
     background-color: #242428 !important;
-    color: var(--on-dark) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #FFFFFF !important;
   }
   .rev-switch {
     width: 46px;
@@ -258,7 +240,7 @@ const SETTINGS_REVOLUT_CSS = `
     border-radius: 999px;
     border: 0;
     padding: 3px;
-    background: var(--faint);
+    background: #E5E7EB;
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
@@ -282,25 +264,46 @@ const SETTINGS_REVOLUT_CSS = `
   .rev-switch.on .rev-switch-thumb {
     transform: translateX(20px);
   }
-    /* WALLET CARD CON TARJETAS EN ABANICO + BOLSILLO LIQUID GLASS */
+
+  /* =========================================================
+     WALLET CARD EN PERFIL + CAÍDA ESCALONADA DE TARJETAS
+     ========================================================= */
+  @keyframes revProfileCardDrop {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, calc(var(--ty) - 145px), 0) rotate(0deg) scale(0.94);
+    }
+    25% {
+      opacity: 1;
+    }
+    76% {
+      opacity: 1;
+      transform: translate3d(0, calc(var(--ty) + 5px), 0) rotate(var(--rot)) scale(1);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, var(--ty), 0) rotate(var(--rot)) scale(1);
+    }
+  }
+
   .rev-wallet-outer {
     width: 100%;
     padding: 7px;
-    border-radius: 34px;
-    background: rgba(73, 79, 223, 0.08);
-    border: 1px solid rgba(73, 79, 223, 0.12);
+    border-radius: 26px;
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
     margin-bottom: 14px;
     box-sizing: border-box;
   }
   .dark .rev-wallet-outer {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #16171C;
+    border: 1px solid rgba(255, 255, 255, 0.09);
   }
   .rev-wallet-card {
     position: relative;
     width: 100%;
     height: 224px;
-    border-radius: 28px;
+    border-radius: 20px;
     background: linear-gradient(180deg, #1E1F24 0%, #141519 100%);
     overflow: hidden;
     border: 0;
@@ -309,18 +312,18 @@ const SETTINGS_REVOLUT_CSS = `
     display: block;
     text-align: center;
     font-family: inherit;
-    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16);
+    box-shadow: none;
     transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .dark .rev-wallet-card {
     background: linear-gradient(180deg, #1A1B20 0%, #101115 100%);
-    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
   }
   .rev-wallet-card:active {
     transform: scale(0.985);
   }
   .rev-wallet-card:hover .rev-wallet-mini-card {
-    transform: translateY(calc(var(--ty) - 6px)) rotate(var(--rot));
+    transform: translate3d(0, calc(var(--ty) - 6px), 0) rotate(var(--rot));
   }
   .rev-wallet-title {
     position: absolute;
@@ -355,8 +358,10 @@ const SETTINGS_REVOLUT_CSS = `
     justify-content: space-between;
     color: #FFFFFF;
     box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.28);
-    transform: translateY(var(--ty)) rotate(var(--rot));
-    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translate3d(0, var(--ty), 0) rotate(var(--rot));
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: revProfileCardDrop 0.95s cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms) backwards;
+    will-change: transform, opacity;
   }
   .rev-wallet-pocket {
     position: absolute;
@@ -364,7 +369,7 @@ const SETTINGS_REVOLUT_CSS = `
     right: 6px;
     bottom: 6px;
     height: 126px;
-    border-radius: 23px;
+    border-radius: 16px;
     z-index: 4;
     background: linear-gradient(
       180deg,
@@ -447,7 +452,8 @@ const ProfileSwitcher = ({
     joinProfile,
     deleteActiveProfile,
   } = useFinance();
-const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [avatarSeeds, setAvatarSeeds] = useState(DICEBEAR_SEEDS);
   const [notifications, setNotifications] = useState(() => getPushNotificationsEnabled(activeProfile.id));
   const [profileEditOpen, setProfileEditOpen] = useState(false);
@@ -479,26 +485,12 @@ const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [syncPassword, setSyncPassword] = useState('');
   const [syncFormError, setSyncFormError] = useState('');
 
-  const initials = customName
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
-  const handleTag = `@${customName
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, '') || 'nexo'}`;
-
   const isSharedSpace = activeProfileId.includes('___');
   const shareCode = isSharedSpace
     ? activeProfileId
     : (syncUser ? `${syncUser.uid}___${activeProfileId}` : null);
 
-const WALLET_CARD_BGS = {
+  const WALLET_CARD_BGS = {
     'revolut-standard': 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 52%, #EC4899 100%)',
     'metal-black': 'linear-gradient(145deg, #3A3C44 0%, #1B1C20 55%, #09090B 100%)',
     'metal-space-grey': 'linear-gradient(145deg, #6B7280 0%, #3F434C 55%, #23252A 100%)',
@@ -577,22 +569,31 @@ const WALLET_CARD_BGS = {
     });
   })();
 
-  const formattedWealth = new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(totalWealth);
+const rawWealthNum = new Intl.NumberFormat('es-ES', {
+    useGrouping: 'always',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(totalWealth));
+
+  const formattedWealth = `${totalWealth < 0 ? '-' : ''}€${rawWealthNum}`;
   const wealthCommaIdx = formattedWealth.indexOf(',');
   const wealthInt = isAmountsHidden
-    ? '•••• €'
+    ? '€••••'
     : (wealthCommaIdx === -1 ? formattedWealth : formattedWealth.slice(0, wealthCommaIdx));
   const wealthDec = isAmountsHidden || wealthCommaIdx === -1
     ? ''
     : formattedWealth.slice(wealthCommaIdx);
 
-  const displayMoney = (val) => (isAmountsHidden
-    ? '•••• €'
-    : new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(val));
-
+  const displayMoney = (val) => {
+    if (isAmountsHidden) return '€••••';
+    const num = Number(val) || 0;
+    return `${num < 0 ? '-' : ''}€${new Intl.NumberFormat('es-ES', {
+      useGrouping: 'always',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Math.abs(num))}`;
+  };
+  
   const currentBgName = bgConfig.customImage
     ? 'Foto propia'
     : (HOME_BACKGROUNDS.find((b) => b.id === bgConfig.id)?.shortName || 'Índigo');
@@ -632,215 +633,11 @@ const WALLET_CARD_BGS = {
           onClick={handleClosePage}
           aria-label="Cerrar ajustes"
         >
-          <X size={21} strokeWidth={2.2} />
+          <X size={19} strokeWidth={2.2} />
         </button>
       </div>
 
-      {/* CABECERA CENTRADA: AVATAR + NOMBRE + @USUARIO 
-      <div className="rev-settings-hero">
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' }}>
-        <button
-          type="button"
-          onClick={() => {
-            triggerHaptic();
-            setIsAvatarModalOpen(true);
-          }}
-          style={{
-            position: 'relative',
-            width: '78px',
-            height: '78px',
-            borderRadius: '999px',
-            border: 0,
-            padding: 0,
-            backgroundColor: 'var(--primary)',
-            color: '#FFFFFF',
-            fontSize: '28px',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(73, 79, 223, 0.28)',
-          }}
-          aria-label="Cambiar avatar"
-        >
-          {avatar ? (
-            <img
-              src={avatar}
-              alt="Avatar de perfil"
-              style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: '999px',
-                objectFit: 'cover',
-                display: 'block',
-                backgroundColor: '#FFFFFF',
-              }}
-            />
-          ) : (
-            (profileName || 'E').slice(0, 1).toUpperCase()
-          )}
-
-          <span
-            style={{
-              position: 'absolute',
-              right: '-2px',
-              bottom: '-2px',
-              width: '26px',
-              height: '26px',
-              borderRadius: '999px',
-              backgroundColor: 'var(--canvas-light)',
-              color: 'var(--ink)',
-              border: '2px solid var(--surface-soft)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.16)',
-            }}
-          >
-            <Camera size={13} strokeWidth={2.2} />
-          </span>
-        </button>
-      </div>
-
-      {/* MODAL SELECTOR DE AVATAR DICEBEAR 
-      {isAvatarModalOpen && createPortal(
-        <div className="sheet-layer" style={{ zIndex: 120 }} onMouseDown={() => setIsAvatarModalOpen(false)}>
-          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 500, margin: 0 }}>Elige tu avatar</h2>
-              <button type="button" className="sheet-close" onClick={() => setIsAvatarModalOpen(false)}>
-                <X size={17} />
-              </button>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: '12px',
-                marginBottom: '18px',
-              }}
-            >
-              {avatarSeeds.map((seed) => {
-                const url = getDiceBearAvatar(seed);
-                const isSelected = avatar === url;
-                return (
-                  <button
-                    key={seed}
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      onAvatarChange?.(url);
-                      setIsAvatarModalOpen(false);
-                    }}
-                    style={{
-                      aspectRatio: '1 / 1',
-                      borderRadius: '999px',
-                      padding: '2px',
-                      background: 'transparent',
-                      border: isSelected ? '3px solid var(--primary)' : '2px solid transparent',
-                      cursor: 'pointer',
-                      overflow: 'hidden',
-                    }}
-                    aria-label={`Avatar ${seed}`}
-                  >
-                    <img
-                      src={url}
-                      alt={seed}
-                      loading="lazy"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: '999px',
-                        objectFit: 'cover',
-                        display: 'block',
-                      }}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', marginBottom: avatar ? '10px' : 0 }}>
-              <button
-                type="button"
-                className="nx-btn-soft"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  triggerHaptic();
-                  setAvatarSeeds(getRandomSeeds(12));
-                }}
-              >
-                <Shuffle size={15} /> Generar otros
-              </button>
-
-              <label
-                className="nx-btn-dark"
-                style={{ flex: 1, margin: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <Upload size={15} /> Subir foto
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    try {
-                      const dataUrl = await processAvatarFile(file, 256);
-                      onAvatarChange?.(dataUrl);
-                      triggerHaptic();
-                      setIsAvatarModalOpen(false);
-                    } catch (err) {
-                      alert(err.message);
-                    } finally {
-                      e.target.value = '';
-                    }
-                  }}
-                />
-              </label>
-            </div>
-
-            {avatar && (
-              <button
-                type="button"
-                className="nx-btn-soft"
-                style={{ width: '100%', color: 'var(--danger-red)' }}
-                onClick={() => {
-                  triggerHaptic();
-                  onAvatarChange?.('');
-                  setIsAvatarModalOpen(false);
-                }}
-              >
-                <Trash2 size={15} /> Usar iniciales
-              </button>
-            )}
-          </section>
-        </div>,
-        document.body,
-      )}
-
-        <h1 className="rev-settings-name">{customName}</h1>
-
-        <button
-          type="button"
-          className="rev-settings-handle"
-          onClick={() => {
-            setCopiedCode(false);
-            setIsSharePanelOpen(true);
-          }}
-        >
-          <span>{handleTag}</span>
-          <QrCode size={14} />
-        </button>
-
-      </div>*/}
-
-      {/* DOS TARJETAS SUPERIORES (ESTILO ULTRA / INVITE FRIENDS) */}
-
-      {/* WALLET CARD ARRIBA CON ABANICO DE TARJETAS + PATRIMONIO TOTAL */}
+      {/* WALLET CARD ARRIBA CON ABANICO DE TARJETAS EN CAÍDA ESCALONADA */}
       <div className="rev-wallet-outer">
         <button
           type="button"
@@ -854,7 +651,7 @@ const WALLET_CARD_BGS = {
           <span className="rev-wallet-title">Wallet</span>
 
           <div className="rev-wallet-stack" aria-hidden="true">
-            {walletCards.map((card) => {
+            {walletCards.map((card, idx) => {
               const isLightCard = card.bg.includes('#E2E8F0');
               return (
                 <div
@@ -864,6 +661,7 @@ const WALLET_CARD_BGS = {
                     background: card.bg,
                     '--ty': card.ty,
                     '--rot': card.rot,
+                    '--delay': `${60 + idx * 140}ms`,
                   }}
                 >
                   {card.net === 'none' ? (
@@ -945,6 +743,7 @@ const WALLET_CARD_BGS = {
         </button>
       </div>
 
+      {/* DOS CAJAS SUPERIORES (PATRIMONIO + INVITAR) */}
       <div className="rev-bento-duo">
         <button
           type="button"
@@ -1016,7 +815,7 @@ const WALLET_CARD_BGS = {
             <span className="rev-list-icon"><Download size={19} strokeWidth={2} /></span>
             <span className="rev-list-label">Exportar y respaldo</span>
           </div>
-          <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+          <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
         </button>
 
         <button type="button" className="rev-list-row" onClick={() => setIsThemeModalOpen(true)}>
@@ -1056,7 +855,7 @@ const WALLET_CARD_BGS = {
               <span className="rev-list-icon"><KeyRound size={19} strokeWidth={2} /></span>
               <span className="rev-list-label">Cambiar código PIN</span>
             </div>
-            <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+            <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
           </button>
         )}
 
@@ -1210,7 +1009,7 @@ const WALLET_CARD_BGS = {
                       </span>
                       <div>
                         <span className="rev-list-label" style={{ display: 'block' }}>{p.name}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-mute)' }}>
+                        <span style={{ fontSize: '12px', color: '#9CA3AF' }}>
                           {shared ? 'Espacio compartido' : 'Espacio personal'}
                         </span>
                       </div>
@@ -1235,7 +1034,7 @@ const WALLET_CARD_BGS = {
                   <span className="rev-list-icon" style={{ color: 'var(--primary)' }}><Plus size={19} /></span>
                   <span className="rev-list-label">Crear nueva cuenta</span>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+                <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
               </button>
 
               <button
@@ -1251,7 +1050,7 @@ const WALLET_CARD_BGS = {
                   <span className="rev-list-icon" style={{ color: 'var(--primary)' }}><UserPlus size={19} /></span>
                   <span className="rev-list-label">Vincular cuenta compartida</span>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+                <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
               </button>
 
               <button
@@ -1267,7 +1066,7 @@ const WALLET_CARD_BGS = {
                   <span className="rev-list-icon" style={{ color: 'var(--primary)' }}><Share2 size={19} /></span>
                   <span className="rev-list-label">Invitar a {activeProfile?.name}</span>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+                <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
               </button>
 
               {profiles.length > 1 && (
@@ -1306,7 +1105,7 @@ const WALLET_CARD_BGS = {
                 <X size={17} />
               </button>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: '0 0 16px' }}>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 16px' }}>
               Descarga tus movimientos o restaura una copia de seguridad.
             </p>
 
@@ -1324,10 +1123,10 @@ const WALLET_CARD_BGS = {
                   <span className="rev-list-icon"><FileSpreadsheet size={19} /></span>
                   <div>
                     <span className="rev-list-label" style={{ display: 'block' }}>Exportar CSV</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-mute)' }}>Excel o Google Sheets</span>
+                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Excel o Google Sheets</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+                <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
               </button>
 
               <button type="button" className="rev-list-row" onClick={exportPdf}>
@@ -1335,10 +1134,10 @@ const WALLET_CARD_BGS = {
                   <span className="rev-list-icon"><FileText size={19} /></span>
                   <div>
                     <span className="rev-list-label" style={{ display: 'block' }}>Informe PDF</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-mute)' }}>Extracto listo para compartir</span>
+                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Extracto listo para compartir</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+                <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
               </button>
 
               <button type="button" className="rev-list-row" onClick={exportData}>
@@ -1346,10 +1145,10 @@ const WALLET_CARD_BGS = {
                   <span className="rev-list-icon"><FileJson size={19} /></span>
                   <div>
                     <span className="rev-list-label" style={{ display: 'block' }}>Copia completa JSON</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-mute)' }}>Movimientos, categorías, topes y facturas</span>
+                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Movimientos, categorías, topes y facturas</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+                <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
               </button>
 
               <button type="button" className="rev-list-row" onClick={() => importInputRef.current?.click()}>
@@ -1357,10 +1156,10 @@ const WALLET_CARD_BGS = {
                   <span className="rev-list-icon"><Upload size={19} /></span>
                   <div>
                     <span className="rev-list-label" style={{ display: 'block' }}>Restaurar copia JSON</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-mute)' }}>Importar respaldo previo</span>
+                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Importar respaldo previo</span>
                   </div>
                 </div>
-                <ChevronRight size={16} style={{ color: 'var(--text-mute)' }} />
+                <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
               </button>
             </div>
 
@@ -1424,13 +1223,14 @@ const WALLET_CARD_BGS = {
             </div>
             {shareCode ? (
               <>
-                <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: '0 0 16px' }}>
+                <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 16px' }}>
                   Envía este código para que otra persona vincule <strong>{activeProfile?.name}</strong> en su móvil.
                 </p>
                 <div style={{
                   padding: '14px',
                   borderRadius: '12px',
-                  background: 'var(--surface-soft)',
+                  background: '#FAFAFB',
+                  border: '1px solid #EAECEF',
                   fontFamily: 'monospace',
                   fontSize: '13px',
                   wordBreak: 'break-all',
@@ -1486,7 +1286,7 @@ const WALLET_CARD_BGS = {
                 <X size={17} />
               </button>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-mute)', margin: '0 0 16px' }}>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 16px' }}>
               Pega el código de invitación y elige un nombre para este espacio.
             </p>
             <form onSubmit={(e) => {
@@ -1577,7 +1377,7 @@ const WALLET_CARD_BGS = {
 
             {syncUser ? (
               <>
-                <p style={{ fontSize: '13px', color: 'var(--text-mute)', marginBottom: '18px' }}>
+                <p style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '18px' }}>
                   Conectado como <strong>{syncUser.email}</strong>. Tus cuentas y movimientos se sincronizan en tiempo real.
                 </p>
                 <button

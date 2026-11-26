@@ -30,6 +30,7 @@ import {
   subscribeToProfiles,
   subscribeToTransactions,
 } from '../utils/firebaseSync';
+import { triggerHaptic } from '../utils/haptics';
 
 const FinanceContext = createContext();
 
@@ -798,6 +799,9 @@ export const FinanceProvider = ({ children }) => {
         [...entriesToAdd, ...(Array.isArray(targetCurrent) ? targetCurrent : [])],
       );
     }
+
+    // Vibración de confirmación al guardar el ingreso o gasto
+    triggerHaptic('success');
 
     if (syncUser && syncStatus === 'synced') {
       runCloudOperation(Promise.all(entriesToAdd.map((entry) => (
