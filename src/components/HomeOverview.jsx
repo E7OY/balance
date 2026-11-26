@@ -264,7 +264,6 @@ const CardThemeStackSlider = ({
     </div>
   );
 };
-
 const WalletTxRow = ({ transaction, isAmountsHidden, onClick }) => {
   const isExpense = transaction.type === "Gasto";
   const isIncome = transaction.type === "Ingreso";
@@ -1303,6 +1302,20 @@ const HOME_WALLET_CSS = `
     background: #16171C;
     border-color: rgba(255, 255, 255, 0.09);
   }
+    @keyframes nx-quick-actions-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -8px, 0) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  .nx-wh-actions.is-open {
+    animation: nx-quick-actions-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
 `;
 
 const HomeOverview = ({
@@ -1340,6 +1353,7 @@ const {
   const [, setBgConfig] = useState(() => getSavedHomeBackground());
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
 
   const [isNewAccountOpen, setIsNewAccountOpen] = useState(false);
   const [addAccountTab, setAddAccountTab] = useState("create");
@@ -1788,17 +1802,21 @@ const {
         {/* CABECERA: MENÚ + WALLET + AÑADIR */}
         <div className="nx-wh-header">
           <button
-            type="button"
-            className="nx-wh-circle-btn"
-            onClick={() => {
-              triggerHaptic();
-              setShowSearch((prev) => !prev);
-            }}
-            aria-label="Menú y búsqueda"
-          >
-            <Menu size={18} strokeWidth={2.2} />
-          </button>
-
+  type="button"
+  className="nx-wh-circle-btn"
+  onClick={() => {
+    triggerHaptic();
+    setIsQuickActionsOpen((prev) => {
+      const next = !prev;
+      if (!next) setIsMoreMenuOpen(false);
+      return next;
+    });
+  }}
+  aria-label="Acciones rápidas"
+  aria-expanded={isQuickActionsOpen}
+>
+  <Menu size={18} strokeWidth={2.2} />
+</button>
           <div
             className="nx-wh-title-wrap"
             onPointerDown={() => {
@@ -1945,6 +1963,8 @@ const {
         </div>
 
         {/* 4 ACCIONES RÁPIDAS */}
+        {isQuickActionsOpen && (
+  <div className="nx-wh-actions is-open">
         <div className="nx-wh-actions">
           {isMoreMenuOpen && (
             <div className="nx-more-popover" role="menu">
@@ -2057,7 +2077,8 @@ const {
             <span className="nx-wh-action-icon"><MoreHorizontal size={18} strokeWidth={2.1} /></span>
             <span className="nx-wh-action-lbl">Más</span>
           </button>
-        </div>
+        </div></div>
+)}
 
         {/* MOVIMIENTOS AGRUPADOS POR MES */}
         <h2 className="nx-wh-section-heading">Movimientos</h2>
