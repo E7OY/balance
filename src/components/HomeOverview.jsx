@@ -25,7 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
-import { getCategoryVisuals } from "./TransactionItem";
+import TransactionItem, { getCategoryVisuals } from "./TransactionItem";
 import HomeThemeModal from "./HomeThemeModal";
 import {
   getSavedHomeBackground,
@@ -354,6 +354,7 @@ const HOME_WALLET_CSS = `
   }
 
   .nx-leather-balance-val {
+    display: block;
     font-size: 28px;
     font-weight: 600;
     letter-spacing: -0.025em;
@@ -363,7 +364,7 @@ const HOME_WALLET_CSS = `
     position: relative;
     z-index: 2;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     margin-left: 6px;
   }
 
@@ -848,6 +849,101 @@ const HOME_WALLET_CSS = `
   .nx-more-item.danger {
     color: #EF4444;
   }
+  /* PORCENTAJE AL LADO DEL BALANCE EN LA CARTERA */
+  .nx-leather-balance-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 12px;
+    margin-left: 6px;
+  }
+  .nx-leather-balance-row .nx-leather-balance-val {
+    margin: 0;
+  }
+  .nx-leather-pct-badge {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 999px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .nx-leather-pct-badge.up {
+    color: #4ADE80;
+  }
+  .nx-leather-pct-badge.down {
+    color: #F87171;
+  }
+
+  /* SLIDER DE GASTOS / INGRESOS EN EL WIDGET */
+  .nx-wh-slider-widget {
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    cursor: default;
+  }
+  .nx-wh-slider-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nx-wh-slider-track::-webkit-scrollbar {
+    display: none;
+  }
+  .nx-wh-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    padding: 16px 16px 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    color: inherit;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .nx-wh-slide-dots {
+    position: absolute;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    z-index: 2;
+  }
+  .nx-wh-slide-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    border: 0;
+    padding: 0;
+    background: rgba(156, 163, 175, 0.45);
+    cursor: pointer;
+    transition: width 0.2s ease, background-color 0.2s ease;
+  }
+  .nx-wh-slide-dot.active {
+    width: 13px;
+    background: #111827;
+  }
+  .dark .nx-wh-slide-dot.active {
+    background: #FFFFFF;
+  }
 `;
 
 const HomeOverview = ({
@@ -878,6 +974,7 @@ const HomeOverview = ({
     exportPdf,
     exportCsv,
     syncUser,
+    deleteTransaction,
   } = useFinance();
 
   const [, setBgConfig] = useState(() => getSavedHomeBackground());
@@ -897,6 +994,7 @@ const HomeOverview = ({
 
   const [showSearch, setShowSearch] = useState(false);
   const [showAllTx, setShowAllTx] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
   const [hoveredCat, setHoveredCat] = useState(null);
 
   // Popup deslizable de tarjetas/cuentas + acciones
@@ -1070,19 +1168,30 @@ const HomeOverview = ({
     ].slice(-3);
   }, [accountsWithCards, activeProfileId]);
 
-  const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, "0")}`;
-
+const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, "0")}`;
+  const monthName = new Intl.DateTimeFormat("es-ES", { month: "long" }).format(
+    new Date(filters.year, filters.month, 1),
+  );
+  const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
   const monthlyTransactions = useMemo(
     () => transactions.filter((tx) => typeof tx.date === "string" && tx.date.startsWith(monthPrefix)),
     [transactions, monthPrefix],
   );
 
-  const previousMonthExpenses = useMemo(() => {
+  const [metricSlide, setMetricSlide] = useState(0);
+  const metricSliderRef = useRef(null);
+
+  const previousMonthTotals = useMemo(() => {
     const prevDate = new Date(filters.year, filters.month - 1, 1);
     const prevPrefix = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
-    return transactions
-      .filter((tx) => tx.type === "Gasto" && typeof tx.date === "string" && tx.date.startsWith(prevPrefix))
-      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    return transactions.reduce((acc, tx) => {
+      if (typeof tx.date !== "string" || !tx.date.startsWith(prevPrefix)) return acc;
+      const amt = Number(tx.amount) || 0;
+      if (!Number.isFinite(amt) || amt <= 0) return acc;
+      if (tx.type === "Ingreso") acc.income += amt;
+      if (tx.type === "Gasto") acc.expenses += amt;
+      return acc;
+    }, { income: 0, expenses: 0 });
   }, [transactions, filters.year, filters.month]);
 
   const totals = useMemo(
@@ -1096,9 +1205,63 @@ const HomeOverview = ({
     [monthlyTransactions],
   );
 
-  const walletBalance = activeAccount ? activeAccount.balance : (totals.income - totals.expenses);
-  const expenseDiff = totals.expenses - previousMonthExpenses;
+  const expenseDiff = totals.expenses - previousMonthTotals.expenses;
+  const incomeDiff = totals.income - previousMonthTotals.income;
 
+  // Comparativa de disponible este mes vs mes pasado
+  const availableThisMonth = totals.income - totals.expenses;
+  const availableLastMonth = previousMonthTotals.income - previousMonthTotals.expenses;
+  const availablePct = useMemo(() => {
+    if (availableLastMonth === 0) {
+      if (availableThisMonth === 0) return 0;
+      return availableThisMonth > 0 ? 100 : -100;
+    }
+    return Math.round(((availableThisMonth - availableLastMonth) / Math.abs(availableLastMonth)) * 100);
+  }, [availableThisMonth, availableLastMonth]);
+  const isAvailableUp = availableThisMonth >= availableLastMonth;
+
+  const { spendWidgetChart, incomeWidgetChart } = useMemo(() => {
+    const daysInMonth = new Date(filters.year, filters.month + 1, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = filters.year === today.getFullYear() && filters.month === today.getMonth();
+    const isPastMonth = filters.year < today.getFullYear() || (filters.year === today.getFullYear() && filters.month < today.getMonth());
+    const cutoffDay = isCurrentMonth ? Math.min(daysInMonth, Math.max(1, today.getDate())) : (isPastMonth ? daysInMonth : 1);
+
+    const buildChart = (txType) => {
+      const daily = Array(daysInMonth).fill(0);
+      monthlyTransactions.filter((tx) => tx.type === txType).forEach((tx) => {
+        const day = parseInt(tx.date.split("-")[2], 10);
+        if (day >= 1 && day <= daysInMonth) daily[day - 1] += Number(tx.amount) || 0;
+      });
+
+      let running = 0;
+      const cumulative = daily.map((val, idx) => {
+        running += val;
+        return { day: idx + 1, value: running };
+      });
+
+      const currentVal = cumulative[cutoffDay - 1]?.value || 0;
+      const maxY = Math.max(currentVal, 1);
+
+      const toCoord = (day, val) => ({
+        x: ((day - 1) / Math.max(1, daysInMonth - 1)) * 140,
+        y: 42 - (val / maxY) * 32,
+      });
+
+      const pts = cumulative.slice(0, cutoffDay).map((item) => toCoord(item.day, item.value));
+      const actualPath = pts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`).join(" ");
+      const last = pts[pts.length - 1] || { x: 0, y: 42 };
+      const actualArea = `${actualPath} L${last.x.toFixed(1)} 46 L0 46 Z`;
+      return { actualPath, actualArea };
+    };
+
+    return {
+      spendWidgetChart: buildChart("Gasto"),
+      incomeWidgetChart: buildChart("Ingreso"),
+    };
+  }, [monthlyTransactions, filters.year, filters.month]);
+
+const walletBalance = availableThisMonth;
   const { totalWealth, allAccountsMonthlyDelta } = useMemo(() => {
     const accountList = profiles.length > 0 ? profiles : activeProfile ? [activeProfile] : [];
     let wealth = 0;
@@ -1169,44 +1332,6 @@ const HomeOverview = ({
 
     return { items, segments };
   }, [monthlyTransactions, totals.expenses, monthlyCategoryCaps]);
-
-  const spendWidgetChart = useMemo(() => {
-    const daysInMonth = new Date(filters.year, filters.month + 1, 0).getDate();
-    const today = new Date();
-    const isCurrentMonth = filters.year === today.getFullYear() && filters.month === today.getMonth();
-    const isPastMonth = filters.year < today.getFullYear() || (filters.year === today.getFullYear() && filters.month < today.getMonth());
-    const cutoffDay = isCurrentMonth ? Math.min(daysInMonth, Math.max(1, today.getDate())) : (isPastMonth ? daysInMonth : 1);
-
-    const daily = Array(daysInMonth).fill(0);
-    monthlyTransactions.filter((tx) => tx.type === "Gasto").forEach((tx) => {
-      const day = parseInt(tx.date.split("-")[2], 10);
-      if (day >= 1 && day <= daysInMonth) daily[day - 1] += Number(tx.amount) || 0;
-    });
-
-    let running = 0;
-    const cumulative = daily.map((val, idx) => {
-      running += val;
-      return { day: idx + 1, value: running };
-    });
-
-    const currentSpend = cumulative[cutoffDay - 1]?.value || 0;
-    const projectedEnd = isCurrentMonth && cutoffDay < daysInMonth
-      ? currentSpend + (currentSpend / cutoffDay) * (daysInMonth - cutoffDay) * 0.65
-      : currentSpend;
-    const maxY = Math.max(projectedEnd, currentSpend, 1);
-
-    const toCoord = (day, val) => ({
-      x: ((day - 1) / Math.max(1, daysInMonth - 1)) * 140,
-      y: 42 - (val / maxY) * 32,
-    });
-
-    const actualPoints = cumulative.slice(0, cutoffDay).map((item) => toCoord(item.day, item.value));
-    const actualPath = actualPoints.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`).join(" ");
-    const lastActual = actualPoints[actualPoints.length - 1] || { x: 0, y: 42 };
-    const actualArea = `${actualPath} L${lastActual.x.toFixed(1)} 46 L0 46 Z`;
-
-    return { actualPath, actualArea };
-  }, [monthlyTransactions, filters.year, filters.month]);
 
   const displayMoney = (val) => (
     isAmountsHidden
@@ -1319,9 +1444,9 @@ const HomeOverview = ({
             }}
             style={{ cursor: "pointer" }}
           >
-            <h1 className="nx-wh-title">Wallet</h1>
+<h1 className="nx-wh-title">Wallet</h1>
             <p className="nx-wh-subtitle">
-              {activeProfile?.name || "Personal"} · Mis Tarjetas y Movimientos
+              {capitalizedMonth} · Mis Tarjetas y Movimientos
             </p>
           </div>
 
@@ -1407,13 +1532,20 @@ const HomeOverview = ({
               draggable={false}
             />
 
-            <div>
+<div>
               <span className="nx-leather-balance-lbl">
                 Balance · {activeProfile?.name || "Personal"}
               </span>
-              <strong className="nx-leather-balance-val privacy-sensitive mb-5">
-                {displayMoney(walletBalance)}
-              </strong>
+              <div className="nx-leather-balance-row">
+                <strong className="nx-leather-balance-val privacy-sensitive">
+                  {displayMoney(walletBalance)}
+                </strong>
+                {!isAmountsHidden && (
+                  <span className={`nx-leather-pct-badge ${isAvailableUp ? "up" : "down"}`}>
+                    {availablePct > 0 ? `+${availablePct}%` : `${availablePct}%`}
+                  </span>
+                )}
+              </div>
             </div>
 
             <button
@@ -1532,15 +1664,7 @@ const HomeOverview = ({
                 <div className="nx-wh-month-label">{group.label}</div>
                 <div className="nx-wh-tx-card">
                   {group.items.map((tx) => (
-                    <WalletTxRow
-                      key={tx.id}
-                      transaction={tx}
-                      isAmountsHidden={isAmountsHidden}
-                      onClick={() => {
-                        triggerHaptic();
-                        onOpenMovements?.();
-                      }}
-                    />
+                  <TransactionItem key={tx.id} transaction={tx} />
                   ))}
                 </div>
               </div>
@@ -1578,39 +1702,104 @@ const HomeOverview = ({
         <h2 className="nx-wh-section-heading">Resumen</h2>
 
         <div className="nx-wh-widgets-grid">
-          <button type="button" className="nx-wh-widget" onClick={onOpenMovements}>
-            <div>
-              <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
-                Gasto este mes
-              </span>
-              <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
-                {displayMoney(totals.expenses)}
-              </strong>
-              <span
-                className="privacy-sensitive"
-                style={{
-                  fontSize: "11.5px",
-                  fontWeight: 600,
-                  display: "inline-block",
-                  marginTop: "6px",
-                  color: expenseDiff >= 0 ? "#D93829" : "#10B981",
-                }}
-              >
-                {expenseDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(expenseDiff))}
-              </span>
+          <div className="nx-wh-widget nx-wh-slider-widget">
+            <div
+              ref={metricSliderRef}
+              className="nx-wh-slider-track"
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const idx = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+                if (idx !== metricSlide) setMetricSlide(idx);
+              }}
+            >
+              {/* SLIDE 1: GASTO ESTE MES */}
+              <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
+                <div>
+                  <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
+                    Gasto este mes
+                  </span>
+                  <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
+                    {displayMoney(totals.expenses)}
+                  </strong>
+                  <span
+                    className="privacy-sensitive"
+                    style={{
+                      fontSize: "11.5px",
+                      fontWeight: 600,
+                      display: "inline-block",
+                      marginTop: "6px",
+                      color: expenseDiff >= 0 ? "#D93829" : "#10B981",
+                    }}
+                  >
+                    {expenseDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(expenseDiff))}
+                  </span>
+                </div>
+
+                <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
+                  <defs>
+                    <linearGradient id="nxWhSpendFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#D93829" stopOpacity="0.18" />
+                      <stop offset="100%" stopColor="#D93829" stopOpacity="0.01" />
+                    </linearGradient>
+                  </defs>
+                  <path d={spendWidgetChart.actualArea} fill="url(#nxWhSpendFill)" />
+                  <path d={spendWidgetChart.actualPath} fill="none" stroke="#D93829" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              </button>
+
+              {/* SLIDE 2: INGRESOS ESTE MES */}
+              <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
+                <div>
+                  <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
+                    Ingresos este mes
+                  </span>
+                  <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
+                    {displayMoney(totals.income)}
+                  </strong>
+                  <span
+                    className="privacy-sensitive"
+                    style={{
+                      fontSize: "11.5px",
+                      fontWeight: 600,
+                      display: "inline-block",
+                      marginTop: "6px",
+                      color: incomeDiff >= 0 ? "#10B981" : "#D93829",
+                    }}
+                  >
+                    {incomeDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(incomeDiff))}
+                  </span>
+                </div>
+
+                <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
+                  <defs>
+                    <linearGradient id="nxWhIncomeFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10B981" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="#10B981" stopOpacity="0.01" />
+                    </linearGradient>
+                  </defs>
+                  <path d={incomeWidgetChart.actualArea} fill="url(#nxWhIncomeFill)" />
+                  <path d={incomeWidgetChart.actualPath} fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
 
-            <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
-              <defs>
-                <linearGradient id="nxWhSpendFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#111827" stopOpacity="0.14" />
-                  <stop offset="100%" stopColor="#111827" stopOpacity="0.01" />
-                </linearGradient>
-              </defs>
-              <path d={spendWidgetChart.actualArea} fill="url(#nxWhSpendFill)" />
-              <path d={spendWidgetChart.actualPath} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-          </button>
+            <div className="nx-wh-slide-dots" aria-label="Cambiar entre gastos e ingresos">
+              {[0, 1].map((idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`nx-wh-slide-dot ${metricSlide === idx ? "active" : ""}`}
+                  onClick={() => {
+                    triggerHaptic();
+                    setMetricSlide(idx);
+                    const el = metricSliderRef.current;
+                    if (el) el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+                  }}
+                  aria-label={idx === 0 ? "Ver gastos" : "Ver ingresos"}
+                />
+              ))}
+            </div>
+          </div>
 
           <button type="button" className="nx-wh-widget" onClick={onOpenMovements}>
             <div>
@@ -2190,7 +2379,118 @@ const HomeOverview = ({
         </div>,
         document.body,
       )}
+      {/* MODAL DETALLE DEL MOVIMIENTO */}
+      {selectedTx && createPortal(
+        <div
+          className="sheet-layer"
+          style={{ zIndex: 10050 }}
+          onMouseDown={() => setSelectedTx(null)}
+        >
+          <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ fontSize: "19px", fontWeight: 600, margin: 0 }}>Detalle del movimiento</h2>
+              <button type="button" className="sheet-close" onClick={() => setSelectedTx(null)}>
+                <X size={17} />
+              </button>
+            </div>
 
+            {(() => {
+              const isExpense = selectedTx.type === "Gasto";
+              const visuals = getCategoryVisuals(selectedTx.category, selectedTx.type);
+              const IconComp = visuals?.icon;
+              const title = (selectedTx.description || "").trim() || selectedTx.category || "Movimiento";
+
+              return (
+                <>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "18px" }}>
+                    <div
+                      className="nx-wtx-avatar"
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        backgroundColor: visuals?.bg || "#ECEEF2",
+                        color: "#FFFFFF",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      {React.isValidElement(IconComp)
+                        ? React.cloneElement(IconComp, { size: 22, strokeWidth: 2.1 })
+                        : typeof IconComp === "function"
+                          ? <IconComp size={22} strokeWidth={2.1} />
+                          : title.charAt(0).toUpperCase()}
+                    </div>
+
+                    <strong style={{ fontSize: "17px", fontWeight: 600 }}>{title}</strong>
+                    <strong
+                      className="privacy-sensitive"
+                      style={{
+                        fontSize: "28px",
+                        fontWeight: 700,
+                        marginTop: "6px",
+                        color: isExpense ? "#D93829" : "inherit",
+                        letterSpacing: "-0.02em",
+                      }}
+                    >
+                      {isAmountsHidden
+                        ? "•••• €"
+                        : `${isExpense ? "- " : "+ "}${displayMoney(Math.abs(Number(selectedTx.amount) || 0))}`}
+                    </strong>
+                  </div>
+
+                  <div className="nx-wh-tx-card" style={{ marginBottom: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 14px", fontSize: "13.5px" }}>
+                      <span style={{ color: "#9CA3AF" }}>Categoría</span>
+                      <span style={{ fontWeight: 500 }}>{selectedTx.category || "Sin categoría"}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 14px", fontSize: "13.5px", borderTop: "1px solid #F1F3F5" }}>
+                      <span style={{ color: "#9CA3AF" }}>Fecha</span>
+                      <span style={{ fontWeight: 500 }}>
+                        {selectedTx.time ? `${selectedTx.time} · ` : ""}{formatTxDateMeta(selectedTx.date)}
+                      </span>
+                    </div>
+                    {selectedTx.paymentMethod && (
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 14px", fontSize: "13.5px", borderTop: "1px solid #F1F3F5" }}>
+                        <span style={{ color: "#9CA3AF" }}>Método</span>
+                        <span style={{ fontWeight: 500 }}>{selectedTx.paymentMethod}</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 14px", fontSize: "13.5px", borderTop: "1px solid #F1F3F5" }}>
+                      <span style={{ color: "#9CA3AF" }}>Tipo</span>
+                      <span style={{ fontWeight: 500 }}>{selectedTx.type}</span>
+                    </div>
+                  </div>
+
+                  {deleteTransaction && (
+                    <button
+                      type="button"
+                      className="nx-btn-soft"
+                      style={{ width: "100%", color: "var(--danger-red)", marginBottom: "8px" }}
+                      onClick={() => {
+                        triggerHaptic();
+                        deleteTransaction(selectedTx.id);
+                        setSelectedTx(null);
+                      }}
+                    >
+                      <Trash2 size={15} /> Eliminar movimiento
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="nx-btn-dark"
+                    style={{ width: "100%" }}
+                    onClick={() => setSelectedTx(null)}
+                  >
+                    Cerrar
+                  </button>
+                </>
+              );
+            })()}
+          </section>
+        </div>,
+        document.body,
+      )}
       <HomeThemeModal
         open={isThemeModalOpen}
         onClose={() => setIsThemeModalOpen(false)}

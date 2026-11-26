@@ -5,6 +5,7 @@ import {
   Banknote,
   Briefcase,
   Bus,
+  ChevronRight,
   CreditCard,
   Download,
   Eye,
@@ -94,43 +95,43 @@ export const getCategoryVisuals = (category = '', type = 'Gasto', size = 17) => 
   const norm = category.toLowerCase().trim();
 
   if (norm.includes('viaje') || norm.includes('vuelo') || norm.includes('hotel') || norm.includes('travel')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[2], size); // #4B89DC Plane
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[2], size);
   }
   if (norm.includes('donaci') || norm.includes('regalo') || norm.includes('donation')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[3], size); // #DE5448 Heart
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[3], size);
   }
   if (norm.includes('recarga') || norm.includes('top up') || norm.includes('ahorro')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[0], size); // #4B89DC MoneyBag
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[0], size);
   }
   if (norm.includes('ocio') || norm.includes('entretenimiento') || norm.includes('juego') || norm.includes('cine') || norm.includes('entertainment')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[1], size); // #DE5448 Gamepad
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[1], size);
   }
   if (norm.includes('comida') || norm.includes('supermercado') || norm.includes('grocer') || norm.includes('aliment')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[4], size); // #8CC152 ShoppingBasket
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[4], size);
   }
   if (norm.includes('salud') || norm.includes('farmacia') || norm.includes('médico') || norm.includes('medico') || norm.includes('health')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[5], size); // #73CEDB Heart
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[5], size);
   }
   if (norm.includes('restaurante') || norm.includes('bar') || norm.includes('café') || norm.includes('cafe') || norm.includes('cena')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[6], size); // #D47A47 Utensils
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[6], size);
   }
   if (norm.includes('compra') || norm.includes('ropa') || norm.includes('tienda') || norm.includes('shopping')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[7], size); // #C94FA0 ShoppingBag
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[7], size);
   }
   if (norm.includes('servicio') || norm.includes('suscrip') || norm.includes('trabajo') || norm.includes('nómina') || norm.includes('nomina') || norm.includes('sueldo')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[8], size); // #6E74D8 Briefcase
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[8], size);
   }
   if (norm.includes('venta') || norm.includes('ingreso') || norm.includes('inversion') || norm.includes('net sales')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[9], size); // #65BC89 Banknote
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[9], size);
   }
   if (norm.includes('transporte') || norm.includes('bus') || norm.includes('metro') || norm.includes('coche') || norm.includes('gasolina') || norm.includes('peaje')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[10], size); // #7B5FF7 Bus
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[10], size);
   }
   if (norm.includes('hogar') || norm.includes('casa') || norm.includes('alquiler') || norm.includes('hipoteca') || norm.includes('luz') || norm.includes('agua') || norm.includes('utilit')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[11], size); // #967B6E Home
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[11], size);
   }
   if (norm.includes('transfer') || norm.includes('bizum')) {
-    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[12], size); // #7B5FF7 ArrowLeftRight
+    return buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[12], size);
   }
 
   return type === 'Ingreso'
@@ -152,12 +153,12 @@ const formatSmartDate = (isoDate = '', time = '') => {
   } else if (isoDate === yesterdayStr) {
     label = 'Ayer';
   } else {
-    const ts = Date.parse(`${isoDate}T00:00:00`);
-    if (Number.isFinite(ts)) {
-      label = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(ts);
+    const parts = isoDate.split('-');
+    if (parts.length === 3) {
+      label = `${parts[2]}/${parts[1]}`;
     }
   }
-  return time ? `${label}, ${time}` : label;
+  return time ? `${time} · ${label}` : label;
 };
 
 const TransactionItem = ({ transaction }) => {
@@ -186,26 +187,23 @@ const TransactionItem = ({ transaction }) => {
     setPhoneNode(document.querySelector('.phone') || document.body);
   }, []);
 
-  const numericAmount = Number(transaction.amount) || 0;
-  const isWholeNumber = Number.isInteger(numericAmount);
+  const numericAmount = Math.abs(Number(transaction.amount) || 0);
   const formatted = isAmountsHidden
     ? '•••• €'
     : new Intl.NumberFormat('es-ES', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: isWholeNumber ? 0 : 2,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(numericAmount);
 
-  const titleText = transaction.description || transaction.category;
+  const titleText = (transaction.description || '').trim() || transaction.category || 'Movimiento';
   const dateLabel = formatSmartDate(transaction.date, transaction.time);
   const subtitleParts = [dateLabel];
-  if (transaction.description && transaction.category) {
-    subtitleParts.push(transaction.category);
-  }
   if (transaction.installment) {
     subtitleParts.push(`Cuota ${transaction.installment.current}/${transaction.installment.total}`);
   }
+  const categoryLabel = transaction.category || (isExpense ? 'Gasto' : 'Ingreso');
 
   const handleSaveNote = async () => {
     try {
@@ -248,7 +246,9 @@ const TransactionItem = ({ transaction }) => {
     <>
       <button
         type="button"
+        className="nx-wtx-row"
         onClick={() => {
+          triggerHaptic();
           setDetailError('');
           setIsSplitting(false);
           setIsEditingNote(false);
@@ -256,79 +256,33 @@ const TransactionItem = ({ transaction }) => {
           setIsDetailOpen(true);
         }}
         style={{
-          display: 'flex',
-          alignItems: 'center',
           width: '100%',
-          padding: '11px 0',
           background: 'transparent',
           border: 0,
           textAlign: 'left',
-          cursor: 'pointer',
-          gap: '14px',
+          fontFamily: 'inherit',
         }}
       >
         <span
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: 'var(--rounded-full)',
-            backgroundColor: visuals.bg,
-            color: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
+          className="nx-wtx-avatar"
+          style={{ backgroundColor: visuals.bg, color: '#FFFFFF' }}
         >
           {visuals.icon}
         </span>
 
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '15px',
-              fontWeight: 500,
-              letterSpacing: '-0.01em',
-              color: 'var(--text-main)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {titleText}
-          </span>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '12.5px',
-              fontWeight: 400,
-              color: 'var(--text-mute)',
-              marginTop: '2px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {subtitleParts.filter(Boolean).join(' · ')}
-          </span>
+        <span className="nx-wtx-main">
+          <span className="nx-wtx-title">{titleText}</span>
+          <span className="nx-wtx-sub">{subtitleParts.filter(Boolean).join(' · ')}</span>
         </span>
 
-        <span
-          className="privacy-sensitive"
-          style={{
-            alignSelf: 'flex-start',
-            marginTop: '2px',
-            fontSize: '15px',
-            fontWeight: 500,
-            letterSpacing: '-0.01em',
-            fontVariantNumeric: 'tabular-nums',
-            color: isExpense ? 'var(--text-main)' : 'var(--accent-teal)',
-            flexShrink: 0,
-          }}
-        >
-          {isExpense ? '-' : '+'}{formatted}
+        <span className="nx-wtx-right">
+          <span className={`nx-wtx-amount privacy-sensitive ${isExpense ? 'expense' : 'income'}`}>
+            {isAmountsHidden ? '•••• €' : `${isExpense ? '- ' : '+ '}${formatted}`}
+          </span>
+          <span className="nx-wtx-cat">{categoryLabel}</span>
         </span>
+
+        <ChevronRight size={15} className="nx-wtx-chevron" />
       </button>
 
       {isDetailOpen && phoneNode && createPortal(
