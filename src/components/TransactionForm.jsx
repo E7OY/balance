@@ -17,7 +17,6 @@ import { expenseCategories, incomeCategories } from '../utils/categories';
 import { getCategoryVisuals } from './TransactionItem';
 import { triggerHaptic } from '../utils/haptics';
 
-// Temas de tarjeta (sin degradados rosas por defecto)
 const FORM_CARD_THEME_BGS = {
   'revolut-standard': 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 52%, #1E3A8A 100%)',
   'metal-black': 'linear-gradient(145deg, #2C2D32 0%, #16171A 52%, #09090B 100%)',
@@ -169,10 +168,13 @@ const WalletAccountSelectorRow = ({
           className="nx-mini-wallet-card front"
           style={{ background: selectedCard?.bg || FORM_CARD_THEME_BGS.cobalt }}
         >
-          <span className="nx-mini-wallet-card-title">
+          {isFrozen && <div className="nx-mini-frost-overlay" />}
+          <span className="nx-mini-wallet-card-title" style={{ position: 'relative', zIndex: 2 }}>
             {selectedCard?.name || 'Card'}
           </span>
-          <MiniCardNetworkBadge net={selectedCard?.net} small />
+          <span style={{ position: 'relative', zIndex: 2 }}>
+            <MiniCardNetworkBadge net={selectedCard?.net} small />
+          </span>
         </div>
 
         <img
@@ -183,6 +185,11 @@ const WalletAccountSelectorRow = ({
         />
       </div>
 
+      <ChevronRight
+        size={17}
+        strokeWidth={2}
+        className={`nx-wallet-sel-chevron ${isExpanded ? 'open' : ''}`}
+      />
     </div>
   </button>
 );
@@ -235,7 +242,6 @@ const NX_FORM_CSS = `
     }
   }
 
-  /* BACKDROP LIMPIO */
   .nx-sheet-backdrop {
     position: fixed;
     inset: 0;
@@ -250,7 +256,6 @@ const NX_FORM_CSS = `
     pointer-events: none;
   }
 
-  /* SHEET PRINCIPAL — SIN DEGRADADOS ROSAS NI BRILLOS DE COLOR */
   .nx-apple-sheet {
     position: fixed;
     left: 0;
@@ -272,12 +277,6 @@ const NX_FORM_CSS = `
     transform-origin: bottom center;
     animation: nx-apple-sheet-in 0.42s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
-  .dark .nx-apple-sheet {
-    background: #13151C;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 -20px 52px rgba(0, 0, 0, 0.6);
-    color: #FFFFFF;
-  }
 
   .nx-apple-sheet.step-keypad {
     height: min(88dvh, 750px);
@@ -298,7 +297,6 @@ const NX_FORM_CSS = `
     pointer-events: none;
   }
 
-  /* BARRITA DE AGARRE */
   .nx-sheet-grabber-zone {
     width: 100%;
     padding: 10px 0 4px;
@@ -317,9 +315,6 @@ const NX_FORM_CSS = `
     background: rgba(17, 24, 39, 0.16);
     transition: width 0.18s ease, background-color 0.18s ease;
   }
-  .dark .nx-sheet-grabber-pill {
-    background: rgba(255, 255, 255, 0.24);
-  }
 
   .nx-step-body {
     flex: 1;
@@ -329,7 +324,6 @@ const NX_FORM_CSS = `
     animation: nx-step-fade 0.24s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  /* CABECERA Y BOTÓN CERRAR */
   .nx-kp-header {
     display: flex;
     align-items: center;
@@ -353,13 +347,7 @@ const NX_FORM_CSS = `
   .nx-kp-close:active {
     transform: scale(0.92);
   }
-  .dark .nx-kp-close {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: #1B1E27;
-    color: #FFFFFF;
-  }
 
-  /* TABS GASTO / INGRESO */
   .nx-kp-seg {
     display: inline-flex;
     gap: 4px;
@@ -367,10 +355,6 @@ const NX_FORM_CSS = `
     border-radius: 999px;
     background: #ECEEF2;
     border: 1px solid #EAECEF;
-  }
-  .dark .nx-kp-seg {
-    background: #1B1E27;
-    border-color: rgba(255, 255, 255, 0.09);
   }
   .nx-kp-seg button {
     border: 0;
@@ -389,15 +373,7 @@ const NX_FORM_CSS = `
     color: #111827;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
   }
-  .dark .nx-kp-seg button {
-    color: rgba(255, 255, 255, 0.6);
-  }
-  .dark .nx-kp-seg button.active {
-    background: #FFFFFF;
-    color: #111827;
-  }
 
-  /* DISPLAY DE IMPORTE */
   .nx-kp-display {
     flex: 1;
     display: flex;
@@ -408,12 +384,6 @@ const NX_FORM_CSS = `
     min-height: 130px;
   }
 
-  /* =========================================================
-     SELECTOR DE CUENTA CON MINI CARTERA DE PIEL (COMO EN LA IMAGEN)
-     ========================================================= */
-/* =========================================================
-     SELECTOR DE CUENTA CON MINI CARTERA DE PIEL PULIDA
-     ========================================================= */
   .nx-wallet-sel-bar {
     width: 100%;
     max-width: 380px;
@@ -433,6 +403,11 @@ const NX_FORM_CSS = `
     box-sizing: border-box;
     transition: background-color 0.14s ease, transform 0.12s ease, border-color 0.14s ease;
   }
+  .nx-wallet-sel-bar:active {
+    transform: scale(0.988);
+    background: #F9FAFB;
+  }
+
   .nx-wallet-sel-left {
     display: flex;
     flex-direction: column;
@@ -467,7 +442,14 @@ const NX_FORM_CSS = `
     text-overflow: ellipsis;
   }
 
-  /* MINI CARTERA PROPORCIÓN ANCHA Y BAJA (CALCADA A LA REFERENCIA) */
+  .nx-wallet-sel-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 100%;
+    flex-shrink: 0;
+  }
+
   .nx-mini-wallet {
     position: relative;
     width: 146px;
@@ -477,8 +459,6 @@ const NX_FORM_CSS = `
     flex-shrink: 0;
     pointer-events: none;
   }
-
-  /* Reborde trasero de cuero que asoma a los lados de las tarjetas */
   .nx-mini-wallet-back {
     position: absolute;
     left: 2px;
@@ -490,7 +470,6 @@ const NX_FORM_CSS = `
     box-shadow: inset 0 1px 0 rgba(255, 214, 175, 0.22);
     z-index: 0;
   }
-
   .nx-mini-wallet-card {
     position: absolute;
     left: 9px;
@@ -498,6 +477,7 @@ const NX_FORM_CSS = `
     height: 44px;
     border-radius: 7px 7px 2px 2px;
     box-sizing: border-box;
+    overflow: hidden;
   }
   .nx-mini-wallet-card.back {
     top: 3px;
@@ -508,7 +488,6 @@ const NX_FORM_CSS = `
       0 -1px 4px rgba(0, 0, 0, 0.18),
       inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
-  /* Detalle de muescas sutiles en la tarjeta trasera como en la foto */
   .nx-mini-wallet-card.back::after {
     content: "";
     position: absolute;
@@ -524,7 +503,6 @@ const NX_FORM_CSS = `
       transparent 6px
     );
   }
-
   .nx-mini-wallet-card.front {
     top: 7px;
     z-index: 2;
@@ -538,6 +516,15 @@ const NX_FORM_CSS = `
       inset 0 1px 0 rgba(255, 255, 255, 0.36);
     animation: nx-mini-card-pop 0.26s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  .nx-mini-frost-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.42) 0%, rgba(190, 225, 255, 0.24) 100%);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    pointer-events: none;
+    z-index: 1;
+  }
   .nx-mini-wallet-card-title {
     font-size: 8.5px;
     font-weight: 700;
@@ -549,11 +536,282 @@ const NX_FORM_CSS = `
     line-height: 1.15;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   }
+  .nx-mini-wallet-pouch {
+    position: absolute;
+    width: 119%;
+    max-width: none;
+    height: auto;
+    left: -10.5%;
+    bottom: -52px;
+    z-index: 3;
+    pointer-events: none;
+    filter: drop-shadow(0 -2px 4px rgba(24, 12, 5, 0.22));
+  }
+
+  .nx-wallet-sel-chevron {
+    color: #9CA3AF;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .nx-wallet-sel-chevron.open {
+    transform: rotate(90deg);
+  }
+
+  .nx-kp-cta-wrap {
+    padding: 0 18px 12px;
+    max-width: 440px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .nx-kp-cta {
+    width: 100%;
+    height: 50px;
+    border-radius: 999px;
+    border: 0;
+    background: #111827;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.12s ease;
+  }
+  .nx-kp-cta:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+  }
+  .nx-kp-cta:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
+  .nx-kp-dock {
+    background: #F3F4F6;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #EAECEF;
+  }
+  .nx-kp-keys {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    padding: 8px 10px;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .nx-kp-btn {
+    height: 50px;
+    border-radius: 14px;
+    border: 1px solid #EAECEF;
+    background: #FFFFFF;
+    color: #111827;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.08s ease, background-color 0.1s ease;
+  }
+  .nx-kp-btn.ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+  .nx-kp-btn:active {
+    transform: scale(0.95);
+    background: #EAECEF;
+  }
+  .nx-kp-num {
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+  .nx-kp-sub {
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.25px;
+    color: #9CA3AF;
+    margin-top: 1px;
+    height: 10px;
+  }
+
+  .nx-detail-scroll {
+    overflow-y: auto;
+    padding: 4px 18px calc(28px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+  }
+  .nx-detail-inner {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .nx-account-picker-wrap {
+    margin-bottom: 12px;
+  }
+  .nx-account-picker-wrap .nx-wallet-sel-bar {
+    max-width: none;
+  }
+
+  .nx-account-drawer-card {
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
+    border-radius: 18px;
+    padding: 8px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .nx-account-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.14s ease;
+  }
+  .nx-account-option:hover,
+  .nx-account-option:active {
+    background: #F9FAFB;
+  }
+  .nx-account-option.selected {
+    background: #F3F4F6;
+    border-color: #E5E7EB;
+  }
+  .nx-account-swatch {
+    position: relative;
+    overflow: hidden;
+    width: 42px;
+    height: 28px;
+    border-radius: 6px;
+    padding: 4px 5px;
+    box-sizing: border-box;
+    color: #FFFFFF;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .nx-group-card {
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
+    border-radius: 18px;
+    padding: 0 16px;
+    margin-bottom: 12px;
+    box-shadow: none;
+  }
+
+  .nx-group-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 50px;
+    padding: 12px 0;
+    font-size: 14px;
+  }
+  .nx-group-row + .nx-group-row {
+    border-top: 1px solid #F1F3F5;
+  }
+
+  .nx-row-label {
+    color: #9CA3AF;
+    font-weight: 500;
+    font-size: 13.5px;
+    flex-shrink: 0;
+  }
+  .nx-row-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: #111827;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: right;
+  }
+
+  .nx-inline-drawer {
+    padding: 12px 0 14px;
+    border-top: 1px solid #F1F3F5;
+  }
+
+  .nx-note-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: #111827;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: right;
+    outline: none;
+  }
+  .nx-note-input::placeholder {
+    color: #9CA3AF;
+    font-weight: 400;
+  }
+
+  .nx-date-input {
+    border: 0;
+    background: transparent;
+    color: #111827;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: right;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .nx-switch {
+    width: 46px;
+    height: 26px;
+    border-radius: 999px;
+    border: 0;
+    padding: 3px;
+    background: #E5E7EB;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .nx-switch.on {
+    background: #111827;
+  }
+  .nx-switch-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: #FFFFFF;
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateX(0);
+  }
+  .nx-switch.on .nx-switch-thumb {
+    transform: translateX(20px);
+  }
 
   /* MODO OSCURO COMPLETO EN TRANSACTION FORM */
   .dark .nx-apple-sheet {
     background: #13151C;
     border-top-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 -20px 52px rgba(0, 0, 0, 0.6);
     color: #FFFFFF;
   }
   .dark .nx-sheet-grabber-pill {
@@ -644,325 +902,6 @@ const NX_FORM_CSS = `
   .dark .nx-switch.on {
     background: var(--primary);
   }
-
-  /* Bolsillo frontal más bajo para despejar por completo texto y red de la tarjeta */
-  .nx-mini-wallet-pouch {
-    position: absolute;
-    width: 119%;
-    max-width: none;
-    height: auto;
-    left: -10.5%;
-    bottom: -52px;
-    z-index: 3;
-    pointer-events: none;
-    filter: drop-shadow(0 -2px 4px rgba(24, 12, 5, 0.22));
-  }
-
-  /* BOTÓN PRINCIPAL (CTA) */
-  .nx-kp-cta-wrap {
-    padding: 0 18px 12px;
-    max-width: 440px;
-    width: 100%;
-    margin: 0 auto;
-    box-sizing: border-box;
-  }
-  .nx-kp-cta {
-    width: 100%;
-    height: 50px;
-    border-radius: 999px;
-    border: 0;
-    background: #111827;
-    color: #FFFFFF;
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s ease, transform 0.12s ease;
-  }
-  .dark .nx-kp-cta {
-    background: #FFFFFF;
-    color: #111827;
-  }
-  .nx-kp-cta:disabled {
-    opacity: 0.32;
-    cursor: not-allowed;
-  }
-  .nx-kp-cta:active:not(:disabled) {
-    transform: scale(0.985);
-  }
-
-  /* TECLADO NUMÉRICO PLANO Y LIMPIO */
-  .nx-kp-dock {
-    background: #F3F4F6;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid #EAECEF;
-  }
-  .dark .nx-kp-dock {
-    background: #16171C;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-  .nx-kp-keys {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 7px;
-    padding: 8px 10px;
-    max-width: 460px;
-    margin: 0 auto;
-  }
-  .nx-kp-btn {
-    height: 50px;
-    border-radius: 14px;
-    border: 1px solid #EAECEF;
-    background: #FFFFFF;
-    color: #111827;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: transform 0.08s ease, background-color 0.1s ease;
-  }
-  .dark .nx-kp-btn {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: #1E2028;
-    color: #FFFFFF;
-  }
-  .nx-kp-btn.ghost {
-    background: transparent;
-    border-color: transparent;
-  }
-  .nx-kp-btn:active {
-    transform: scale(0.95);
-    background: #EAECEF;
-  }
-  .dark .nx-kp-btn:active {
-    background: rgba(255, 255, 255, 0.14);
-  }
-  .nx-kp-num {
-    font-size: 22px;
-    font-weight: 500;
-    line-height: 1.05;
-    font-variant-numeric: tabular-nums;
-  }
-  .nx-kp-sub {
-    font-size: 8.5px;
-    font-weight: 600;
-    letter-spacing: 0.25px;
-    color: #9CA3AF;
-    margin-top: 1px;
-    height: 10px;
-  }
-
-  /* =========================================================
-     PASO 2: DETALLES — CAJAS CON BORDE #EAECEF IGUAL QUE HOME
-     ========================================================= */
-  .nx-detail-scroll {
-    overflow-y: auto;
-    padding: 4px 18px calc(28px + env(safe-area-inset-bottom, 0px));
-    -webkit-overflow-scrolling: touch;
-  }
-  .nx-detail-inner {
-    max-width: 440px;
-    margin: 0 auto;
-  }
-
-  .nx-account-picker-wrap {
-    margin-bottom: 12px;
-  }
-  .nx-account-picker-wrap .nx-wallet-sel-bar {
-    max-width: none;
-  }
-
-  .nx-account-drawer-card {
-    background: #FFFFFF;
-    border: 1px solid #EAECEF;
-    border-radius: 18px;
-    padding: 8px;
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .dark .nx-account-drawer-card {
-    background: #16171C;
-    border-color: rgba(255, 255, 255, 0.09);
-  }
-
-  .nx-account-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 13px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: inherit;
-    font-family: inherit;
-    cursor: pointer;
-    text-align: left;
-    transition: background-color 0.14s ease;
-  }
-  .nx-account-option:hover,
-  .nx-account-option:active {
-    background: #F9FAFB;
-  }
-  .dark .nx-account-option:hover,
-  .dark .nx-account-option:active {
-    background: rgba(255, 255, 255, 0.04);
-  }
-  .nx-account-option.selected {
-    background: #F3F4F6;
-    border-color: #E5E7EB;
-  }
-  .dark .nx-account-option.selected {
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-  .nx-account-swatch {
-    width: 42px;
-    height: 28px;
-    border-radius: 6px;
-    padding: 4px 5px;
-    box-sizing: border-box;
-    color: #FFFFFF;
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-end;
-    flex-shrink: 0;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  }
-
-  .nx-group-card {
-    background: #FFFFFF;
-    border: 1px solid #EAECEF;
-    border-radius: 18px;
-    padding: 0 16px;
-    margin-bottom: 12px;
-    box-shadow: none;
-  }
-  .dark .nx-group-card {
-    background: #16171C;
-    border-color: rgba(255, 255, 255, 0.09);
-  }
-
-  .nx-group-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 50px;
-    padding: 12px 0;
-    font-size: 14px;
-  }
-  .nx-group-row + .nx-group-row {
-    border-top: 1px solid #F1F3F5;
-  }
-  .dark .nx-group-row + .nx-group-row {
-    border-top-color: rgba(255, 255, 255, 0.07);
-  }
-
-  .nx-row-label {
-    color: #9CA3AF;
-    font-weight: 500;
-    font-size: 13.5px;
-    flex-shrink: 0;
-  }
-  .nx-row-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    color: #111827;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    text-align: right;
-  }
-  .dark .nx-row-action {
-    color: #FFFFFF;
-  }
-
-  .nx-inline-drawer {
-    padding: 12px 0 14px;
-    border-top: 1px solid #F1F3F5;
-  }
-  .dark .nx-inline-drawer {
-    border-top-color: rgba(255, 255, 255, 0.07);
-  }
-
-  .nx-note-input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    background: transparent;
-    color: #111827;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: right;
-    outline: none;
-  }
-  .dark .nx-note-input {
-    color: #FFFFFF;
-  }
-  .nx-note-input::placeholder {
-    color: #9CA3AF;
-    font-weight: 400;
-  }
-
-  .nx-date-input {
-    border: 0;
-    background: transparent;
-    color: #111827;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: right;
-    outline: none;
-    cursor: pointer;
-  }
-  .dark .nx-date-input {
-    color: #FFFFFF;
-  }
-
-  .nx-switch {
-    width: 46px;
-    height: 26px;
-    border-radius: 999px;
-    border: 0;
-    padding: 3px;
-    background: #E5E7EB;
-    display: inline-flex;
-    align-items: center;
-    flex-shrink: 0;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-  .dark .nx-switch {
-    background: #2C2C32;
-  }
-  .nx-switch.on {
-    background: #111827;
-  }
-  .dark .nx-switch.on {
-    background: var(--primary);
-  }
-  .nx-switch-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 999px;
-    background: #FFFFFF;
-    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-    transform: translateX(0);
-  }
-  .nx-switch.on .nx-switch-thumb {
-    transform: translateX(20px);
-  }
 `;
 
 const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
@@ -988,7 +927,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
   const [selectedProfileId, setSelectedProfileId] = useState(activeProfileId);
   const [openDrawer, setOpenDrawer] = useState(null);
 
-  // Cierre animado y gesto drag-to-dismiss
   const [isClosing, setIsClosing] = useState(false);
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -1038,7 +976,9 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     }
   }, []);
 
-  // Cuentas enriquecidas con su color real, red y saldo
+  const isSelectedFrozen = Boolean(frozenAccounts[selectedProfileId]);
+  const isAddingBlocked = isSelectedFrozen && !transaction;
+
   const accountsWithCards = useMemo(() => {
     let savedThemes = {};
     let savedNets = {};
@@ -1109,6 +1049,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     const idx = accountsWithCards.findIndex((p) => p.id === selectedProfileId);
     const next = accountsWithCards[(idx + 1) % accountsWithCards.length];
     setSelectedProfileId(next.id);
+    setFormError('');
   };
 
   const switchTransactionType = (nextType) => {
@@ -1144,6 +1085,12 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
 
   const goToDetails = () => {
     if (!isValidAmount) return;
+    if (isAddingBlocked) {
+      triggerHaptic('error');
+      setFormError('Esta tarjeta está congelada. Descongélala para añadir movimientos.');
+      return;
+    }
+    setFormError('');
     triggerHaptic();
     if (!categoriesForType.includes(category)) {
       setCategory(categoriesForType[0] || '');
@@ -1172,6 +1119,11 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     e.preventDefault();
     setFormError('');
     if (!isValidAmount || !category) return;
+    if (isAddingBlocked) {
+      triggerHaptic('error');
+      setFormError('Esta tarjeta está congelada. Descongélala para añadir movimientos.');
+      return;
+    }
 
     const txData = {
       amount: numAmount,
@@ -1299,19 +1251,25 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               <WalletAccountSelectorRow
                 selectedCard={selectedCard}
                 backCard={backCard}
-                isFrozen={Boolean(frozenAccounts[selectedProfileId])}
+                isFrozen={isSelectedFrozen}
                 onClick={cycleTargetAccount}
               />
+
+              {isAddingBlocked && (
+                <p style={{ color: '#D93829', fontSize: '12px', fontWeight: 500, margin: '8px 0 0', textAlign: 'center' }}>
+                  Esta tarjeta está congelada y no admite nuevos movimientos.
+                </p>
+              )}
             </div>
 
             <div className="nx-kp-cta-wrap">
               <button
                 type="button"
                 className="nx-kp-cta"
-                disabled={!isValidAmount}
+                disabled={!isValidAmount || isAddingBlocked}
                 onClick={goToDetails}
               >
-                Continuar
+                {isAddingBlocked ? 'Tarjeta congelada' : 'Continuar'}
               </button>
             </div>
 
@@ -1333,7 +1291,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
           </div>
         )}
 
-        {/* PASO 2: DETALLES LIMPIOS + SELECTOR CON CARTERA DESPLEGABLE */}
+        {/* PASO 2: DETALLES */}
         {step === 2 && (
           <div key="step-2" className="nx-step-body nx-detail-scroll">
             <div className="nx-detail-inner">
@@ -1408,12 +1366,11 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               </div>
 
               <form onSubmit={handleSubmit}>
-                {/* SELECTOR DE CUENTA CON LA MINI CARTERA Y TARJETA SELECCIONADA */}
                 <div className="nx-account-picker-wrap">
                   <WalletAccountSelectorRow
                     selectedCard={selectedCard}
                     backCard={backCard}
-                    isFrozen={Boolean(frozenAccounts[selectedProfileId])}
+                    isFrozen={isSelectedFrozen}
                     isExpanded={openDrawer === 'account'}
                     onClick={() => {
                       triggerHaptic();
@@ -1435,11 +1392,15 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                               triggerHaptic();
                               setSelectedProfileId(acc.id);
                               setOpenDrawer(null);
+                              setFormError('');
                             }}
                           >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                               <div className="nx-account-swatch" style={{ background: acc.bg }}>
-                                <MiniCardNetworkBadge net={acc.net} small />
+                                {isFrozen && <div className="nx-mini-frost-overlay" />}
+                                <span style={{ position: 'relative', zIndex: 2 }}>
+                                  <MiniCardNetworkBadge net={acc.net} small />
+                                </span>
                               </div>
 
                               <div style={{ minWidth: 0 }}>
@@ -1447,17 +1408,8 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                                   <span style={{ fontSize: '14px', fontWeight: 600 }}>{acc.name}</span>
                                   {isFrozen && <Snowflake size={12} style={{ color: '#38BDF8' }} />}
                                 </div>
-                                <span
-                                  style={{
-                                    display: 'block',
-                                    fontSize: '12.5px',
-                                    fontWeight: 500,
-                                    color: '#6B7280',
-                                    marginTop: '2px',
-                                    fontVariantNumeric: 'tabular-nums',
-                                  }}
-                                >
-                                  Disponible · {formatEuro(acc.balance)}
+                                <span style={{ fontSize: '12px', color: '#9CA3AF', fontVariantNumeric: 'tabular-nums' }}>
+                                  **{acc.digits} · {formatEuro(acc.balance)}
                                 </span>
                               </div>
                             </div>
@@ -1470,7 +1422,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   )}
                 </div>
 
-                {/* CAJA 1: CATEGORÍA, MÉTODO Y FECHA */}
                 <div className="nx-group-card">
                   <div className="nx-group-row">
                     <span className="nx-row-label">Categoría</span>
@@ -1654,7 +1605,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </div>
                 </div>
 
-                {/* CAJA 2: DESCRIPCIÓN Y JUSTIFICANTE */}
                 <div className="nx-group-card">
                   <div className="nx-group-row">
                     <span className="nx-row-label">Descripción</span>
@@ -1721,7 +1671,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </div>
                 </div>
 
-                {/* CAJA 3: PAGO A PLAZOS */}
                 {!isIncome && !transaction && (
                   <div className="nx-group-card">
                     <div className="nx-group-row">
@@ -1782,8 +1731,14 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </p>
                 )}
 
-                <button type="submit" className="nx-kp-cta" style={{ marginTop: '6px' }}>
-                  {transaction ? 'Guardar cambios' : isIncome ? 'Guardar ingreso' : 'Guardar gasto'}
+                <button type="submit" className="nx-kp-cta" disabled={isAddingBlocked} style={{ marginTop: '6px' }}>
+                  {isAddingBlocked
+                    ? 'Tarjeta congelada'
+                    : transaction
+                      ? 'Guardar cambios'
+                      : isIncome
+                        ? 'Guardar ingreso'
+                        : 'Guardar gasto'}
                 </button>
               </form>
             </div>

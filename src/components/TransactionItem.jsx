@@ -139,6 +139,16 @@ export const getCategoryVisuals = (category = '', type = 'Gasto', size = 17) => 
     : buildVisualsFromPreset(REVOLUT_CATEGORY_PRESETS[7], size);
 };
 
+const formatEuroAmount = (val) => {
+  const num = Math.abs(Number(val) || 0);
+  const formatted = new Intl.NumberFormat('es-ES', {
+    useGrouping: 'always',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+  return `€${formatted}`;
+};
+
 const formatSmartDate = (isoDate = '', time = '') => {
   if (!isoDate) return '';
   const today = new Date();
@@ -187,14 +197,8 @@ const TransactionItem = ({ transaction }) => {
     setPhoneNode(document.querySelector('.phone') || document.body);
   }, []);
 
-const numericAmount = Math.abs(Number(transaction.amount) || 0);
-  const formattedNumber = new Intl.NumberFormat('es-ES', {
-    useGrouping: 'always',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numericAmount);
-
-  const formatted = isAmountsHidden ? '€••••' : `€${formattedNumber}`;
+  const numericAmount = Math.abs(Number(transaction.amount) || 0);
+  const formatted = isAmountsHidden ? '€••••' : formatEuroAmount(numericAmount);
 
   const titleText = (transaction.description || '').trim() || transaction.category || 'Movimiento';
   const dateLabel = formatSmartDate(transaction.date, transaction.time);
@@ -208,7 +212,7 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
     try {
       await updateTransaction(transaction.id, { description: noteText.trim() });
       setIsEditingNote(false);
-      triggerHaptic();
+      triggerHaptic('light');
     } catch (err) {
       setDetailError(err.message);
     }
@@ -220,7 +224,7 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
     setDetailError('');
     try {
       await updateTransaction(transaction.id, { invoiceFile: file });
-      triggerHaptic();
+      triggerHaptic('success');
     } catch (err) {
       setDetailError(err.message);
     }
@@ -228,16 +232,17 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
 
   const detailCardStyle = {
     backgroundColor: 'var(--bg-card)',
-    borderRadius: 'var(--rounded-lg)',
-    padding: 'var(--sp-xs) var(--sp-xl)',
-    marginBottom: 'var(--sp-md)',
+    border: '1px solid #EAECEF',
+    borderRadius: '18px',
+    padding: '4px 16px',
+    marginBottom: '12px',
   };
 
   const detailRowStyle = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 'var(--sp-md) 0',
+    padding: '13px 0',
     fontSize: '14px',
   };
 
@@ -247,7 +252,7 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
         type="button"
         className="nx-wtx-row"
         onClick={() => {
-          triggerHaptic();
+          triggerHaptic('light');
           setDetailError('');
           setIsSplitting(false);
           setIsEditingNote(false);
@@ -276,7 +281,7 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
 
         <span className="nx-wtx-right">
           <span className={`nx-wtx-amount privacy-sensitive ${isExpense ? 'expense' : 'income'}`}>
-            {isAmountsHidden ? '•••• €' : `${isExpense ? '- ' : '+ '}${formatted}`}
+            {isAmountsHidden ? '€••••' : `${isExpense ? '- ' : '+ '}${formatted}`}
           </span>
           <span className="nx-wtx-cat">{categoryLabel}</span>
         </span>
@@ -291,7 +296,7 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
             style={{ minHeight: '86dvh' }}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 'var(--sp-lg)' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}>
               <button
                 type="button"
                 className="sheet-close"
@@ -302,22 +307,23 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--sp-xl)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div>
                 <span
                   className="nx-display privacy-sensitive"
                   style={{
                     display: 'block',
                     fontSize: '36px',
-                    color: isExpense ? 'var(--text-main)' : 'var(--accent-teal)',
+                    color: isExpense ? '#D93829' : '#10B981',
+                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {isExpense ? '−' : '+'}{formatted}
+                  {isAmountsHidden ? '€••••' : `${isExpense ? '- ' : '+ '}${formatted}`}
                 </span>
-                <span style={{ display: 'block', fontSize: '15px', fontWeight: 500, color: 'var(--primary)', marginTop: 'var(--sp-xs)' }}>
+                <span style={{ display: 'block', fontSize: '15px', fontWeight: 600, color: 'var(--primary)', marginTop: '4px' }}>
                   {titleText}
                 </span>
-                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: 'var(--sp-xxs)' }}>
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginTop: '2px' }}>
                   {transaction.date}
                 </span>
               </div>
@@ -325,7 +331,7 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
               <div style={{
                 width: '48px',
                 height: '48px',
-                borderRadius: 'var(--rounded-full)',
+                borderRadius: '999px',
                 background: visuals.bg,
                 color: '#FFFFFF',
                 display: 'flex',
@@ -337,7 +343,7 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--sp-sm)', marginBottom: 'var(--sp-xl)' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
               {isExpense && !transaction.installment && splitTransaction && (
                 <button
                   type="button"
@@ -363,10 +369,11 @@ const numericAmount = Math.abs(Number(transaction.amount) || 0);
             </div>
 
             {isSplitting && (
-              <div style={{ ...detailCardStyle, padding: 'var(--sp-lg)' }}>
-                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: 'var(--sp-md)' }}>
-Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numericAmount / splitCount)}/mes)                </span>
-                <div style={{ display: 'flex', gap: 'var(--sp-xs)', marginBottom: 'var(--sp-md)' }}>
+              <div style={{ ...detailCardStyle, padding: '16px' }}>
+                <span className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '12px' }}>
+                  Dividir en cuotas ({formatEuroAmount(numericAmount / splitCount)}/mes)
+                </span>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
                   {[2, 3, 4, 6, 12].map((n) => (
                     <button
                       key={n}
@@ -375,7 +382,7 @@ Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', m
                       style={{
                         flex: 1,
                         height: '36px',
-                        borderRadius: 'var(--rounded-full)',
+                        borderRadius: '999px',
                         border: 0,
                         fontWeight: 500,
                         fontSize: '13px',
@@ -395,7 +402,7 @@ Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', m
                   onClick={() => {
                     try {
                       splitTransaction(transaction.id, splitCount);
-                      triggerHaptic();
+                      triggerHaptic('success');
                       setIsDetailOpen(false);
                     } catch (err) {
                       setDetailError(err.message);
@@ -408,12 +415,12 @@ Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', m
             )}
 
             <div style={detailCardStyle}>
-              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--border-hairline)' }}>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid #F1F3F5' }}>
                 <span style={{ color: 'var(--text-mute)' }}>Estado</span>
                 <span style={{ fontWeight: 500 }}>Completado</span>
               </div>
 
-              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--border-hairline)' }}>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid #F1F3F5' }}>
                 <span style={{ color: 'var(--text-mute)' }}>Método</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 500 }}>
                   <CreditCard size={15} /> {transaction.paymentMethod || 'Tarjeta'}
@@ -456,7 +463,7 @@ Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', m
             </div>
 
             <div style={detailCardStyle}>
-              <div style={{ ...detailRowStyle, borderBottom: '1px solid var(--border-hairline)' }}>
+              <div style={{ ...detailRowStyle, borderBottom: '1px solid #F1F3F5' }}>
                 <span style={{ color: 'var(--text-mute)' }}>Categoría</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 500 }}>
                   {getCategoryVisuals(transaction.category, transaction.type, 15).icon}
@@ -505,7 +512,7 @@ Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', m
             </div>
 
             {detailError && (
-              <p style={{ color: 'var(--danger-red)', fontSize: '12px', fontWeight: 500, marginBottom: 'var(--sp-md)' }}>
+              <p style={{ color: '#D93829', fontSize: '12px', fontWeight: 500, marginBottom: '12px' }}>
                 {detailError}
               </p>
             )}
@@ -514,7 +521,7 @@ Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', m
               <button
                 type="button"
                 onClick={() => {
-                  triggerHaptic();
+                  triggerHaptic('error');
                   setIsDetailOpen(false);
                   deleteTransaction(transaction.id);
                 }}
@@ -523,7 +530,7 @@ Dividir en cuotas (€{new Intl.NumberFormat('es-ES', { useGrouping: 'always', m
                   width: '100%',
                   background: 'transparent',
                   border: 0,
-                  color: 'var(--danger-red)',
+                  color: '#D93829',
                   fontWeight: 500,
                   cursor: 'pointer',
                 }}

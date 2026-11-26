@@ -92,6 +92,196 @@ const formatTxDateMeta = (dateStr) => {
   return dateStr;
 };
 
+const CardThemeStackSlider = ({
+  themes,
+  selectedThemeId,
+  account,
+  balanceDisplay,
+  isFrozen,
+  onSelectTheme,
+}) => {
+  const activeIdx = Math.max(
+    0,
+    themes.findIndex((t) => t.id === selectedThemeId),
+  );
+
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDraggingCard, setIsDraggingCard] = useState(false);
+  const dragStartRef = useRef(null);
+
+  const goToIndex = (nextIdx) => {
+    const wrapped = (nextIdx + themes.length) % themes.length;
+    triggerHaptic("light");
+    onSelectTheme(themes[wrapped].id);
+  };
+
+  const handlePointerDown = (e) => {
+    if (e.target.closest("button")) return;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    setIsDraggingCard(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDraggingCard || !dragStartRef.current) return;
+    const dy = e.clientY - dragStartRef.current.y;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dominant = Math.abs(dy) >= Math.abs(dx) ? dy : dx;
+    setDragOffset(dominant * 0.65);
+  };
+
+  const handlePointerUp = () => {
+    if (!isDraggingCard) return;
+    setIsDraggingCard(false);
+    const threshold = 34;
+
+    if (dragOffset > threshold) {
+      goToIndex(activeIdx + 1);
+    } else if (dragOffset < -threshold) {
+      goToIndex(activeIdx - 1);
+    }
+    setDragOffset(0);
+    dragStartRef.current = null;
+  };
+
+  const currentTheme = themes[activeIdx] || themes[0];
+  const txCount = Array.isArray(account?.txs) ? account.txs.length : 0;
+  const network = account?.net || "mastercard";
+  const cardTitle = account?.name || "Tarjeta";
+
+  return (
+    <div>
+      <div
+        className="nx-card-slider-shell"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{ touchAction: "none" }}
+      >
+        <button
+          type="button"
+          className="nx-stack-nav-btn prev"
+          onClick={() => goToIndex(activeIdx - 1)}
+          aria-label="Color anterior"
+        >
+          <ChevronRight size={16} style={{ transform: "rotate(180deg)" }} />
+        </button>
+
+        <div className="nx-card-stack-stage">
+          {themes.map((t, idx) => {
+            let offset = idx - activeIdx;
+            const half = Math.floor(themes.length / 2);
+            if (offset > half) offset -= themes.length;
+            if (offset < -half) offset += themes.length;
+
+            const absOffset = Math.abs(offset);
+            const isVisible = absOffset <= 2;
+
+            const liveShift = isDraggingCard ? dragOffset * 0.35 : 0;
+            const translateY = offset * 34 + liveShift;
+            const scale = absOffset === 0 ? 1 : absOffset === 1 ? 0.93 : 0.86;
+            const opacity = !isVisible ? 0 : absOffset === 0 ? 1 : absOffset === 1 ? 0.82 : 0.45;
+            const zIndex = 10 - absOffset * 2;
+
+            return (
+              <div
+                key={t.id}
+                role="button"
+                tabIndex={isVisible ? 0 : -1}
+                className="nx-stack-slide-card"
+                onClick={() => {
+                  if (Math.abs(dragOffset) > 6) return;
+                  if (offset === 0) {
+                    goToIndex(activeIdx + 1);
+                  } else {
+                    triggerHaptic("light");
+                    onSelectTheme(t.id);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    goToIndex(idx);
+                  }
+                }}
+                style={{
+                  background: t.bg,
+                  opacity,
+                  zIndex,
+                  pointerEvents: isVisible ? "auto" : "none",
+                  transition: isDraggingCard
+                    ? "none"
+                    : "transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease",
+                  transform: `translate3d(0, ${translateY}px, 0) scale(${scale})`,
+                }}
+                aria-label={`Color ${t.label} · ${cardTitle}`}
+              >
+                {isFrozen && <div className="nx-frost-overlay" />}
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 3 }}>
+                  <span style={{ fontSize: "14px", fontWeight: 600 }}>{cardTitle}</span>
+                  <span className="privacy-sensitive" style={{ fontSize: "18px", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                    {balanceDisplay}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative", zIndex: 3 }}>
+                  <span style={{ fontSize: "12px", opacity: 0.85 }}>
+                    {isFrozen
+                      ? "Tarjeta congelada"
+                      : `${txCount} ${txCount === 1 ? "movimiento" : "movimientos"}`}
+                  </span>
+
+                  {network === "visa" ? (
+                    <span style={{ fontSize: "16px", fontWeight: 800, fontStyle: "italic" }}>VISA</span>
+                  ) : network === "amex" ? (
+                    <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.06em" }}>AMEX</span>
+                  ) : network === "none" ? null : (
+                    <span style={{ display: "inline-flex", alignItems: "center" }}>
+                      <i style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#EB001B", display: "inline-block" }} />
+                      <i style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#F79E1B", marginLeft: "-7px", display: "inline-block" }} />
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          className="nx-stack-nav-btn next"
+          onClick={() => goToIndex(activeIdx + 1)}
+          aria-label="Siguiente color"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      <div className="nx-card-theme-caption">
+        <span style={{ fontSize: "12.5px", color: "#9CA3AF", fontWeight: 500 }}>
+          Color de tarjeta
+        </span>
+        <strong style={{ fontSize: "13.5px", fontWeight: 600 }}>
+          {currentTheme?.label} · {activeIdx + 1}/{themes.length}
+        </strong>
+      </div>
+
+      <div className="nx-card-dots" aria-hidden="true">
+        {themes.map((t, idx) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`nx-card-dot ${idx === activeIdx ? "active" : ""}`}
+            onClick={() => goToIndex(idx)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const WalletTxRow = ({ transaction, isAmountsHidden, onClick }) => {
   const isExpense = transaction.type === "Gasto";
   const isIncome = transaction.type === "Ingreso";
@@ -102,7 +292,7 @@ const WalletTxRow = ({ transaction, isAmountsHidden, onClick }) => {
   const dateLabel = formatTxDateMeta(transaction.date);
   const timeLabel = transaction.time ? `${transaction.time} · ` : "";
 
-const amt = Math.abs(Number(transaction.amount) || 0);
+  const amt = Math.abs(Number(transaction.amount) || 0);
   const formattedAmt = isAmountsHidden
     ? "€••••"
     : formatEuro(amt, { minDecimals: 2, maxDecimals: 2 });
@@ -304,17 +494,16 @@ const HOME_WALLET_CSS = `
     }
     76% {
       opacity: 1;
-      /* Cae un pelín más hondo al entrar en el bolsillo */
       transform: translate3d(0, calc(var(--ty) + 4px), 0) scale(1);
     }
     100% {
       opacity: 1;
-      /* Se asienta suavemente en su posición final */
       transform: translate3d(0, var(--ty), 0) scale(1);
     }
   }
 
   .nx-leather-fan-card {
+    position: relative;
     position: absolute;
     left: 0;
     right: 0;
@@ -324,6 +513,7 @@ const HOME_WALLET_CSS = `
     padding: 10px 14px;
     box-sizing: border-box;
     border: 0;
+    overflow: hidden;
     color: #FFFFFF;
     display: flex;
     align-items: flex-start;
@@ -336,10 +526,26 @@ const HOME_WALLET_CSS = `
       inset 0 1px 0 rgba(255, 255, 255, 0.32);
     transform: translate3d(0, var(--ty), 0);
     transition: transform .98s cubic-bezier(0.16, 1, 0.3, 1);
-animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    will-change: transform, opacity;
+    animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;
+    will-change: transform, opacity;
   }
   .nx-leather-fan-card:hover {
     transform: translate3d(0, calc(var(--ty) - 6px), 0);
+  }
+
+  /* EFECTO HIELO COMPARTIDO EN TARJETAS */
+  .nx-frost-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.44) 0%, transparent 45%),
+      radial-gradient(circle at 80% 30%, rgba(210, 235, 255, 0.38) 0%, transparent 50%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0%, rgba(190, 225, 255, 0.18) 100%);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    pointer-events: none;
+    z-index: 2;
   }
 
   .nx-leather-pouch {
@@ -383,7 +589,7 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
   .nx-leather-balance-val {
     display: block;
     font-size: 28px;
-    font-weight:500;
+    font-weight: 500;
     letter-spacing: -0.025em;
     line-height: 1.05;
     color: #FFFDF9;
@@ -458,7 +664,7 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
     justify-content: center;
     transition: transform 0.12s ease, background-color 0.15s ease;
   }
-  .nx-wh-action-btn:active .nx-wh-action-icon {
+  .nx-wh-action-btn:active:not(:disabled) .nx-wh-action-icon {
     transform: scale(0.93);
     background: #F3F4F6;
   }
@@ -477,7 +683,7 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
   }
 
   /* =========================================================
-     LISTA DE MOVIMIENTOS — CALCADA A LA REFERENCIA
+     LISTA DE MOVIMIENTOS
      ========================================================= */
   .nx-wh-section-heading {
     font-size: 18px;
@@ -604,7 +810,7 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
   }
 
   /* =========================================================
-     WIDGETS — MISMA ESTÉTICA LIMPIA (1px #EAECEF, SIN SOMBRAS)
+     WIDGETS
      ========================================================= */
   .nx-wh-widgets-grid {
     display: grid;
@@ -737,21 +943,6 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
     box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
   }
 
-  /* EFECTO HIELO EN TARJETA CONGELADA */
-  .nx-picker-frost {
-    position: absolute;
-    inset: 0;
-    border-radius: 22px;
-    background:
-      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.42) 0%, transparent 45%),
-      radial-gradient(circle at 80% 30%, rgba(210, 235, 255, 0.36) 0%, transparent 50%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(190, 225, 255, 0.16) 100%);
-    backdrop-filter: blur(6px) saturate(130%);
-    -webkit-backdrop-filter: blur(6px) saturate(130%);
-    pointer-events: none;
-    z-index: 1;
-  }
-
   /* ACCIONES DE CUENTA DENTRO DEL POPUP DE TARJETAS */
   .nx-picker-actions {
     display: grid;
@@ -792,9 +983,9 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
     color: #FFFFFF;
   }
   .nx-picker-action-circle.frozen {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #FFFFFF;
+    background: #38BDF8;
+    border-color: #38BDF8;
+    color: #0F172A;
   }
   .nx-picker-action-lbl {
     font-size: 11.5px;
@@ -837,7 +1028,7 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
     color: #111827;
   }
 
-/* POPOVER MÁS: OSCURO EN MODO CLARO / CLARO EN MODO OSCURO */
+  /* POPOVER MÁS: OSCURO EN MODO CLARO / CLARO EN MODO OSCURO */
   .nx-more-backdrop {
     position: fixed;
     inset: 0;
@@ -882,8 +1073,6 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
   .nx-more-item.danger {
     color: #F87171;
   }
-
-  /* INVERSIÓN EN MODO OSCURO -> MENÚ BLANCO */
   .dark .nx-more-popover {
     background: rgba(255, 255, 255, 0.97);
     border: 1px solid #EAECEF;
@@ -901,6 +1090,7 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
   .dark .nx-more-item.danger {
     color: #DC2626;
   }
+
   /* PORCENTAJE AL LADO DEL BALANCE EN LA CARTERA */
   .nx-leather-balance-row {
     display: flex;
@@ -996,6 +1186,139 @@ animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;    w
   .dark .nx-wh-slide-dot.active {
     background: #FFFFFF;
   }
+
+  /* AJUSTES DE TARJETA — SLIDER APILADO */
+  .nx-card-slider-shell {
+    position: relative;
+    width: 100%;
+    height: 286px;
+    margin: 6px 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+  .nx-card-stack-stage {
+    position: relative;
+    width: 100%;
+    max-width: 310px;
+    height: 182px;
+  }
+  .nx-stack-slide-card {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 182px;
+    border-radius: 20px;
+    padding: 16px 18px;
+    box-sizing: border-box;
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    overflow: hidden;
+    color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+    will-change: transform, opacity;
+  }
+  .dark .nx-stack-slide-card {
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
+  }
+  .nx-stack-chip {
+    width: 34px;
+    height: 25px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .nx-stack-chip::before {
+    content: "";
+    position: absolute;
+    inset: 4px 7px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 2px;
+  }
+  .nx-stack-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid #EAECEF;
+    background: #FFFFFF;
+    color: #111827;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    transition: transform 0.12s ease, background-color 0.14s ease;
+  }
+  .nx-stack-nav-btn:active {
+    transform: translateY(-50%) scale(0.92);
+  }
+  .nx-stack-nav-btn.prev {
+    left: 2px;
+  }
+  .nx-stack-nav-btn.next {
+    right: 2px;
+  }
+  .dark .nx-stack-nav-btn {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+  }
+  .nx-card-theme-caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 4px 12px;
+  }
+  .nx-card-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .nx-card-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    border: 0;
+    padding: 0;
+    background: #D1D5DB;
+    cursor: pointer;
+    transition: width 0.2s ease, background-color 0.2s ease;
+  }
+  .dark .nx-card-dot {
+    background: rgba(255, 255, 255, 0.22);
+  }
+  .nx-card-dot.active {
+    width: 18px;
+    background: #111827;
+  }
+  .dark .nx-card-dot.active {
+    background: #FFFFFF;
+  }
+  .nx-settings-box {
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .dark .nx-settings-box {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+  }
 `;
 
 const HomeOverview = ({
@@ -1033,7 +1356,6 @@ const HomeOverview = ({
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
-  // Estados del modal Nueva cuenta
   const [isNewAccountOpen, setIsNewAccountOpen] = useState(false);
   const [addAccountTab, setAddAccountTab] = useState("create");
   const [newAccountName, setNewAccountName] = useState("");
@@ -1049,7 +1371,6 @@ const HomeOverview = ({
   const [selectedTx, setSelectedTx] = useState(null);
   const [hoveredCat, setHoveredCat] = useState(null);
 
-  // Popup deslizable de tarjetas/cuentas + acciones
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [previewAccountId, setPreviewAccountId] = useState(activeProfileId);
   const [frozenMap, setFrozenMap] = useState(() => {
@@ -1057,7 +1378,6 @@ const HomeOverview = ({
   });
   const [metaVersion, setMetaVersion] = useState(0);
 
-  // Sub-modal de ajustes de la tarjeta en vista previa
   const [isPickerSettingsOpen, setIsPickerSettingsOpen] = useState(false);
   const [editAccName, setEditAccName] = useState("");
   const [copiedAccCode, setCopiedAccCode] = useState(false);
@@ -1080,9 +1400,7 @@ const HomeOverview = ({
   }, []);
 
   useEffect(() => {
-    // 50ms delay + (2150ms * 0.76) ≈ 1680ms -> instante exacto en que tocan fondo
     const settleTimer = window.setTimeout(() => {
-      // Solo intentamos vibrar si el navegador ya registra activación del usuario
       if (!navigator.userActivation || navigator.userActivation.hasBeenActive) {
         triggerHaptic("cardSettle");
       }
@@ -1109,7 +1427,7 @@ const HomeOverview = ({
   };
 
   const toggleFreezeAccount = (profileId) => {
-    triggerHaptic();
+    triggerHaptic("medium");
     const next = { ...frozenMap, [profileId]: !frozenMap[profileId] };
     setFrozenMap(next);
     try { localStorage.setItem("balance-frozen-accounts", JSON.stringify(next)); } catch {}
@@ -1170,10 +1488,7 @@ const HomeOverview = ({
     });
   }, [profiles, activeProfile, activeProfileId, transactions, getTransactionsForProfile, metaVersion]);
 
-  const activeAccount = useMemo(
-    () => accountsWithCards.find((a) => a.id === activeProfileId) || accountsWithCards[0],
-    [accountsWithCards, activeProfileId],
-  );
+  const isActiveFrozen = Boolean(frozenMap[activeProfileId]);
 
   const openPickerAt = (profileId) => {
     triggerHaptic();
@@ -1232,7 +1547,7 @@ const HomeOverview = ({
     ].slice(-3);
   }, [accountsWithCards, activeProfileId]);
 
-const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, "0")}`;
+  const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, "0")}`;
   const monthName = new Intl.DateTimeFormat("es-ES", { month: "long" }).format(
     new Date(filters.year, filters.month, 1),
   );
@@ -1272,7 +1587,6 @@ const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, "0"
   const expenseDiff = totals.expenses - previousMonthTotals.expenses;
   const incomeDiff = totals.income - previousMonthTotals.income;
 
-  // Comparativa de disponible este mes vs mes pasado
   const availableThisMonth = totals.income - totals.expenses;
   const availableLastMonth = previousMonthTotals.income - previousMonthTotals.expenses;
   const availablePct = useMemo(() => {
@@ -1325,7 +1639,8 @@ const monthPrefix = `${filters.year}-${String(filters.month + 1).padStart(2, "0"
     };
   }, [monthlyTransactions, filters.year, filters.month]);
 
-const walletBalance = availableThisMonth;
+  const walletBalance = availableThisMonth;
+
   const { totalWealth, allAccountsMonthlyDelta } = useMemo(() => {
     const accountList = profiles.length > 0 ? profiles : activeProfile ? [activeProfile] : [];
     let wealth = 0;
@@ -1397,7 +1712,7 @@ const walletBalance = availableThisMonth;
     return { items, segments };
   }, [monthlyTransactions, totals.expenses, monthlyCategoryCaps]);
 
-const displayMoney = (val) => (
+  const displayMoney = (val) => (
     isAmountsHidden
       ? "€••••"
       : formatEuro(val, { minDecimals: 2, maxDecimals: 2 })
@@ -1511,7 +1826,7 @@ const displayMoney = (val) => (
             }}
             style={{ cursor: "pointer" }}
           >
-<h1 className="nx-wh-title">Wallet</h1>
+            <h1 className="nx-wh-title">Wallet</h1>
             <p className="nx-wh-subtitle">
               {capitalizedMonth} · Mis Tarjetas y Movimientos
             </p>
@@ -1554,35 +1869,40 @@ const displayMoney = (val) => (
           <div className="nx-leather-back-rim" aria-hidden="true" />
 
           <div className="nx-leather-fan">
-            {fanCards.map((card, idx) => (
-              <button
-                key={card.id}
-                type="button"
-                className="nx-leather-fan-card"
-                onClick={() => openPickerAt(card.id)}
-                style={{
-                  background: card.bg,
-                  "--ty": `${idx * 13}px`,
-                  zIndex: idx + 1,
-                }}
-                aria-label={`Ver tarjeta ${card.name}`}
-              >
-                <span style={{ fontSize: "12.5px", fontWeight: 700, letterSpacing: "-0.01em" }}>
-                  {card.name}
-                </span>
+            {fanCards.map((card, idx) => {
+              const isCardFrozen = Boolean(frozenMap[card.id]);
+              return (
+                <button
+                  key={card.id}
+                  type="button"
+                  className="nx-leather-fan-card"
+                  onClick={() => openPickerAt(card.id)}
+                  style={{
+                    background: card.bg,
+                    "--ty": `${idx * 13}px`,
+                    zIndex: idx + 1,
+                  }}
+                  aria-label={`Ver tarjeta ${card.name}`}
+                >
+                  {isCardFrozen && <div className="nx-frost-overlay" />}
 
-                {card.net === "visa" ? (
-                  <span style={{ fontSize: "13.5px", fontWeight: 800, fontStyle: "italic", letterSpacing: "-0.04em" }}>
-                    VISA
+                  <span style={{ position: "relative", zIndex: 3, fontSize: "12.5px", fontWeight: 700, letterSpacing: "-0.01em" }}>
+                    {card.name}
                   </span>
-                ) : card.net === "none" ? null : (
-                  <span style={{ display: "inline-flex", alignItems: "center" }}>
-                    <i style={{ width: "15px", height: "15px", borderRadius: "50%", background: "#EB001B", display: "inline-block" }} />
-                    <i style={{ width: "15px", height: "15px", borderRadius: "50%", background: "#F79E1B", marginLeft: "-6px", opacity: 0.92, display: "inline-block" }} />
-                  </span>
-                )}
-              </button>
-            ))}
+
+                  {card.net === "visa" ? (
+                    <span style={{ position: "relative", zIndex: 3, fontSize: "13.5px", fontWeight: 800, fontStyle: "italic", letterSpacing: "-0.04em" }}>
+                      VISA
+                    </span>
+                  ) : card.net === "none" ? null : (
+                    <span style={{ position: "relative", zIndex: 3, display: "inline-flex", alignItems: "center" }}>
+                      <i style={{ width: "15px", height: "15px", borderRadius: "50%", background: "#EB001B", display: "inline-block" }} />
+                      <i style={{ width: "15px", height: "15px", borderRadius: "50%", background: "#F79E1B", marginLeft: "-6px", opacity: 0.92, display: "inline-block" }} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div
@@ -1599,9 +1919,10 @@ const displayMoney = (val) => (
               draggable={false}
             />
 
-<div>
+            <div>
               <span className="nx-leather-balance-lbl">
-                Disponible · {activeProfile?.name || "Personal"}
+                Disponible · {activeProfile?.name || "Personal"} 
+                 {isActiveFrozen ? <Snowflake size={12} style={{ color: '#38BDF8', marginLeft: "5px" }} /> : ""}
               </span>
               <div className="nx-leather-balance-row">
                 <strong className="nx-leather-balance-val privacy-sensitive">
@@ -1695,12 +2016,36 @@ const displayMoney = (val) => (
             </div>
           )}
 
-          <button type="button" className="nx-wh-action-btn" onClick={() => { setIsMoreMenuOpen(false); onQuickAction?.("income"); }}>
+          <button
+            type="button"
+            className="nx-wh-action-btn"
+            style={{ opacity: isActiveFrozen ? 0.45 : 1 }}
+            onClick={() => {
+              if (isActiveFrozen) {
+                triggerHaptic("error");
+                return;
+              }
+              setIsMoreMenuOpen(false);
+              onQuickAction?.("income");
+            }}
+          >
             <span className="nx-wh-action-icon"><Plus size={18} strokeWidth={2.1} /></span>
             <span className="nx-wh-action-lbl">Ingreso</span>
           </button>
 
-          <button type="button" className="nx-wh-action-btn" onClick={() => { setIsMoreMenuOpen(false); onQuickAction?.("expense"); }}>
+          <button
+            type="button"
+            className="nx-wh-action-btn"
+            style={{ opacity: isActiveFrozen ? 0.45 : 1 }}
+            onClick={() => {
+              if (isActiveFrozen) {
+                triggerHaptic("error");
+                return;
+              }
+              setIsMoreMenuOpen(false);
+              onQuickAction?.("expense");
+            }}
+          >
             <span className="nx-wh-action-icon"><Shuffle size={16} strokeWidth={2.1} /></span>
             <span className="nx-wh-action-lbl">Gasto</span>
           </button>
@@ -1721,7 +2066,7 @@ const displayMoney = (val) => (
           </button>
         </div>
 
-        {/* MOVIMIENTOS AGRUPADOS POR MES (UI CALCADA) */}
+        {/* MOVIMIENTOS AGRUPADOS POR MES */}
         <h2 className="nx-wh-section-heading">Movimientos</h2>
 
         {groupedMonths.length > 0 ? (
@@ -1731,7 +2076,7 @@ const displayMoney = (val) => (
                 <div className="nx-wh-month-label">{group.label}</div>
                 <div className="nx-wh-tx-card">
                   {group.items.map((tx) => (
-                  <TransactionItem key={tx.id} transaction={tx} />
+                    <TransactionItem key={tx.id} transaction={tx} />
                   ))}
                 </div>
               </div>
@@ -1765,7 +2110,7 @@ const displayMoney = (val) => (
           </div>
         )}
 
-        {/* WIDGETS ADAPTADOS A LA MISMA UI */}
+        {/* WIDGETS */}
         <h2 className="nx-wh-section-heading">Resumen</h2>
 
         <div className="nx-wh-widgets-grid">
@@ -1779,7 +2124,6 @@ const displayMoney = (val) => (
                 if (idx !== metricSlide) setMetricSlide(idx);
               }}
             >
-              {/* SLIDE 1: GASTO ESTE MES */}
               <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
                 <div>
                   <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
@@ -1814,7 +2158,6 @@ const displayMoney = (val) => (
                 </svg>
               </button>
 
-              {/* SLIDE 2: INGRESOS ESTE MES */}
               <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
                 <div>
                   <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
@@ -2012,16 +2355,16 @@ const displayMoney = (val) => (
                 return (
                   <div key={acc.id} className="nx-picker-slide">
                     <div className="nx-picker-card" style={{ background: acc.bg }}>
-                      {isFrozen && <div className="nx-picker-frost" />}
+                      {isFrozen && <div className="nx-frost-overlay" />}
 
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 2 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 3 }}>
                         <span style={{ fontSize: "14px", fontWeight: 600 }}>{acc.name}</span>
                         <span className="privacy-sensitive" style={{ fontSize: "18px", fontWeight: 700 }}>
                           {displayMoney(acc.balance)}
                         </span>
                       </div>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative", zIndex: 2 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative", zIndex: 3 }}>
                         <span style={{ fontSize: "12px", opacity: 0.85 }}>
                           {isFrozen ? "Tarjeta congelada" : `${acc.txs.length} ${acc.txs.length === 1 ? "movimiento" : "movimientos"}`}
                         </span>
@@ -2059,7 +2402,7 @@ const displayMoney = (val) => (
               <button
                 type="button"
                 className="nx-picker-action-btn"
-                style={{ color: frozenMap[previewAccount.id] ? "var(--primary)" : "inherit" }}
+                style={{ color: frozenMap[previewAccount.id] ? "#38BDF8" : "inherit" }}
                 onClick={() => toggleFreezeAccount(previewAccount.id)}
               >
                 <span className={`nx-picker-action-circle ${frozenMap[previewAccount.id] ? "frozen" : ""}`}>
@@ -2127,100 +2470,103 @@ const displayMoney = (val) => (
         document.body,
       )}
 
-      {/* SUB-MODAL AJUSTES DE LA TARJETA DESDE EL POPUP */}
+      {/* SUB-MODAL AJUSTES DE LA TARJETA CON SLIDER APILADO */}
       {isPickerSettingsOpen && previewAccount && createPortal(
         <div className="sheet-layer" style={{ zIndex: 10040 }} onMouseDown={() => setIsPickerSettingsOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "20px", fontWeight: 500, margin: 0 }}>Ajustes · {previewAccount.name}</h2>
-              <button type="button" className="sheet-close" onClick={() => setIsPickerSettingsOpen(false)}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <div>
+                <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
+                  Ajustes de tarjeta
+                </h2>
+                <span style={{ fontSize: "12.5px", color: "#9CA3AF" }}>
+                  Desliza arriba o abajo para cambiar el color de {previewAccount.name}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="sheet-close"
+                style={{ border: "1px solid #EAECEF" }}
+                onClick={() => setIsPickerSettingsOpen(false)}
+              >
                 <X size={17} />
               </button>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                try {
-                  renameProfile?.(previewAccount.id, editAccName);
-                  triggerHaptic();
-                  setIsPickerSettingsOpen(false);
-                } catch {}
+            <CardThemeStackSlider
+              themes={HOME_CARD_THEMES}
+              selectedThemeId={previewAccount.themeId}
+              account={{
+                ...previewAccount,
+                name: (editAccName || "").trim() || previewAccount.name,
               }}
-              style={{ marginBottom: "18px" }}
-            >
-              <label className="nx-label" style={{ display: "block", color: "var(--text-mute)", marginBottom: "12px" }}>
-                Nombre de la cuenta
-                <input value={editAccName} onChange={(e) => setEditAccName(e.target.value)} required />
-              </label>
-              <button type="submit" className="nx-btn-dark" style={{ width: "100%" }}>
-                Guardar nombre
-              </button>
-            </form>
+              balanceDisplay={displayMoney(previewAccount.balance)}
+              isFrozen={Boolean(frozenMap[previewAccount.id])}
+              onSelectTheme={(themeId) => updateAccountTheme(previewAccount.id, themeId)}
+            />
 
-            <span className="nx-label" style={{ display: "block", color: "var(--text-mute)", marginBottom: "8px" }}>
-              Color de tarjeta
-            </span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "16px" }}>
-              {HOME_CARD_THEMES.map((t) => {
-                const isSelected = previewAccount.themeId === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => updateAccountTheme(previewAccount.id, t.id)}
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "var(--rounded-full)",
-                      background: t.bg,
-                      border: isSelected ? "3px solid var(--primary)" : "2px solid transparent",
-                      boxShadow: isSelected ? "0 0 0 2px rgba(73, 79, 223, 0.25)" : "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#FFFFFF",
-                      cursor: "pointer",
-                      padding: 0,
-                    }}
-                    aria-label={t.label}
-                  >
-                    {isSelected && <Check size={15} strokeWidth={3} />}
-                  </button>
-                );
-              })}
+            <div className="nx-settings-box">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  try {
+                    renameProfile?.(previewAccount.id, editAccName);
+                    triggerHaptic("success");
+                    setIsPickerSettingsOpen(false);
+                  } catch {}
+                }}
+              >
+                <label className="nx-label" style={{ display: "block", color: "#9CA3AF", marginBottom: "10px" }}>
+                  Nombre de la tarjeta / cuenta
+                  <input
+                    value={editAccName}
+                    onChange={(e) => setEditAccName(e.target.value)}
+                    required
+                    style={{ marginTop: "6px" }}
+                  />
+                </label>
+                <button type="submit" className="nx-btn-dark" style={{ width: "100%" }}>
+                  Guardar nombre
+                </button>
+              </form>
             </div>
 
-            <span className="nx-label" style={{ display: "block", color: "var(--text-mute)", marginBottom: "8px" }}>
-              Red de pagos
-            </span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "18px" }}>
-              {HOME_CARD_NETWORKS.map((net) => (
-                <button
-                  key={net.id}
-                  type="button"
-                  onClick={() => updateAccountNetwork(previewAccount.id, net.id)}
-                  style={{
-                    height: "34px",
-                    padding: "0 14px",
-                    borderRadius: "999px",
-                    border: 0,
-                    fontSize: "12.5px",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    backgroundColor: previewAccount.net === net.id ? "var(--primary)" : "var(--surface-soft)",
-                    color: previewAccount.net === net.id ? "#FFFFFF" : "var(--text-main)",
-                  }}
-                >
-                  {net.label}
-                </button>
-              ))}
+            <div className="nx-settings-box">
+              <span className="nx-label" style={{ display: "block", color: "#9CA3AF", marginBottom: "10px" }}>
+                Red de pagos
+              </span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {HOME_CARD_NETWORKS.map((net) => {
+                  const active = previewAccount.net === net.id;
+                  return (
+                    <button
+                      key={net.id}
+                      type="button"
+                      onClick={() => updateAccountNetwork(previewAccount.id, net.id)}
+                      style={{
+                        height: "34px",
+                        padding: "0 14px",
+                        borderRadius: "999px",
+                        border: active ? "1px solid #111827" : "1px solid #EAECEF",
+                        fontSize: "12.5px",
+                        fontWeight: active ? 600 : 500,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        backgroundColor: active ? "#111827" : "transparent",
+                        color: active ? "#FFFFFF" : "inherit",
+                      }}
+                    >
+                      {net.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {(previewAccount.id.includes("___") || syncUser) && (
-              <div className="nx-card" style={{ padding: "14px", marginBottom: "14px" }}>
-                <span className="nx-label" style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-mute)", marginBottom: "6px" }}>
+              <div className="nx-settings-box">
+                <span className="nx-label" style={{ display: "flex", alignItems: "center", gap: "6px", color: "#9CA3AF", marginBottom: "8px" }}>
                   <Share2 size={13} /> Código para compartir
                 </span>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
@@ -2234,6 +2580,7 @@ const displayMoney = (val) => (
                     onClick={() => {
                       const code = previewAccount.id.includes("___") ? previewAccount.id : `${syncUser.uid}___${previewAccount.id}`;
                       navigator.clipboard?.writeText(code);
+                      triggerHaptic("light");
                       setCopiedAccCode(true);
                     }}
                   >
@@ -2247,6 +2594,7 @@ const displayMoney = (val) => (
               <button
                 type="button"
                 onClick={() => {
+                  triggerHaptic("error");
                   deleteActiveProfile?.()
                     .then(() => {
                       setIsPickerSettingsOpen(false);
@@ -2255,7 +2603,7 @@ const displayMoney = (val) => (
                     .catch((err) => alert(err.message));
                 }}
                 className="nx-btn-soft"
-                style={{ width: "100%", color: "var(--danger-red)" }}
+                style={{ width: "100%", color: "#D93829", border: "1px solid #EAECEF" }}
               >
                 <Trash2 size={15} /> {previewAccount.id.includes("___") ? "Desvincular cuenta" : "Eliminar cuenta"}
               </button>
@@ -2265,7 +2613,7 @@ const displayMoney = (val) => (
         document.body,
       )}
 
-      {/* MODAL NUEVA CUENTA COMPLETO (COLORES + RED DE PAGOS + COMPARTIDA) */}
+      {/* MODAL NUEVA CUENTA COMPLETO */}
       {isNewAccountOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 10030 }} onMouseDown={() => setIsNewAccountOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -2446,6 +2794,7 @@ const displayMoney = (val) => (
         </div>,
         document.body,
       )}
+
       {/* MODAL DETALLE DEL MOVIMIENTO */}
       {selectedTx && createPortal(
         <div
@@ -2500,7 +2849,7 @@ const displayMoney = (val) => (
                       }}
                     >
                       {isAmountsHidden
-                        ? "•••• €"
+                        ? "€••••"
                         : `${isExpense ? "- " : "+ "}${displayMoney(Math.abs(Number(selectedTx.amount) || 0))}`}
                     </strong>
                   </div>
@@ -2558,6 +2907,7 @@ const displayMoney = (val) => (
         </div>,
         document.body,
       )}
+
       <HomeThemeModal
         open={isThemeModalOpen}
         onClose={() => setIsThemeModalOpen(false)}

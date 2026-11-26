@@ -34,9 +34,17 @@ import { getPushNotificationsEnabled, setPushNotificationsEnabled } from '../uti
 import { triggerHaptic } from '../utils/haptics';
 import HomeThemeModal from './HomeThemeModal';
 import { getSavedHomeBackground, HOME_BACKGROUNDS } from '../utils/homeBackgrounds';
-import {
-  DICEBEAR_SEEDS,
-} from '../utils/avatar';
+
+const formatEuro = (val, { minDecimals = 2, maxDecimals = 2 } = {}) => {
+  const num = Number(val) || 0;
+  const sign = num < 0 ? '-' : '';
+  const formatted = new Intl.NumberFormat('es-ES', {
+    useGrouping: 'always',
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
+  }).format(Math.abs(num));
+  return `${sign}€${formatted}`;
+};
 
 const SETTINGS_REVOLUT_CSS = `
   .rev-settings-page {
@@ -78,7 +86,6 @@ const SETTINGS_REVOLUT_CSS = `
     transform: scale(0.93);
   }
 
-  /* DOS TARJETAS SUPERIORES (PATRIMONIO + INVITAR) — BORDE #EAECEF IGUAL QUE HOME */
   .rev-bento-duo {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -130,7 +137,6 @@ const SETTINGS_REVOLUT_CSS = `
     margin-top: 2px;
   }
 
-  /* CAJAS DE LISTA AGRUPADAS CON BORDE FINO #EAECEF Y DIVISORES #F1F3F5 */
   .rev-list-group {
     background-color: #FFFFFF;
     color: #111827;
@@ -265,9 +271,6 @@ const SETTINGS_REVOLUT_CSS = `
     transform: translateX(20px);
   }
 
-  /* =========================================================
-     WALLET CARD EN PERFIL + CAÍDA ESCALONADA DE TARJETAS
-     ========================================================= */
   @keyframes revProfileCardDrop {
     0% {
       opacity: 0;
@@ -453,8 +456,6 @@ const ProfileSwitcher = ({
     deleteActiveProfile,
   } = useFinance();
 
-  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
-  const [avatarSeeds, setAvatarSeeds] = useState(DICEBEAR_SEEDS);
   const [notifications, setNotifications] = useState(() => getPushNotificationsEnabled(activeProfile.id));
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const customName = profileName || activeProfile?.name || 'Mi perfil';
@@ -527,7 +528,6 @@ const ProfileSwitcher = ({
       savedNets = JSON.parse(localStorage.getItem('balance-account-networks') || '{}') || {};
     } catch {}
 
-    // Ordenamos para que la cuenta activa quede siempre la última (al frente del bolsillo)
     const orderedProfiles = [
       ...profiles.filter((p) => p.id !== activeProfileId),
       ...profiles.filter((p) => p.id === activeProfileId),
@@ -569,13 +569,7 @@ const ProfileSwitcher = ({
     });
   })();
 
-const rawWealthNum = new Intl.NumberFormat('es-ES', {
-    useGrouping: 'always',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Math.abs(totalWealth));
-
-  const formattedWealth = `${totalWealth < 0 ? '-' : ''}€${rawWealthNum}`;
+  const formattedWealth = formatEuro(totalWealth);
   const wealthCommaIdx = formattedWealth.indexOf(',');
   const wealthInt = isAmountsHidden
     ? '€••••'
@@ -584,16 +578,8 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
     ? ''
     : formattedWealth.slice(wealthCommaIdx);
 
-  const displayMoney = (val) => {
-    if (isAmountsHidden) return '€••••';
-    const num = Number(val) || 0;
-    return `${num < 0 ? '-' : ''}€${new Intl.NumberFormat('es-ES', {
-      useGrouping: 'always',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Math.abs(num))}`;
-  };
-  
+  const displayMoney = (val) => (isAmountsHidden ? '€••••' : formatEuro(val));
+
   const currentBgName = bgConfig.customImage
     ? 'Foto propia'
     : (HOME_BACKGROUNDS.find((b) => b.id === bgConfig.id)?.shortName || 'Índigo');
@@ -625,7 +611,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
     <section className="rev-settings-page" aria-label="Perfil y ajustes">
       <style>{SETTINGS_REVOLUT_CSS}</style>
 
-      {/* BARRA SUPERIOR CON BOTÓN X */}
       <div className="rev-settings-topbar">
         <button
           type="button"
@@ -637,7 +622,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         </button>
       </div>
 
-      {/* WALLET CARD ARRIBA CON ABANICO DE TARJETAS EN CAÍDA ESCALONADA */}
       <div className="rev-wallet-outer">
         <button
           type="button"
@@ -743,7 +727,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         </button>
       </div>
 
-      {/* DOS CAJAS SUPERIORES (PATRIMONIO + INVITAR) */}
       <div className="rev-bento-duo">
         <button
           type="button"
@@ -777,7 +760,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         </button>
       </div>
 
-      {/* BLOQUE 1: CUENTA, ESPACIOS, NUBE, BACKUP Y TEMA */}
       <div className="rev-list-group">
         <button type="button" className="rev-list-row" onClick={() => setProfileEditOpen(true)}>
           <div className="rev-list-left">
@@ -827,7 +809,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         </button>
       </div>
 
-      {/* BLOQUE 2: SEGURIDAD Y PRIVACIDAD */}
       <div className="rev-list-group">
         <div className="rev-list-row" style={{ cursor: 'default' }}>
           <div className="rev-list-left">
@@ -879,7 +860,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         </div>
       </div>
 
-      {/* BLOQUE 3: NOTIFICACIONES Y APARIENCIA */}
       <div className="rev-list-group">
         <div className="rev-list-row" style={{ cursor: 'default' }}>
           <div className="rev-list-left">
@@ -957,7 +937,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         </div>
       </div>
 
-      {/* BLOQUE 4: CERRAR SESIÓN */}
       {syncUser && (
         <div className="rev-list-group">
           <button
@@ -976,7 +955,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         </div>
       )}
 
-      {/* HOJA DE CUENTAS Y ESPACIOS COMPARTIDOS */}
       {isSpacesSheetOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsSpacesSheetOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -1094,7 +1072,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         document.body,
       )}
 
-      {/* MODAL EXPORTAR / IMPORTAR DATOS */}
       {isExportOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsExportOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -1177,7 +1154,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         document.body,
       )}
 
-      {/* MODAL EDITAR PERFIL */}
       {profileEditOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setProfileEditOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -1210,7 +1186,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         document.body,
       )}
 
-      {/* MODAL INVITAR A CUENTA */}
       {isSharePanelOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsSharePanelOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -1275,7 +1250,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         document.body,
       )}
 
-      {/* MODAL VINCULAR CUENTA */}
       {isJoinPanelOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsJoinPanelOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -1320,7 +1294,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         document.body,
       )}
 
-      {/* MODAL NUEVO ESPACIO */}
       {isNewSpaceOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsNewSpaceOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
@@ -1363,7 +1336,6 @@ const rawWealthNum = new Intl.NumberFormat('es-ES', {
         document.body,
       )}
 
-      {/* MODAL NUBE FIREBASE */}
       {isSyncPanelOpen && createPortal(
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsSyncPanelOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
