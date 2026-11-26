@@ -62,6 +62,91 @@ const HOME_CARD_NETWORKS = [
   { id: "none", label: "Sin logo" },
 ];
 
+const WALLET_LEATHER_STORAGE_KEY = "balance-leather-wallet-color";
+
+const WALLET_LEATHER_THEMES = [
+  {
+    id: "saddle-brown",
+    label: "Marrón Clásico",
+    swatch: "#6B3F24",
+    imgFilter: "none",
+    rimBg: "linear-gradient(180deg, #4B2E1B 0%, #331D0F 100%)",
+    stitchColor: "rgba(214, 168, 124, 0.32)",
+    eyeBg: "rgba(94, 60, 38, 0.56)",
+    eyeBorder: "rgba(255, 226, 190, 0.26)",
+  },
+  {
+    id: "onyx-black",
+    label: "Negro Ónix",
+    swatch: "#1C1E22",
+    imgFilter: "grayscale(1) brightness(0.58) contrast(1.22)",
+    rimBg: "linear-gradient(180deg, #23252A 0%, #121316 100%)",
+    stitchColor: "rgba(255, 255, 255, 0.2)",
+    eyeBg: "rgba(32, 34, 40, 0.62)",
+    eyeBorder: "rgba(255, 255, 255, 0.2)",
+  },
+  {
+    id: "midnight-navy",
+    label: "Azul Marino",
+    swatch: "#1E3A5F",
+    imgFilter: "hue-rotate(192deg) saturate(0.95) brightness(0.76) contrast(1.12)",
+    rimBg: "linear-gradient(180deg, #1B314E 0%, #0F1E33 100%)",
+    stitchColor: "rgba(147, 197, 253, 0.28)",
+    eyeBg: "rgba(26, 49, 82, 0.58)",
+    eyeBorder: "rgba(191, 219, 254, 0.26)",
+  },
+  {
+    id: "forest-green",
+    label: "Verde Bosque",
+    swatch: "#1F4D3A",
+    imgFilter: "hue-rotate(118deg) saturate(0.85) brightness(0.78) contrast(1.1)",
+    rimBg: "linear-gradient(180deg, #1D4232 0%, #10281E 100%)",
+    stitchColor: "rgba(167, 243, 208, 0.26)",
+    eyeBg: "rgba(25, 62, 46, 0.58)",
+    eyeBorder: "rgba(167, 243, 208, 0.24)",
+  },
+  {
+    id: "burgundy-wine",
+    label: "Burdeos",
+    swatch: "#6E2035",
+    imgFilter: "hue-rotate(322deg) saturate(1.15) brightness(0.78) contrast(1.12)",
+    rimBg: "linear-gradient(180deg, #58192A 0%, #360E19 100%)",
+    stitchColor: "rgba(253, 164, 175, 0.28)",
+    eyeBg: "rgba(88, 25, 42, 0.58)",
+    eyeBorder: "rgba(254, 205, 211, 0.25)",
+  },
+  {
+    id: "cognac-tan",
+    label: "Camel Cognac",
+    swatch: "#A66332",
+    imgFilter: "hue-rotate(6deg) saturate(1.28) brightness(1.16) contrast(1.02)",
+    rimBg: "linear-gradient(180deg, #7C4722 0%, #563015 100%)",
+    stitchColor: "rgba(254, 215, 170, 0.38)",
+    eyeBg: "rgba(124, 71, 34, 0.52)",
+    eyeBorder: "rgba(255, 237, 213, 0.3)",
+  },
+  {
+    id: "graphite-slate",
+    label: "Gris Grafito",
+    swatch: "#4B5563",
+    imgFilter: "grayscale(0.88) brightness(0.88) contrast(1.08)",
+    rimBg: "linear-gradient(180deg, #3B4048 0%, #24282E 100%)",
+    stitchColor: "rgba(229, 231, 235, 0.26)",
+    eyeBg: "rgba(55, 65, 81, 0.58)",
+    eyeBorder: "rgba(255, 255, 255, 0.24)",
+  },
+  {
+    id: "plum-violet",
+    label: "Ciruela",
+    swatch: "#4C2863",
+    imgFilter: "hue-rotate(255deg) saturate(0.92) brightness(0.76) contrast(1.12)",
+    rimBg: "linear-gradient(180deg, #3E2052 0%, #241132 100%)",
+    stitchColor: "rgba(216, 180, 254, 0.28)",
+    eyeBg: "rgba(62, 32, 82, 0.58)",
+    eyeBorder: "rgba(233, 213, 255, 0.25)",
+  },
+];
+
 const getTodayStr = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -159,7 +244,6 @@ const CardThemeStackSlider = ({
         onPointerCancel={handlePointerUp}
         style={{ touchAction: "none" }}
       >
-
         <div className="nx-card-stack-stage">
           {themes.map((t, idx) => {
             let offset = idx - activeIdx;
@@ -264,6 +348,7 @@ const CardThemeStackSlider = ({
     </div>
   );
 };
+
 const WalletTxRow = ({ transaction, isAmountsHidden, onClick }) => {
   const isExpense = transaction.type === "Gasto";
   const isIncome = transaction.type === "Ingreso";
@@ -425,16 +510,30 @@ const HOME_WALLET_CSS = `
   }
 
   /* =========================================================
-     CARTERA DE PIEL CON IMAGEN PNG — TAMAÑO COMPACTO Y LIMPIO
+     CARTERA DE PIEL PERSONALIZABLE CON PULSACIÓN LARGA
      ========================================================= */
+  .nx-leather-stage,
+  .nx-leather-pouch,
+  .nx-leather-pouch-img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
   .nx-leather-stage {
     position: relative;
     width: 100%;
     max-width: 340px;
     height: 212px;
     margin: 0 auto 18px;
-    user-select: none;
     overflow: visible;
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nx-leather-stage.is-pressing {
+    transform: scale(0.975);
+  }
+  .nx-leather-stage.is-customizing {
+    transform: scale(1.015);
   }
 
   .nx-leather-back-rim {
@@ -445,16 +544,18 @@ const HOME_WALLET_CSS = `
     bottom: 12px;
     border-radius: 24px;
     z-index: 0;
-    background: linear-gradient(180deg, #4B2E1B 0%, #331D0F 100%);
+    background: var(--wallet-rim-bg, linear-gradient(180deg, #4B2E1B 0%, #331D0F 100%));
     box-shadow: none;
+    transition: background 0.28s ease;
   }
   .nx-leather-back-rim::before {
     content: "";
     position: absolute;
     inset: 4px;
     border-radius: 20px;
-    border: 1.5px dashed rgba(214, 168, 124, 0.3);
+    border: 1.5px dashed var(--wallet-stitch-color, rgba(214, 168, 124, 0.3));
     pointer-events: none;
+    transition: border-color 0.28s ease;
   }
 
   .nx-leather-fan {
@@ -485,7 +586,6 @@ const HOME_WALLET_CSS = `
   }
 
   .nx-leather-fan-card {
-    position: relative;
     position: absolute;
     left: 0;
     right: 0;
@@ -554,7 +654,8 @@ const HOME_WALLET_CSS = `
     bottom: -40px;
     pointer-events: none;
     z-index: 0;
-    filter: none;
+    filter: var(--wallet-img-filter, none);
+    transition: filter 0.28s ease;
   }
 
   .nx-leather-balance-lbl {
@@ -587,12 +688,12 @@ const HOME_WALLET_CSS = `
     width: 38px;
     height: 38px;
     border-radius: 999px;
-    border: 1px solid rgba(255, 226, 190, 0.26);
-    background: rgba(94, 60, 38, 0.56);
+    border: 1px solid var(--wallet-eye-border, rgba(255, 226, 190, 0.26));
+    background: var(--wallet-eye-bg, rgba(94, 60, 38, 0.56));
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     box-shadow:
-      inset 0 1px 1px rgba(255, 232, 204, 0.24),
+      inset 0 1px 1px rgba(255, 255, 255, 0.22),
       0 3px 8px rgba(0, 0, 0, 0.28);
     color: rgba(255, 248, 240, 0.92);
     display: inline-flex;
@@ -602,28 +703,176 @@ const HOME_WALLET_CSS = `
     position: relative;
     z-index: 2;
     flex-shrink: 0;
-    transition: transform 0.12s ease;
+    transition: transform 0.12s ease, background-color 0.25s ease, border-color 0.25s ease;
     margin-bottom: 8px;
   }
   .nx-leather-eye-btn:active {
     transform: scale(0.93);
   }
 
-  /* =========================================================
-     ACCIONES RÁPIDAS — ESTILO PLANO Y NÍTIDO (1px #EAECEF)
-     ========================================================= */
-  .nx-wh-actions {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+  /* SELECTOR DE MUESTRAS DE PIEL */
+  .nx-leather-swatches {
+    display: flex;
+    align-items: center;
     gap: 10px;
-    margin-bottom: 22px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 2px 14px;
+  }
+  .nx-leather-swatches::-webkit-scrollbar {
+    display: none;
+  }
+  .nx-leather-swatch-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.14);
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .nx-leather-swatch-btn.active {
+    border-color: #111827;
+    transform: scale(1.1);
+  }
+  .dark .nx-leather-swatch-btn.active {
+    border-color: #FFFFFF;
+  }
+
+  /* =========================================================
+     BARRA INFERIOR COMPACTA (AL MANTENER PULSADA LA CARTERA)
+     ========================================================= */
+  @keyframes nx-slim-bar-up {
+    from {
+      transform: translate3d(0, 100%, 0);
+      opacity: 0.65;
+    }
+    to {
+      transform: translate3d(0, 0, 0);
+      opacity: 1;
+    }
+  }
+
+  .nx-wallet-slim-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10035;
+    background: transparent;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .nx-wallet-slim-sheet {
+    width: 100%;
+    max-width: 460px;
+    border-radius: 26px 26px 0 0;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    border-top: 1px solid #EAECEF;
+    padding: 8px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.14);
+    color: #111827;
+    box-sizing: border-box;
+    animation: nx-slim-bar-up 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .dark .nx-wallet-slim-sheet {
+    background: rgba(20, 22, 29, 0.96);
+    border-top-color: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.52);
+    color: #FFFFFF;
+  }
+
+  .nx-wallet-slim-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .nx-wallet-slim-swatches {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 2px 2px;
+  }
+  .nx-wallet-slim-swatches::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nx-wallet-slim-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 2.5px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.28), 0 3px 8px rgba(0, 0, 0, 0.16);
+    transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.16s ease;
+  }
+  .nx-wallet-slim-dot:active {
+    transform: scale(0.92);
+  }
+  .nx-wallet-slim-dot.active {
+    border-color: #111827;
+    transform: scale(1.1);
+  }
+  .dark .nx-wallet-slim-dot.active {
+    border-color: #FFFFFF;
+  }
+
+  /* =========================================================
+     ACCIONES RÁPIDAS — DISTRIBUCIÓN UNIFORME Y LIMPIA
+     ========================================================= */
+  @keyframes nx-quick-actions-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -8px, 0) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  .nx-wh-actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    align-items: start;
+    justify-items: center;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 22px;
     position: relative;
+  }
+  .nx-wh-actions.is-open {
+    animation: nx-quick-actions-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
   .nx-wh-action-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
     background: transparent;
     border: 0;
     padding: 0;
@@ -635,8 +884,8 @@ const HOME_WALLET_CSS = `
     color: #FFFFFF;
   }
   .nx-wh-action-icon {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 999px;
     background: #FFFFFF;
     border: 1px solid #EAECEF;
@@ -644,6 +893,7 @@ const HOME_WALLET_CSS = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     transition: transform 0.12s ease, background-color 0.15s ease;
   }
   .nx-wh-action-btn:active:not(:disabled) .nx-wh-action-icon {
@@ -659,6 +909,7 @@ const HOME_WALLET_CSS = `
     font-size: 11.5px;
     font-weight: 500;
     color: #6B7280;
+    white-space: nowrap;
   }
   .dark .nx-wh-action-lbl {
     color: rgba(255, 255, 255, 0.72);
@@ -1010,7 +1261,7 @@ const HOME_WALLET_CSS = `
     color: #111827;
   }
 
-  /* POPOVER MÁS: OSCURO EN MODO CLARO / CLARO EN MODO OSCURO */
+  /* POPOVER MÁS */
   .nx-more-backdrop {
     position: fixed;
     inset: 0;
@@ -1021,7 +1272,7 @@ const HOME_WALLET_CSS = `
     position: absolute;
     right: 0;
     bottom: calc(100% + 10px);
-    width: 220px;
+    width: 224px;
     z-index: 20;
     border-radius: 18px;
     background: rgba(24, 26, 33, 0.96);
@@ -1209,53 +1460,6 @@ const HOME_WALLET_CSS = `
     border-color: rgba(255, 255, 255, 0.18);
     box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
   }
-  .nx-stack-chip {
-    width: 34px;
-    height: 25px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 100%);
-    position: relative;
-    overflow: hidden;
-  }
-  .nx-stack-chip::before {
-    content: "";
-    position: absolute;
-    inset: 4px 7px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 2px;
-  }
-  .nx-stack-nav-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    border: 1px solid #EAECEF;
-    background: #FFFFFF;
-    color: #111827;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 20;
-    transition: transform 0.12s ease, background-color 0.14s ease;
-  }
-  .nx-stack-nav-btn:active {
-    transform: translateY(-50%) scale(0.92);
-  }
-  .nx-stack-nav-btn.prev {
-    left: 2px;
-  }
-  .nx-stack-nav-btn.next {
-    right: 2px;
-  }
-  .dark .nx-stack-nav-btn {
-    background: #1B1E27;
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #FFFFFF;
-  }
   .nx-card-theme-caption {
     display: flex;
     align-items: center;
@@ -1302,20 +1506,6 @@ const HOME_WALLET_CSS = `
     background: #16171C;
     border-color: rgba(255, 255, 255, 0.09);
   }
-    @keyframes nx-quick-actions-in {
-    from {
-      opacity: 0;
-      transform: translate3d(0, -8px, 0) scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: translate3d(0, 0, 0) scale(1);
-    }
-  }
-
-  .nx-wh-actions.is-open {
-    animation: nx-quick-actions-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
 `;
 
 const HomeOverview = ({
@@ -1327,9 +1517,8 @@ const HomeOverview = ({
   onLongPressAvatar,
   onOpenMovements,
 }) => {
-const {
+  const {
     transactions,
-    investmentRecords = [],
     monthlyCategoryCaps = {},
     accountsVersion = 0,
     filters,
@@ -1353,7 +1542,82 @@ const {
   const [, setBgConfig] = useState(() => getSavedHomeBackground());
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+
+  const [walletColorId, setWalletColorId] = useState(() => {
+    try {
+      return localStorage.getItem(WALLET_LEATHER_STORAGE_KEY) || "saddle-brown";
+    } catch {
+      return "saddle-brown";
+    }
+  });
+  const [isWalletSlimBarOpen, setIsWalletSlimBarOpen] = useState(false);
+  const [isPressingWallet, setIsPressingWallet] = useState(false);
+
+  const walletPressTimerRef = useRef(null);
+  const walletPressOriginRef = useRef(null);
+  const walletDidLongPressRef = useRef(false);
+
+  const activeLeatherTheme = useMemo(
+    () => WALLET_LEATHER_THEMES.find((t) => t.id === walletColorId) || WALLET_LEATHER_THEMES[0],
+    [walletColorId],
+  );
+
+  const handleSelectWalletColor = (id) => {
+    triggerHaptic("light");
+    setWalletColorId(id);
+    try {
+      localStorage.setItem(WALLET_LEATHER_STORAGE_KEY, id);
+    } catch {}
+  };
+
+  const leatherCssVars = useMemo(
+    () => ({
+      "--wallet-img-filter": activeLeatherTheme.imgFilter,
+      "--wallet-rim-bg": activeLeatherTheme.rimBg,
+      "--wallet-stitch-color": activeLeatherTheme.stitchColor,
+      "--wallet-eye-bg": activeLeatherTheme.eyeBg,
+      "--wallet-eye-border": activeLeatherTheme.eyeBorder,
+    }),
+    [activeLeatherTheme],
+  );
+
+  const cancelWalletLongPress = () => {
+    window.clearTimeout(walletPressTimerRef.current);
+    setIsPressingWallet(false);
+  };
+
+  const handleWalletPointerDown = (e) => {
+    if (e.target.closest(".nx-leather-eye-btn")) return;
+    if (e.button && e.button !== 0) return;
+
+    walletDidLongPressRef.current = false;
+    walletPressOriginRef.current = { x: e.clientX, y: e.clientY };
+    setIsPressingWallet(true);
+
+    window.clearTimeout(walletPressTimerRef.current);
+    walletPressTimerRef.current = window.setTimeout(() => {
+      walletDidLongPressRef.current = true;
+      setIsPressingWallet(false);
+      triggerHaptic("medium");
+      setIsWalletSlimBarOpen(true);
+    }, 550);
+  };
+
+  const handleWalletPointerMove = (e) => {
+    if (!walletPressOriginRef.current) return;
+    const dx = Math.abs(e.clientX - walletPressOriginRef.current.x);
+    const dy = Math.abs(e.clientY - walletPressOriginRef.current.y);
+    if (dx > 10 || dy > 10) {
+      cancelWalletLongPress();
+      walletPressOriginRef.current = null;
+    }
+  };
+
+  const handleWalletPointerEnd = () => {
+    cancelWalletLongPress();
+    walletPressOriginRef.current = null;
+  };
 
   const [isNewAccountOpen, setIsNewAccountOpen] = useState(false);
   const [addAccountTab, setAddAccountTab] = useState("create");
@@ -1394,7 +1658,7 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
     window.addEventListener("finance:transactions-updated", handleTxUpdated);
     return () => window.removeEventListener("finance:transactions-updated", handleTxUpdated);
   }, []);
-  
+
   const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } =
     useElasticScroll(75, 0.35);
 
@@ -1416,7 +1680,10 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
     return () => window.clearTimeout(settleTimer);
   }, []);
 
-  useEffect(() => () => window.clearTimeout(pickerScrollTimerRef.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(pickerScrollTimerRef.current);
+    window.clearTimeout(walletPressTimerRef.current);
+  }, []);
 
   const saveAccountMeta = (profileId, { themeId, networkId, createdDate }) => {
     try {
@@ -1802,21 +2069,22 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
         {/* CABECERA: MENÚ + WALLET + AÑADIR */}
         <div className="nx-wh-header">
           <button
-  type="button"
-  className="nx-wh-circle-btn"
-  onClick={() => {
-    triggerHaptic();
-    setIsQuickActionsOpen((prev) => {
-      const next = !prev;
-      if (!next) setIsMoreMenuOpen(false);
-      return next;
-    });
-  }}
-  aria-label="Acciones rápidas"
-  aria-expanded={isQuickActionsOpen}
->
-  <Menu size={18} strokeWidth={2.2} />
-</button>
+            type="button"
+            className="nx-wh-circle-btn"
+            onClick={() => {
+              triggerHaptic();
+              setIsQuickActionsOpen((prev) => {
+                const next = !prev;
+                if (!next) setIsMoreMenuOpen(false);
+                return next;
+              });
+            }}
+            aria-label="Acciones rápidas"
+            aria-expanded={isQuickActionsOpen}
+          >
+            <Menu size={18} strokeWidth={2.2} />
+          </button>
+
           <div
             className="nx-wh-title-wrap"
             onPointerDown={() => {
@@ -1875,8 +2143,12 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
           </div>
         )}
 
-        {/* CARTERA DE PIEL REAL CON IMAGEN PNG */}
-        <div className="nx-leather-stage">
+        {/* CARTERA DE PIEL PERSONALIZABLE CON PULSACIÓN LARGA */}
+        <div
+          className={`nx-leather-stage ${isPressingWallet ? "is-pressing" : ""} ${isWalletSlimBarOpen ? "is-customizing" : ""}`}
+          style={leatherCssVars}
+          onContextMenu={(e) => e.preventDefault()}
+        >
           <div className="nx-leather-back-rim" aria-hidden="true" />
 
           <div className="nx-leather-fan">
@@ -1918,10 +2190,22 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
 
           <div
             className="nx-leather-pouch"
-            onClick={() => openPickerAt(activeProfileId)}
+            onPointerDown={handleWalletPointerDown}
+            onPointerMove={handleWalletPointerMove}
+            onPointerUp={handleWalletPointerEnd}
+            onPointerCancel={handleWalletPointerEnd}
+            onPointerLeave={handleWalletPointerEnd}
+            onContextMenu={(e) => e.preventDefault()}
+            onClick={() => {
+              if (walletDidLongPressRef.current) {
+                walletDidLongPressRef.current = false;
+                return;
+              }
+              openPickerAt(activeProfileId);
+            }}
             role="button"
             tabIndex={0}
-            aria-label="Cambiar de tarjeta o cuenta"
+            aria-label="Toca para cambiar de tarjeta o mantén pulsado para cambiar el color de la cartera"
           >
             <img
               src="/wallet_pouch.png"
@@ -1932,8 +2216,8 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
 
             <div>
               <span className="nx-leather-balance-lbl">
-                Disponible · {activeProfile?.name || "Personal"} 
-                 {isActiveFrozen ? <Snowflake size={12} style={{ color: '#38BDF8', marginLeft: "5px" }} /> : ""}
+                Disponible · {activeProfile?.name || "Personal"}
+                {isActiveFrozen ? <Snowflake size={12} style={{ color: "#38BDF8", marginLeft: "5px" }} /> : ""}
               </span>
               <div className="nx-leather-balance-row">
                 <strong className="nx-leather-balance-val privacy-sensitive">
@@ -1950,6 +2234,7 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
             <button
               type="button"
               className="nx-leather-eye-btn"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 triggerHaptic();
@@ -1964,121 +2249,155 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
 
         {/* 4 ACCIONES RÁPIDAS */}
         {isQuickActionsOpen && (
-  <div className="nx-wh-actions is-open">
-        <div className="nx-wh-actions">
-          {isMoreMenuOpen && (
-            <div className="nx-more-popover" role="menu">
-              <button
-                type="button"
-                className="nx-more-item"
-                onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); onOpenMovements?.(); }}
-              >
-                <span>Ver cuentas</span>
-                <BarChart2 size={16} />
-              </button>
-              <button
-                type="button"
-                className="nx-more-item"
-                onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); exportPdf?.(); }}
-              >
-                <span>Extracto PDF</span>
-                <FileText size={16} />
-              </button>
-              <button
-                type="button"
-                className="nx-more-item"
-                onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); exportCsv?.(); }}
-              >
-                <span>Exportar CSV</span>
-                <ArrowLeftRight size={16} />
-              </button>
-              <button
-                type="button"
-                className="nx-more-item"
-                onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); setIsThemeModalOpen(true); }}
-              >
-                <span>Tema</span>
-                <Palette size={16} />
-              </button>
-              <button
-                type="button"
-                className="nx-more-item"
-                onClick={() => {
-                  triggerHaptic();
-                  setIsMoreMenuOpen(false);
-                  openAddAccountModal();
-                }}
-              >
-                <span>Nueva cuenta</span>
-                <FolderPlus size={16} />
-              </button>
-              {profiles.length > 1 && (
+          <div className="nx-wh-actions is-open">
+            {isMoreMenuOpen && (
+              <div className="nx-more-popover" role="menu">
                 <button
                   type="button"
-                  className="nx-more-item danger"
+                  className="nx-more-item"
+                  onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); setShowSearch((prev) => !prev); }}
+                >
+                  <span>Buscar</span>
+                  <Search size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); onOpenMovements?.(); }}
+                >
+                  <span>Ver cuentas</span>
+                  <BarChart2 size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); setIsWalletSlimBarOpen(true); }}
+                >
+                  <span>Color de cartera</span>
+                  <i
+                    style={{
+                      width: "15px",
+                      height: "15px",
+                      borderRadius: "50%",
+                      backgroundColor: activeLeatherTheme.swatch,
+                      border: "1.5px solid rgba(255,255,255,0.65)",
+                      display: "inline-block",
+                    }}
+                  />
+                </button>
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); exportPdf?.(); }}
+                >
+                  <span>Extracto PDF</span>
+                  <FileText size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); exportCsv?.(); }}
+                >
+                  <span>Exportar CSV</span>
+                  <ArrowLeftRight size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="nx-more-item"
+                  onClick={() => { triggerHaptic(); setIsMoreMenuOpen(false); setIsThemeModalOpen(true); }}
+                >
+                  <span>Tema</span>
+                  <Palette size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="nx-more-item"
                   onClick={() => {
                     triggerHaptic();
                     setIsMoreMenuOpen(false);
-                    deleteActiveProfile?.().catch((err) => alert(err.message));
+                    openAddAccountModal();
                   }}
                 >
-                  <span>Eliminar cuenta</span>
-                  <Trash2 size={16} />
+                  <span>Nueva cuenta</span>
+                  <FolderPlus size={16} />
                 </button>
-              )}
-            </div>
-          )}
+                {profiles.length > 1 && (
+                  <button
+                    type="button"
+                    className="nx-more-item danger"
+                    onClick={() => {
+                      triggerHaptic();
+                      setIsMoreMenuOpen(false);
+                      deleteActiveProfile?.().catch((err) => alert(err.message));
+                    }}
+                  >
+                    <span>Eliminar cuenta</span>
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            )}
 
-          <button
-            type="button"
-            className="nx-wh-action-btn"
-            style={{ opacity: isActiveFrozen ? 0.45 : 1 }}
-            onClick={() => {
-              if (isActiveFrozen) {
-                triggerHaptic("error");
-                return;
-              }
-              setIsMoreMenuOpen(false);
-              onQuickAction?.("income");
-            }}
-          >
-            <span className="nx-wh-action-icon"><Plus size={18} strokeWidth={2.1} /></span>
-            <span className="nx-wh-action-lbl">Ingreso</span>
-          </button>
+            <button
+              type="button"
+              className="nx-wh-action-btn"
+              style={{ opacity: isActiveFrozen ? 0.45 : 1 }}
+              onClick={() => {
+                if (isActiveFrozen) {
+                  triggerHaptic("error");
+                  return;
+                }
+                setIsMoreMenuOpen(false);
+                onQuickAction?.("income");
+              }}
+            >
+              <span className="nx-wh-action-icon"><Plus size={18} strokeWidth={2.1} /></span>
+              <span className="nx-wh-action-lbl">Ingreso</span>
+            </button>
 
-          <button
-            type="button"
-            className="nx-wh-action-btn"
-            style={{ opacity: isActiveFrozen ? 0.45 : 1 }}
-            onClick={() => {
-              if (isActiveFrozen) {
-                triggerHaptic("error");
-                return;
-              }
-              setIsMoreMenuOpen(false);
-              onQuickAction?.("expense");
-            }}
-          >
-            <span className="nx-wh-action-icon"><Shuffle size={16} strokeWidth={2.1} /></span>
-            <span className="nx-wh-action-lbl">Gasto</span>
-          </button>
+            <button
+              type="button"
+              className="nx-wh-action-btn"
+              style={{ opacity: isActiveFrozen ? 0.45 : 1 }}
+              onClick={() => {
+                if (isActiveFrozen) {
+                  triggerHaptic("error");
+                  return;
+                }
+                setIsMoreMenuOpen(false);
+                onQuickAction?.("expense");
+              }}
+            >
+              <span className="nx-wh-action-icon"><Shuffle size={16} strokeWidth={2.1} /></span>
+              <span className="nx-wh-action-lbl">Gasto</span>
+            </button>
 
-          <button type="button" className="nx-wh-action-btn" onClick={() => { setIsMoreMenuOpen(false); onOpenLimits?.(); }}>
-            <span className="nx-wh-action-icon"><Landmark size={16} strokeWidth={2.1} /></span>
-            <span className="nx-wh-action-lbl">Topes</span>
-          </button>
+            <button
+              type="button"
+              className="nx-wh-action-btn"
+              onClick={() => {
+                setIsMoreMenuOpen(false);
+                onOpenLimits?.();
+              }}
+            >
+              <span className="nx-wh-action-icon"><Landmark size={16} strokeWidth={2.1} /></span>
+              <span className="nx-wh-action-lbl">Topes</span>
+            </button>
 
-          <button
-            type="button"
-            className="nx-wh-action-btn"
-            onClick={() => { triggerHaptic(); setIsMoreMenuOpen((prev) => !prev); }}
-            aria-expanded={isMoreMenuOpen}
-          >
-            <span className="nx-wh-action-icon"><MoreHorizontal size={18} strokeWidth={2.1} /></span>
-            <span className="nx-wh-action-lbl">Más</span>
-          </button>
-        </div></div>
-)}
+            <button
+              type="button"
+              className="nx-wh-action-btn"
+              onClick={() => {
+                triggerHaptic();
+                setIsMoreMenuOpen((prev) => !prev);
+              }}
+              aria-expanded={isMoreMenuOpen}
+            >
+              <span className="nx-wh-action-icon"><MoreHorizontal size={18} strokeWidth={2.1} /></span>
+              <span className="nx-wh-action-lbl">Más</span>
+            </button>
+          </div>
+        )}
 
         {/* MOVIMIENTOS AGRUPADOS POR MES */}
         <h2 className="nx-wh-section-heading">Movimientos</h2>
@@ -2325,7 +2644,79 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
         </div>
       </div>
 
-      {/* POPUP DESLIZABLE DE TARJETAS + ACCIONES + MOVIMIENTOS + SELECCIONAR */}
+      {/* BARRA INFERIOR DELGADA AL MANTENER PULSADA LA CARTERA */}
+      {isWalletSlimBarOpen && createPortal(
+        <div
+          className="nx-wallet-slim-backdrop"
+          onClick={() => {
+            triggerHaptic("light");
+            setIsWalletSlimBarOpen(false);
+          }}
+        >
+          <div
+            className="nx-wallet-slim-sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="nx-picker-grabber" style={{ marginBottom: "8px" }} />
+
+            <div className="nx-wallet-slim-header">
+              <div style={{ display: "flex", alignItems: "baseline", gap: "6px", minWidth: 0 }}>
+                <span style={{ fontSize: "13px", fontWeight: 600 }}>Color de cartera</span>
+                <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  · {activeLeatherTheme.label}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic("light");
+                  setIsWalletSlimBarOpen(false);
+                }}
+                aria-label="Cerrar selector de color"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "999px",
+                  border: "1px solid #EAECEF",
+                  background: "transparent",
+                  color: "inherit",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  padding: 0,
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="nx-wallet-slim-swatches">
+              {WALLET_LEATHER_THEMES.map((item) => {
+                const active = item.id === walletColorId;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`nx-wallet-slim-dot ${active ? "active" : ""}`}
+                    style={{ backgroundColor: item.swatch }}
+                    onClick={() => handleSelectWalletColor(item.id)}
+                    aria-label={`Cartera ${item.label}`}
+                    title={item.label}
+                  >
+                    {active && <Check size={15} strokeWidth={2.8} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* POPUP DESLIZABLE DE TARJETAS + COLOR DE CARTERA + ACCIONES + MOVIMIENTOS */}
       {isPickerOpen && previewAccount && createPortal(
         <div
           className="nx-card-picker-backdrop"
@@ -2442,6 +2833,34 @@ const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
                 </span>
                 <span className="nx-picker-action-lbl">Ajustes</span>
               </button>
+            </div>
+
+            {/* SELECTOR DE COLOR DE PIEL DE LA CARTERA */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "0 4px 6px" }}>
+              <span style={{ fontSize: "12.5px", fontWeight: 500, color: "#9CA3AF" }}>
+                Color de la cartera
+              </span>
+              <span style={{ fontSize: "12px", fontWeight: 600 }}>
+                {activeLeatherTheme.label}
+              </span>
+            </div>
+            <div className="nx-leather-swatches">
+              {WALLET_LEATHER_THEMES.map((item) => {
+                const active = item.id === walletColorId;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`nx-leather-swatch-btn ${active ? "active" : ""}`}
+                    style={{ backgroundColor: item.swatch }}
+                    onClick={() => handleSelectWalletColor(item.id)}
+                    aria-label={`Cartera ${item.label}`}
+                    title={item.label}
+                  >
+                    {active && <Check size={14} strokeWidth={2.8} />}
+                  </button>
+                );
+              })}
             </div>
 
             <div style={{ fontSize: "12.5px", fontWeight: 500, color: "#9CA3AF", margin: "0 0 8px 4px" }}>

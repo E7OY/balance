@@ -47,6 +47,71 @@ const formatEuro = (val, { minDecimals = 2, maxDecimals = 2 } = {}) => {
   return `${sign}€${formatted}`;
 };
 
+const CardNetworkMark = ({ net = 'mastercard', isLight = false, size = 'sm' }) => {
+  const dot = size === 'lg' ? 18 : 13;
+  const overlap = size === 'lg' ? -7 : -5;
+
+  if (net === 'none') return <span />;
+  if (net === 'visa') {
+    return (
+      <span
+        style={{
+          fontSize: size === 'lg' ? '15px' : '11.5px',
+          fontWeight: 800,
+          fontStyle: 'italic',
+          letterSpacing: '-0.04em',
+          color: isLight ? '#1E3A8A' : '#FFFFFF',
+        }}
+      >
+        VISA
+      </span>
+    );
+  }
+  if (net === 'amex') {
+    return (
+      <span
+        style={{
+          fontSize: size === 'lg' ? '10px' : '8.5px',
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          padding: '2px 5px',
+          borderRadius: '4px',
+          border: '1px solid rgba(255, 255, 255, 0.6)',
+          color: isLight ? '#0F172A' : '#FFFFFF',
+        }}
+      >
+        AMEX
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+      <i
+        style={{
+          width: `${dot}px`,
+          height: `${dot}px`,
+          borderRadius: '50%',
+          background: net === 'mastercard-color' ? '#EB001B' : '#3A3B40',
+          border: '1px solid rgba(255,255,255,0.35)',
+          display: 'inline-block',
+        }}
+      />
+      <i
+        style={{
+          width: `${dot}px`,
+          height: `${dot}px`,
+          borderRadius: '50%',
+          background: net === 'mastercard-color' ? '#F79E1B' : '#B4B6BE',
+          border: '1px solid rgba(255,255,255,0.35)',
+          marginLeft: `${overlap}px`,
+          opacity: 0.9,
+          display: 'inline-block',
+        }}
+      />
+    </span>
+  );
+};
+
 const SETTINGS_REVOLUT_CSS = `
   .rev-settings-page {
     min-height: 100dvh;
@@ -413,7 +478,447 @@ const SETTINGS_REVOLUT_CSS = `
     color: rgba(255, 255, 255, 0.48);
     font-weight: 600;
   }
+
+  /* =========================================================
+     SISTEMA UNIFICADO DE CABECERAS DE MODAL (ESTILO WALLET PLANO)
+     ========================================================= */
+  @keyframes revHeroRise {
+    0% {
+      opacity: 0;
+      transform: translate3d(var(--hx, 0px), calc(var(--hy, 0px) + 16px), 0) rotate(0deg) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(var(--hx, 0px), var(--hy, 0px), 0) rotate(var(--hrot, 0deg)) scale(1);
+    }
+  }
+
+  .rev-sheet-hero {
+    position: relative;
+    width: 100%;
+    height: 148px;
+    border-radius: 18px;
+    margin: 2px 0 16px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+  /* Misma mini-tarjeta que .rev-wallet-mini-card */
+  .rev-hero-card {
+    position: absolute;
+    width: 176px;
+    height: 108px;
+    border-radius: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.92);
+    padding: 11px 13px;
+    box-sizing: border-box;
+    color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    transform: translate3d(var(--hx, 0px), var(--hy, 0px), 0) rotate(var(--hrot, 0deg));
+    animation: revHeroRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--hdelay, 0ms) backwards;
+  }
+  .dark .rev-hero-card {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
+  }
+
+  .rev-hero-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .rev-hero-card-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rev-hero-card-sub {
+    font-size: 10.5px;
+    font-weight: 500;
+    opacity: 0.78;
+    letter-spacing: -0.01em;
+  }
+
+  /* Nodo circular minimalista (1px #EAECEF, igual a .rev-close-circle) */
+  .rev-hero-node {
+    position: relative;
+    z-index: 5;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
+    color: #111827;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  }
+  .dark .rev-hero-node {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #FFFFFF;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  .rev-hero-node-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: #9CA3AF;
+    border: 2px solid #FFFFFF;
+  }
+  .rev-hero-node-dot.active {
+    background: #10B981;
+  }
+  .dark .rev-hero-node-dot {
+    border-color: #1B1E27;
+  }
+
+  /* Láminas de extracto limpias para Exportar */
+  .rev-hero-sheet-slip {
+    position: absolute;
+    width: 132px;
+    height: 82px;
+    border-radius: 14px;
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #111827;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    transform: translate3d(var(--hx, 0px), var(--hy, 0px), 0) rotate(var(--hrot, 0deg));
+    animation: revHeroRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--hdelay, 0ms) backwards;
+  }
+  .dark .rev-hero-sheet-slip {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.11);
+    color: #FFFFFF;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  }
+  .rev-hero-slip-line {
+    height: 4px;
+    border-radius: 999px;
+    background: #EAECEF;
+    width: 68%;
+  }
+  .dark .rev-hero-slip-line {
+    background: rgba(255, 255, 255, 0.1);
+  }
 `;
+
+const SHARED_FAN_PRESETS = [
+  {
+    id: 'fan-1',
+    name: 'Cuenta común',
+    sub: 'Gastos compartidos',
+    bg: 'linear-gradient(145deg, #6B7280 0%, #3F434C 55%, #23252A 100%)',
+    net: 'mastercard',
+    hx: '-46px',
+    hy: '10px',
+    hrot: '-9deg',
+    z: 1,
+    delay: '30ms',
+  },
+  {
+    id: 'fan-2',
+    name: 'Compartida',
+    sub: 'Sincronizada',
+    bg: 'linear-gradient(135deg, #DFBD69 0%, #A8823A 52%, #735723 100%)',
+    net: 'visa',
+    hx: '46px',
+    hy: '10px',
+    hrot: '9deg',
+    z: 2,
+    delay: '90ms',
+  },
+  {
+    id: 'fan-3',
+    name: 'Espacio activo',
+    sub: 'Tiempo real',
+    bg: 'linear-gradient(145deg, #3A3C44 0%, #1B1C20 55%, #09090B 100%)',
+    net: 'mastercard-color',
+    hx: '0px',
+    hy: '2px',
+    hrot: '0deg',
+    z: 3,
+    delay: '150ms',
+  },
+];
+
+const SharedCardsHero = ({ cards = [] }) => {
+  const items = SHARED_FAN_PRESETS.map((preset, idx) => {
+    const userCard = cards[idx];
+    return {
+      ...preset,
+      name: idx === 2 && userCard?.name ? userCard.name : preset.name,
+      bg: userCard?.bg || preset.bg,
+      net: userCard?.net || preset.net,
+    };
+  });
+
+  return (
+    <div className="rev-sheet-hero" aria-hidden="true">
+      {items.map((card) => {
+        const isLight = card.bg.includes('#E2E8F0');
+        return (
+          <div
+            key={card.id}
+            className="rev-hero-card"
+            style={{
+              background: card.bg,
+              zIndex: card.z,
+              color: isLight ? '#0F172A' : '#FFFFFF',
+              '--hx': card.hx,
+              '--hy': card.hy,
+              '--hrot': card.hrot,
+              '--hdelay': card.delay,
+            }}
+          >
+            <div className="rev-hero-card-top">
+              <CardNetworkMark net={card.net} isLight={isLight} />
+              <span className="rev-hero-card-title">{card.name}</span>
+            </div>
+            <span className="rev-hero-card-sub">{card.sub}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const CloudSyncHero = ({ cards = [], isSynced = false }) => {
+  const left = cards[0] || {
+    name: 'Personal',
+    bg: 'linear-gradient(145deg, #3A3C44 0%, #1B1C20 55%, #09090B 100%)',
+    net: 'mastercard-color',
+  };
+  const right = cards[1] || {
+    name: 'Espacio Cloud',
+    bg: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1D4ED8 100%)',
+    net: 'visa',
+  };
+
+  const leftLight = left.bg.includes('#E2E8F0');
+  const rightLight = right.bg.includes('#E2E8F0');
+
+  return (
+    <div className="rev-sheet-hero" aria-hidden="true">
+      <div
+        className="rev-hero-card"
+        style={{
+          width: '154px',
+          height: '96px',
+          background: left.bg,
+          color: leftLight ? '#0F172A' : '#FFFFFF',
+          zIndex: 2,
+          '--hx': '-62px',
+          '--hy': '6px',
+          '--hrot': '-7deg',
+          '--hdelay': '40ms',
+        }}
+      >
+        <div className="rev-hero-card-top">
+          <CardNetworkMark net={left.net} isLight={leftLight} />
+          <span className="rev-hero-card-title">{left.name}</span>
+        </div>
+        <span className="rev-hero-card-sub">Este dispositivo</span>
+      </div>
+
+      <div className="rev-hero-node">
+        <Cloud size={19} strokeWidth={2} />
+        <span className={`rev-hero-node-dot ${isSynced ? 'active' : ''}`} />
+      </div>
+
+      <div
+        className="rev-hero-card"
+        style={{
+          width: '154px',
+          height: '96px',
+          background: right.bg,
+          color: rightLight ? '#0F172A' : '#FFFFFF',
+          zIndex: 2,
+          '--hx': '62px',
+          '--hy': '6px',
+          '--hrot': '7deg',
+          '--hdelay': '110ms',
+        }}
+      >
+        <div className="rev-hero-card-top">
+          <CardNetworkMark net={right.net} isLight={rightLight} />
+          <span className="rev-hero-card-title">{right.name}</span>
+        </div>
+        <span className="rev-hero-card-sub">{isSynced ? 'Sincronizada' : 'En la nube'}</span>
+      </div>
+    </div>
+  );
+};
+
+const AccountCardHero = ({ name = 'Mi perfil', primaryCard, backCard, accountsCount = 1 }) => {
+  const cleanName = (name || 'Mi perfil').trim() || 'Mi perfil';
+  const main = primaryCard || {
+    bg: 'linear-gradient(145deg, #3A3C44 0%, #1B1C20 55%, #09090B 100%)',
+    net: 'mastercard-color',
+    name: 'Personal',
+  };
+  const secondaryBg = backCard?.bg || 'linear-gradient(145deg, #6B7280 0%, #3F434C 55%, #23252A 100%)';
+  const isLight = main.bg.includes('#E2E8F0');
+
+  return (
+    <div className="rev-sheet-hero" aria-hidden="true">
+      <div
+        className="rev-hero-card"
+        style={{
+          width: '188px',
+          height: '104px',
+          background: secondaryBg,
+          opacity: 0.55,
+          zIndex: 1,
+          '--hx': '0px',
+          '--hy': '-10px',
+          '--hrot': '-5deg',
+          '--hdelay': '20ms',
+        }}
+      />
+
+      <div
+        className="rev-hero-card"
+        style={{
+          width: '198px',
+          height: '110px',
+          background: main.bg,
+          color: isLight ? '#0F172A' : '#FFFFFF',
+          zIndex: 2,
+          '--hx': '0px',
+          '--hy': '6px',
+          '--hrot': '0deg',
+          '--hdelay': '90ms',
+        }}
+      >
+        <div className="rev-hero-card-top">
+          <CardNetworkMark net={main.net} isLight={isLight} />
+          <span className="rev-hero-card-sub">
+            {accountsCount} {accountsCount === 1 ? 'cuenta' : 'cuentas'}
+          </span>
+        </div>
+
+        <div>
+          <span style={{ display: 'block', fontSize: '10px', opacity: 0.68, marginBottom: '1px' }}>
+            Titular
+          </span>
+          <strong
+            style={{
+              display: 'block',
+              fontSize: '14.5px',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {cleanName}
+          </strong>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ExportStackHero = ({ primaryCard, txCount = 0 }) => {
+  const main = primaryCard || {
+    name: 'Personal',
+    bg: 'linear-gradient(145deg, #3A3C44 0%, #1B1C20 55%, #09090B 100%)',
+    net: 'mastercard-color',
+  };
+  const isLight = main.bg.includes('#E2E8F0');
+
+  return (
+    <div className="rev-sheet-hero" aria-hidden="true">
+      {/* Tarjeta origen a la izquierda */}
+      <div
+        className="rev-hero-card"
+        style={{
+          width: '156px',
+          height: '98px',
+          background: main.bg,
+          color: isLight ? '#0F172A' : '#FFFFFF',
+          zIndex: 2,
+          '--hx': '-48px',
+          '--hy': '2px',
+          '--hrot': '-5deg',
+          '--hdelay': '30ms',
+        }}
+      >
+        <div className="rev-hero-card-top">
+          <CardNetworkMark net={main.net} isLight={isLight} />
+          <span className="rev-hero-card-title">{main.name}</span>
+        </div>
+        <span className="rev-hero-card-sub">
+          {txCount} {txCount === 1 ? 'movimiento' : 'movimientos'}
+        </span>
+      </div>
+
+      {/* Dos láminas limpias de extracto superpuestas a la derecha */}
+      <div
+        className="rev-hero-sheet-slip"
+        style={{
+          zIndex: 3,
+          '--hx': '56px',
+          '--hy': '-6px',
+          '--hrot': '7deg',
+          '--hdelay': '90ms',
+        }}
+      >
+        <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.04em' }}>
+          CSV · JSON
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <span className="rev-hero-slip-line" style={{ width: '78%' }} />
+          <span className="rev-hero-slip-line" style={{ width: '52%' }} />
+        </div>
+      </div>
+
+      <div
+        className="rev-hero-sheet-slip"
+        style={{
+          zIndex: 4,
+          '--hx': '42px',
+          '--hy': '10px',
+          '--hrot': '2deg',
+          '--hdelay': '150ms',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.03em' }}>
+            EXTRACTO PDF
+          </span>
+          <Download size={13} strokeWidth={2.2} style={{ color: '#9CA3AF' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <span className="rev-hero-slip-line" style={{ width: '86%' }} />
+          <span className="rev-hero-slip-line" style={{ width: '60%' }} />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ProfileSwitcher = ({
   theme,
@@ -435,7 +940,7 @@ const ProfileSwitcher = ({
   getTransactionsForProfile,
   onClose,
 }) => {
-const {
+  const {
     profiles,
     activeProfile,
     activeProfileId,
@@ -461,6 +966,7 @@ const {
   const [notifications, setNotifications] = useState(() => getPushNotificationsEnabled(activeProfile.id));
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const customName = profileName || activeProfile?.name || 'Mi perfil';
+  const [draftProfileName, setDraftProfileName] = useState(customName);
 
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [bgConfig, setBgConfig] = useState(() => getSavedHomeBackground());
@@ -593,6 +1099,9 @@ const {
     });
   })();
 
+  const activeWalletCard = walletCards[walletCards.length - 1];
+  const secondaryWalletCard = walletCards.length > 1 ? walletCards[walletCards.length - 2] : null;
+
   const formattedWealth = formatEuro(totalWealth);
   const wealthCommaIdx = formattedWealth.indexOf(',');
   const wealthInt = isAmountsHidden
@@ -672,60 +1181,7 @@ const {
                     '--delay': `${60 + idx * 140}ms`,
                   }}
                 >
-                  {card.net === 'none' ? (
-                    <span />
-                  ) : card.net === 'visa' ? (
-                    <span
-                      style={{
-                        fontSize: '15px',
-                        fontWeight: 800,
-                        fontStyle: 'italic',
-                        letterSpacing: '-0.04em',
-                        color: isLightCard ? '#1E3A8A' : '#FFFFFF',
-                      }}
-                    >
-                      VISA
-                    </span>
-                  ) : card.net === 'amex' ? (
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: 800,
-                        letterSpacing: '0.06em',
-                        padding: '2px 5px',
-                        borderRadius: '4px',
-                        border: '1px solid rgba(255, 255, 255, 0.6)',
-                        color: isLightCard ? '#0F172A' : '#FFFFFF',
-                      }}
-                    >
-                      AMEX
-                    </span>
-                  ) : (
-                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                      <i
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          background: card.net === 'mastercard-color' ? '#EB001B' : '#3A3B40',
-                          border: '1px solid rgba(255,255,255,0.35)',
-                          display: 'inline-block',
-                        }}
-                      />
-                      <i
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          background: card.net === 'mastercard-color' ? '#F79E1B' : '#B4B6BE',
-                          border: '1px solid rgba(255,255,255,0.35)',
-                          marginLeft: '-7px',
-                          opacity: 0.9,
-                          display: 'inline-block',
-                        }}
-                      />
-                    </span>
-                  )}
+                  <CardNetworkMark net={card.net} isLight={isLightCard} size="lg" />
 
                   <span
                     style={{
@@ -785,7 +1241,14 @@ const {
       </div>
 
       <div className="rev-list-group">
-        <button type="button" className="rev-list-row" onClick={() => setProfileEditOpen(true)}>
+        <button
+          type="button"
+          className="rev-list-row"
+          onClick={() => {
+            setDraftProfileName(customName);
+            setProfileEditOpen(true);
+          }}
+        >
           <div className="rev-list-left">
             <span className="rev-list-icon"><User size={19} strokeWidth={2} /></span>
             <span className="rev-list-label">Cuenta</span>
@@ -1100,13 +1563,19 @@ const {
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsExportOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Exportar y respaldo</h2>
               <button type="button" className="sheet-close" onClick={() => setIsExportOpen(false)}>
                 <X size={17} />
               </button>
             </div>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 16px' }}>
+
+            <ExportStackHero
+              primaryCard={activeWalletCard}
+              txCount={Array.isArray(transactions) ? transactions.length : 0}
+            />
+
+            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 14px' }}>
               Descarga tus movimientos o restaura una copia de seguridad.
             </p>
 
@@ -1182,24 +1651,38 @@ const {
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setProfileEditOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Datos personales</h2>
               <button type="button" className="sheet-close" onClick={() => setProfileEditOpen(false)}>
                 <X size={17} />
               </button>
             </div>
+
+            <AccountCardHero
+              name={draftProfileName}
+              primaryCard={activeWalletCard}
+              backCard={secondaryWalletCard}
+              accountsCount={profiles.length}
+            />
+
             <form onSubmit={(e) => {
               e.preventDefault();
-              const val = String(new FormData(e.currentTarget).get('name') || '').trim();
+              const val = draftProfileName.trim();
               if (val) {
                 onProfileNameChange(val);
-                triggerHaptic();
+                triggerHaptic('success');
                 setProfileEditOpen(false);
               }
             }}>
               <label className="nx-label" style={{ display: 'block', color: 'var(--text-mute)', marginBottom: '16px' }}>
                 Nombre visible
-                <input name="name" defaultValue={customName} required autoFocus />
+                <input
+                  name="name"
+                  value={draftProfileName}
+                  onChange={(e) => setDraftProfileName(e.target.value)}
+                  required
+                  autoFocus
+                />
               </label>
               <button className="nx-btn-dark" style={{ width: '100%' }} type="submit">
                 Guardar cambios <ArrowRight size={16} />
@@ -1214,15 +1697,18 @@ const {
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsSharePanelOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Invitar a este espacio</h2>
               <button type="button" className="sheet-close" onClick={() => setIsSharePanelOpen(false)}>
                 <X size={17} />
               </button>
             </div>
+
+            <SharedCardsHero cards={walletCards} />
+
             {shareCode ? (
               <>
-                <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 16px' }}>
+                <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 14px' }}>
                   Envía este código para que otra persona vincule <strong>{activeProfile?.name}</strong> en su móvil.
                 </p>
                 <div style={{
@@ -1278,13 +1764,16 @@ const {
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsJoinPanelOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Vincular cuenta</h2>
               <button type="button" className="sheet-close" onClick={() => setIsJoinPanelOpen(false)}>
                 <X size={17} />
               </button>
             </div>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 16px' }}>
+
+            <SharedCardsHero cards={walletCards} />
+
+            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '0 0 14px' }}>
               Pega el código de invitación y elige un nombre para este espacio.
             </p>
             <form onSubmit={(e) => {
@@ -1364,12 +1853,14 @@ const {
         <div className="sheet-layer" style={{ zIndex: 110 }} onMouseDown={() => setIsSyncPanelOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Sincronización en la nube</h2>
               <button type="button" className="sheet-close" onClick={() => setIsSyncPanelOpen(false)}>
                 <X size={17} />
               </button>
             </div>
+
+            <CloudSyncHero cards={walletCards} isSynced={Boolean(syncUser)} />
 
             {syncUser ? (
               <>
