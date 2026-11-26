@@ -550,6 +550,101 @@ const NX_FORM_CSS = `
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   }
 
+  /* MODO OSCURO COMPLETO EN TRANSACTION FORM */
+  .dark .nx-apple-sheet {
+    background: #13151C;
+    border-top-color: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+  }
+  .dark .nx-sheet-grabber-pill {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  .dark .nx-kp-close {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+  }
+  .dark .nx-kp-seg {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.09);
+  }
+  .dark .nx-kp-seg button {
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .dark .nx-kp-seg button.active {
+    background: #FFFFFF;
+    color: #111827;
+  }
+  .dark .nx-wallet-sel-bar {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
+  }
+  .dark .nx-wallet-sel-bar:active {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .dark .nx-wallet-sel-sub {
+    color: rgba(255, 255, 255, 0.56);
+  }
+  .dark .nx-kp-cta {
+    background: #FFFFFF;
+    color: #111827;
+  }
+  .dark .nx-kp-dock {
+    background: #16171C;
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+  .dark .nx-kp-btn {
+    background: #1E2028;
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
+  }
+  .dark .nx-kp-btn.ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+  .dark .nx-kp-btn:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .dark .nx-kp-sub {
+    color: rgba(255, 255, 255, 0.48);
+  }
+  .dark .nx-group-card,
+  .dark .nx-account-drawer-card {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
+  }
+  .dark .nx-group-row + .nx-group-row,
+  .dark .nx-inline-drawer {
+    border-top-color: rgba(255, 255, 255, 0.07);
+  }
+  .dark .nx-row-label {
+    color: rgba(255, 255, 255, 0.56);
+  }
+  .dark .nx-row-action,
+  .dark .nx-note-input,
+  .dark .nx-date-input {
+    color: #FFFFFF;
+  }
+  .dark .nx-note-input::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+  }
+  .dark .nx-account-option:hover,
+  .dark .nx-account-option:active {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .dark .nx-account-option.selected {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+  .dark .nx-switch {
+    background: #2C2C32;
+  }
+  .dark .nx-switch.on {
+    background: var(--primary);
+  }
+
   /* Bolsillo frontal más bajo para despejar por completo texto y red de la tarjeta */
   .nx-mini-wallet-pouch {
     position: absolute;
