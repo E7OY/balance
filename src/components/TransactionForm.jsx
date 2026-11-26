@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  ArrowLeftRight,
   Camera,
   Check,
   ChevronDown,
@@ -126,6 +127,43 @@ const MiniCardNetworkBadge = ({ net, small = false }) => {
   );
 };
 
+const MiniWalletArtwork = ({ selectedCard, backCard, isFrozen }) => (
+  <div className="nx-mini-wallet" aria-hidden="true">
+    <div className="nx-mini-wallet-back" />
+
+    <div
+      className="nx-mini-wallet-card back"
+      style={{
+        background:
+          backCard && backCard.id !== selectedCard?.id
+            ? backCard.bg
+            : 'linear-gradient(145deg, #3F434C 0%, #23252A 100%)',
+      }}
+    />
+
+    <div
+      key={selectedCard?.id}
+      className="nx-mini-wallet-card front"
+      style={{ background: selectedCard?.bg || FORM_CARD_THEME_BGS.cobalt }}
+    >
+      {isFrozen && <div className="nx-mini-frost-layer" />}
+      <span className="nx-mini-wallet-card-title" style={{ position: 'relative', zIndex: 2 }}>
+        {selectedCard?.name || 'Card'}
+      </span>
+      <span style={{ position: 'relative', zIndex: 2 }}>
+        <MiniCardNetworkBadge net={selectedCard?.net} small />
+      </span>
+    </div>
+
+    <img
+      src="/wallet_pouch.png"
+      alt=""
+      className="nx-mini-wallet-pouch"
+      draggable={false}
+    />
+  </div>
+);
+
 const WalletAccountSelectorRow = ({
   selectedCard,
   backCard,
@@ -150,40 +188,11 @@ const WalletAccountSelectorRow = ({
     </div>
 
     <div className="nx-wallet-sel-right">
-      <div className="nx-mini-wallet" aria-hidden="true">
-        <div className="nx-mini-wallet-back" />
-
-        <div
-          className="nx-mini-wallet-card back"
-          style={{
-            background:
-              backCard && backCard.id !== selectedCard?.id
-                ? backCard.bg
-                : 'linear-gradient(145deg, #3F434C 0%, #23252A 100%)',
-          }}
-        />
-
-        <div
-          key={selectedCard?.id}
-          className="nx-mini-wallet-card front"
-          style={{ background: selectedCard?.bg || FORM_CARD_THEME_BGS.cobalt }}
-        >
-          {isFrozen && <div className="nx-mini-frost-overlay" />}
-          <span className="nx-mini-wallet-card-title" style={{ position: 'relative', zIndex: 2 }}>
-            {selectedCard?.name || 'Card'}
-          </span>
-          <span style={{ position: 'relative', zIndex: 2 }}>
-            <MiniCardNetworkBadge net={selectedCard?.net} small />
-          </span>
-        </div>
-
-        <img
-          src="/wallet_pouch.png"
-          alt=""
-          className="nx-mini-wallet-pouch"
-          draggable={false}
-        />
-      </div>
+      <MiniWalletArtwork
+        selectedCard={selectedCard}
+        backCard={backCard}
+        isFrozen={isFrozen}
+      />
 
       <ChevronRight
         size={17}
@@ -192,6 +201,43 @@ const WalletAccountSelectorRow = ({
       />
     </div>
   </button>
+);
+
+const TransferEndpointBox = ({
+  label,
+  card,
+  backCard,
+  isFrozen,
+  onClick,
+  disabled = false,
+}) => (
+  <div className="nx-tf-endpoint-col">
+    <span className="nx-tf-endpoint-label">{label}</span>
+    <button
+      type="button"
+      className={`nx-tf-endpoint-box ${isFrozen ? 'frozen' : ''}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <div className="nx-tf-endpoint-meta">
+        <div className="nx-tf-endpoint-name-row">
+          <span className="nx-tf-endpoint-name">{card?.name || 'Cuenta'}</span>
+          {isFrozen && <Snowflake size={12} style={{ color: '#38BDF8', flexShrink: 0 }} />}
+        </div>
+        <span className="nx-tf-endpoint-avail">
+          Disponible · {formatEuro(card?.balance ?? 0)}
+        </span>
+      </div>
+      <div className="nx-tf-endpoint-wallet-wrap">
+        <MiniWalletArtwork
+          selectedCard={card}
+          backCard={backCard}
+          isFrozen={isFrozen}
+        />
+      </div>
+
+    </button>
+  </div>
 );
 
 const NX_FORM_CSS = `
@@ -277,9 +323,15 @@ const NX_FORM_CSS = `
     transform-origin: bottom center;
     animation: nx-apple-sheet-in 0.42s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
+  .dark .nx-apple-sheet {
+    background: #13151C;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 -20px 52px rgba(0, 0, 0, 0.6);
+    color: #FFFFFF;
+  }
 
   .nx-apple-sheet.step-keypad {
-    height: min(88dvh, 750px);
+    height: min(90dvh, 780px);
   }
   .nx-apple-sheet.step-details {
     max-height: 90dvh;
@@ -315,6 +367,9 @@ const NX_FORM_CSS = `
     background: rgba(17, 24, 39, 0.16);
     transition: width 0.18s ease, background-color 0.18s ease;
   }
+  .dark .nx-sheet-grabber-pill {
+    background: rgba(255, 255, 255, 0.24);
+  }
 
   .nx-step-body {
     flex: 1;
@@ -347,21 +402,30 @@ const NX_FORM_CSS = `
   .nx-kp-close:active {
     transform: scale(0.92);
   }
+  .dark .nx-kp-close {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: #1B1E27;
+    color: #FFFFFF;
+  }
 
   .nx-kp-seg {
     display: inline-flex;
-    gap: 4px;
+    gap: 3px;
     padding: 4px;
     border-radius: 999px;
     background: #ECEEF2;
     border: 1px solid #EAECEF;
   }
+  .dark .nx-kp-seg {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.09);
+  }
   .nx-kp-seg button {
     border: 0;
-    padding: 6px 18px;
+    padding: 6px 14px;
     border-radius: 999px;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
     background-color: transparent;
@@ -373,6 +437,13 @@ const NX_FORM_CSS = `
     color: #111827;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
   }
+  .dark .nx-kp-seg button {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .dark .nx-kp-seg button.active {
+    background: #FFFFFF;
+    color: #111827;
+  }
 
   .nx-kp-display {
     flex: 1;
@@ -380,10 +451,176 @@ const NX_FORM_CSS = `
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0 18px;
-    min-height: 130px;
+    padding: 0 16px;
+    min-height: 145px;
   }
 
+  /* =========================================================
+     TRANSFERENCIA: CAJAS DESDE (ORIGEN) Y HACIA (DESTINO)
+     ========================================================= */
+  .nx-tf-duo-row {
+    width: 100%;
+    max-width: 404px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+  }
+  .nx-tf-endpoint-col {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .nx-tf-endpoint-label {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #9CA3AF;
+    padding-left: 4px;
+  }
+.nx-tf-endpoint-box {
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid #EAECEF;
+    background: #FFFFFF;
+    color: inherit;
+    font-family: inherit;
+    padding: 12px 0 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 6px;
+    text-align: left;
+    transition: transform 0.12s ease, background-color 0.14s ease, border-color 0.14s ease;
+  }
+  .nx-tf-endpoint-box:active:not(:disabled) {
+    transform: scale(0.98);
+    background: #F9FAFB;
+  }
+  .nx-tf-endpoint-box:disabled {
+    opacity: 0.65;
+    cursor: default;
+  }
+  .dark .nx-tf-endpoint-box {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+  }
+  .dark .nx-tf-endpoint-box:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .nx-tf-endpoint-meta {
+    width: 100%;
+    min-width: 0;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+
+  .nx-tf-endpoint-wallet-wrap {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .nx-tf-endpoint-wallet-wrap .nx-mini-wallet {
+    width: 116px;
+    height: 48px;
+  }
+
+  .nx-tf-endpoint-meta {
+.nx-tf-endpoint-meta {
+    width: 100%;
+    min-width: 0;
+    padding: 0 12px 0 16px;
+    box-sizing: border-box;
+  }
+  }
+  .nx-tf-endpoint-name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  .nx-tf-endpoint-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nx-tf-endpoint-avail {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: #9CA3AF;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nx-tf-swap-btn {
+    width: 28px;
+    height: 28px;
+    margin-top: 18px;
+    border-radius: 999px;
+    border: 1px solid #EAECEF;
+    background: #FFFFFF;
+    color: #6B7280;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.16s ease, color 0.14s ease, background-color 0.14s ease;
+  }
+  .nx-tf-swap-btn:active:not(:disabled) {
+    transform: rotate(180deg) scale(0.92);
+    color: #111827;
+  }
+  .nx-tf-swap-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .dark .nx-tf-swap-btn {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .nx-tf-note-inline {
+    width: 100%;
+    max-width: 404px;
+    margin-top: 10px;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid #EAECEF;
+    background: #FFFFFF;
+    color: #111827;
+    font-family: inherit;
+    font-size: 12.5px;
+    outline: none;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  .dark .nx-tf-note-inline {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
+  }
+
+  /* =========================================================
+     SELECTOR DE CUENTA CON MINI CARTERA DE PIEL (GASTO / INGRESO)
+     ========================================================= */
   .nx-wallet-sel-bar {
     width: 100%;
     max-width: 380px;
@@ -406,6 +643,14 @@ const NX_FORM_CSS = `
   .nx-wallet-sel-bar:active {
     transform: scale(0.988);
     background: #F9FAFB;
+  }
+  .dark .nx-wallet-sel-bar {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
+  }
+  .dark .nx-wallet-sel-bar:active {
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .nx-wallet-sel-left {
@@ -516,14 +761,14 @@ const NX_FORM_CSS = `
       inset 0 1px 0 rgba(255, 255, 255, 0.36);
     animation: nx-mini-card-pop 0.26s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .nx-mini-frost-overlay {
+  .nx-mini-frost-layer {
     position: absolute;
     inset: 0;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.42) 0%, rgba(190, 225, 255, 0.24) 100%);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    pointer-events: none;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     z-index: 1;
+    pointer-events: none;
   }
   .nx-mini-wallet-card-title {
     font-size: 8.5px;
@@ -547,7 +792,6 @@ const NX_FORM_CSS = `
     pointer-events: none;
     filter: drop-shadow(0 -2px 4px rgba(24, 12, 5, 0.22));
   }
-
   .nx-wallet-sel-chevron {
     color: #9CA3AF;
     transition: transform 0.2s ease;
@@ -558,7 +802,7 @@ const NX_FORM_CSS = `
   }
 
   .nx-kp-cta-wrap {
-    padding: 0 18px 12px;
+    padding: 0 18px 10px;
     max-width: 440px;
     width: 100%;
     margin: 0 auto;
@@ -566,7 +810,7 @@ const NX_FORM_CSS = `
   }
   .nx-kp-cta {
     width: 100%;
-    height: 50px;
+    height: 48px;
     border-radius: 999px;
     border: 0;
     background: #111827;
@@ -576,6 +820,10 @@ const NX_FORM_CSS = `
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s ease, transform 0.12s ease;
+  }
+  .dark .nx-kp-cta {
+    background: #FFFFFF;
+    color: #111827;
   }
   .nx-kp-cta:disabled {
     opacity: 0.32;
@@ -590,16 +838,20 @@ const NX_FORM_CSS = `
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid #EAECEF;
   }
+  .dark .nx-kp-dock {
+    background: #16171C;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
   .nx-kp-keys {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 7px;
-    padding: 8px 10px;
+    gap: 6px;
+    padding: 7px 10px;
     max-width: 460px;
     margin: 0 auto;
   }
   .nx-kp-btn {
-    height: 50px;
+    height: 46px;
     border-radius: 14px;
     border: 1px solid #EAECEF;
     background: #FFFFFF;
@@ -612,6 +864,11 @@ const NX_FORM_CSS = `
     touch-action: manipulation;
     transition: transform 0.08s ease, background-color 0.1s ease;
   }
+  .dark .nx-kp-btn {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #1E2028;
+    color: #FFFFFF;
+  }
   .nx-kp-btn.ghost {
     background: transparent;
     border-color: transparent;
@@ -620,8 +877,11 @@ const NX_FORM_CSS = `
     transform: scale(0.95);
     background: #EAECEF;
   }
+  .dark .nx-kp-btn:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
   .nx-kp-num {
-    font-size: 22px;
+    font-size: 21px;
     font-weight: 500;
     line-height: 1.05;
     font-variant-numeric: tabular-nums;
@@ -635,6 +895,7 @@ const NX_FORM_CSS = `
     height: 10px;
   }
 
+  /* PASO 2: DETALLES */
   .nx-detail-scroll {
     overflow-y: auto;
     padding: 4px 18px calc(28px + env(safe-area-inset-bottom, 0px));
@@ -644,14 +905,12 @@ const NX_FORM_CSS = `
     max-width: 440px;
     margin: 0 auto;
   }
-
   .nx-account-picker-wrap {
     margin-bottom: 12px;
   }
   .nx-account-picker-wrap .nx-wallet-sel-bar {
     max-width: none;
   }
-
   .nx-account-drawer-card {
     background: #FFFFFF;
     border: 1px solid #EAECEF;
@@ -662,7 +921,10 @@ const NX_FORM_CSS = `
     flex-direction: column;
     gap: 6px;
   }
-
+  .dark .nx-account-drawer-card {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+  }
   .nx-account-option {
     display: flex;
     align-items: center;
@@ -682,13 +944,19 @@ const NX_FORM_CSS = `
   .nx-account-option:active {
     background: #F9FAFB;
   }
+  .dark .nx-account-option:hover,
+  .dark .nx-account-option:active {
+    background: rgba(255, 255, 255, 0.04);
+  }
   .nx-account-option.selected {
     background: #F3F4F6;
     border-color: #E5E7EB;
   }
+  .dark .nx-account-option.selected {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
   .nx-account-swatch {
-    position: relative;
-    overflow: hidden;
     width: 42px;
     height: 28px;
     border-radius: 6px;
@@ -701,7 +969,6 @@ const NX_FORM_CSS = `
     flex-shrink: 0;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
-
   .nx-group-card {
     background: #FFFFFF;
     border: 1px solid #EAECEF;
@@ -710,7 +977,11 @@ const NX_FORM_CSS = `
     margin-bottom: 12px;
     box-shadow: none;
   }
-
+  .dark .nx-group-card {
+    background: #16171C;
+    border-color: rgba(255, 255, 255, 0.09);
+    color: #FFFFFF;
+  }
   .nx-group-row {
     display: flex;
     align-items: center;
@@ -723,7 +994,9 @@ const NX_FORM_CSS = `
   .nx-group-row + .nx-group-row {
     border-top: 1px solid #F1F3F5;
   }
-
+  .dark .nx-group-row + .nx-group-row {
+    border-top-color: rgba(255, 255, 255, 0.07);
+  }
   .nx-row-label {
     color: #9CA3AF;
     font-weight: 500;
@@ -744,12 +1017,18 @@ const NX_FORM_CSS = `
     cursor: pointer;
     text-align: right;
   }
-
+  .dark .nx-row-action,
+  .dark .nx-note-input,
+  .dark .nx-date-input {
+    color: #FFFFFF;
+  }
   .nx-inline-drawer {
     padding: 12px 0 14px;
     border-top: 1px solid #F1F3F5;
   }
-
+  .dark .nx-inline-drawer {
+    border-top-color: rgba(255, 255, 255, 0.07);
+  }
   .nx-note-input {
     flex: 1;
     min-width: 0;
@@ -766,7 +1045,6 @@ const NX_FORM_CSS = `
     color: #9CA3AF;
     font-weight: 400;
   }
-
   .nx-date-input {
     border: 0;
     background: transparent;
@@ -778,7 +1056,6 @@ const NX_FORM_CSS = `
     outline: none;
     cursor: pointer;
   }
-
   .nx-switch {
     width: 46px;
     height: 26px;
@@ -792,8 +1069,14 @@ const NX_FORM_CSS = `
     cursor: pointer;
     transition: background-color 0.2s ease;
   }
+  .dark .nx-switch {
+    background: #2C2C32;
+  }
   .nx-switch.on {
     background: #111827;
+  }
+  .dark .nx-switch.on {
+    background: var(--primary);
   }
   .nx-switch-thumb {
     width: 20px;
@@ -805,102 +1088,6 @@ const NX_FORM_CSS = `
   }
   .nx-switch.on .nx-switch-thumb {
     transform: translateX(20px);
-  }
-
-  /* MODO OSCURO COMPLETO EN TRANSACTION FORM */
-  .dark .nx-apple-sheet {
-    background: #13151C;
-    border-top-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 -20px 52px rgba(0, 0, 0, 0.6);
-    color: #FFFFFF;
-  }
-  .dark .nx-sheet-grabber-pill {
-    background: rgba(255, 255, 255, 0.25);
-  }
-  .dark .nx-kp-close {
-    background: #1B1E27;
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #FFFFFF;
-  }
-  .dark .nx-kp-seg {
-    background: #1B1E27;
-    border-color: rgba(255, 255, 255, 0.09);
-  }
-  .dark .nx-kp-seg button {
-    color: rgba(255, 255, 255, 0.62);
-  }
-  .dark .nx-kp-seg button.active {
-    background: #FFFFFF;
-    color: #111827;
-  }
-  .dark .nx-wallet-sel-bar {
-    background: #16171C;
-    border-color: rgba(255, 255, 255, 0.09);
-    color: #FFFFFF;
-  }
-  .dark .nx-wallet-sel-bar:active {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  .dark .nx-wallet-sel-sub {
-    color: rgba(255, 255, 255, 0.56);
-  }
-  .dark .nx-kp-cta {
-    background: #FFFFFF;
-    color: #111827;
-  }
-  .dark .nx-kp-dock {
-    background: #16171C;
-    border-top-color: rgba(255, 255, 255, 0.08);
-  }
-  .dark .nx-kp-btn {
-    background: #1E2028;
-    border-color: rgba(255, 255, 255, 0.08);
-    color: #FFFFFF;
-  }
-  .dark .nx-kp-btn.ghost {
-    background: transparent;
-    border-color: transparent;
-  }
-  .dark .nx-kp-btn:active {
-    background: rgba(255, 255, 255, 0.15);
-  }
-  .dark .nx-kp-sub {
-    color: rgba(255, 255, 255, 0.48);
-  }
-  .dark .nx-group-card,
-  .dark .nx-account-drawer-card {
-    background: #16171C;
-    border-color: rgba(255, 255, 255, 0.09);
-    color: #FFFFFF;
-  }
-  .dark .nx-group-row + .nx-group-row,
-  .dark .nx-inline-drawer {
-    border-top-color: rgba(255, 255, 255, 0.07);
-  }
-  .dark .nx-row-label {
-    color: rgba(255, 255, 255, 0.56);
-  }
-  .dark .nx-row-action,
-  .dark .nx-note-input,
-  .dark .nx-date-input {
-    color: #FFFFFF;
-  }
-  .dark .nx-note-input::placeholder {
-    color: rgba(255, 255, 255, 0.42);
-  }
-  .dark .nx-account-option:hover,
-  .dark .nx-account-option:active {
-    background: rgba(255, 255, 255, 0.04);
-  }
-  .dark .nx-account-option.selected {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.14);
-  }
-  .dark .nx-switch {
-    background: #2C2C32;
-  }
-  .dark .nx-switch.on {
-    background: var(--primary);
   }
 `;
 
@@ -916,15 +1103,30 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     getTransactionsForProfile,
   } = useFinance();
 
-  const initialType = transaction?.type || (defaultType === 'income' ? 'Ingreso' : 'Gasto');
+  const initialMode = transaction?.type
+    ? transaction.type
+    : defaultType === 'income'
+      ? 'Ingreso'
+      : defaultType === 'transfer'
+        ? 'Transferencia'
+        : 'Gasto';
+
   const [step, setStep] = useState(1);
   const [amount, setAmount] = useState(() => (
     transaction?.amount ? String(transaction.amount).replace('.', ',') : '0'
   ));
   const [resetNextDigit, setResetNextDigit] = useState(false);
 
-  const [type, setType] = useState(initialType);
+  const [type, setType] = useState(initialMode);
+  const isTransfer = type === 'Transferencia';
+  const isIncome = type === 'Ingreso';
+
   const [selectedProfileId, setSelectedProfileId] = useState(activeProfileId);
+  const [toProfileId, setToProfileId] = useState(() => {
+    const other = profiles.find((p) => p.id !== activeProfileId);
+    return other ? other.id : activeProfileId;
+  });
+
   const [openDrawer, setOpenDrawer] = useState(null);
 
   const [isClosing, setIsClosing] = useState(false);
@@ -976,9 +1178,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     }
   }, []);
 
-  const isSelectedFrozen = Boolean(frozenAccounts[selectedProfileId]);
-  const isAddingBlocked = isSelectedFrozen && !transaction;
-
   const accountsWithCards = useMemo(() => {
     let savedThemes = {};
     let savedNets = {};
@@ -1014,16 +1213,27 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     [accountsWithCards, selectedProfileId],
   );
 
+  const destinationCard = useMemo(() => {
+    const found = accountsWithCards.find((a) => a.id === toProfileId);
+    if (found && found.id !== selectedCard?.id) return found;
+    return accountsWithCards.find((a) => a.id !== selectedCard?.id) || selectedCard;
+  }, [accountsWithCards, toProfileId, selectedCard]);
+
   const backCard = useMemo(
     () => accountsWithCards.find((a) => a.id !== selectedCard?.id) || null,
     [accountsWithCards, selectedCard],
   );
 
+  const destBackCard = useMemo(
+    () => accountsWithCards.find((a) => a.id !== destinationCard?.id) || null,
+    [accountsWithCards, destinationCard],
+  );
+
   const categoriesForType = useMemo(() => {
-    const base = type === 'Ingreso' ? incomeCategories : expenseCategories;
-    const extra = allCategories?.[type] || [];
+    const base = isIncome ? incomeCategories : expenseCategories;
+    const extra = allCategories?.[isIncome ? 'Ingreso' : 'Gasto'] || [];
     return Array.from(new Set([...base, ...extra]));
-  }, [type, allCategories]);
+  }, [isIncome, allCategories]);
 
   const [category, setCategory] = useState(() => transaction?.category || categoriesForType[0] || '');
   const [description, setDescription] = useState(transaction?.description || '');
@@ -1038,10 +1248,19 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
   const [newCatName, setNewCatName] = useState('');
   const [formError, setFormError] = useState('');
 
-  const isIncome = type === 'Ingreso';
   const numAmount = parseFloat(amount.replace(',', '.'));
   const isValidAmount = !isNaN(numAmount) && numAmount > 0;
   const displayAmountStr = formatKeypadDisplay(amount);
+
+  const isSourceFrozen = Boolean(frozenAccounts[selectedCard?.id]);
+  const isDestFrozen = Boolean(frozenAccounts[destinationCard?.id]);
+  const canTransfer =
+    accountsWithCards.length > 1 &&
+    selectedCard?.id &&
+    destinationCard?.id &&
+    selectedCard.id !== destinationCard.id &&
+    !isSourceFrozen &&
+    !isDestFrozen;
 
   const cycleTargetAccount = () => {
     if (accountsWithCards.length <= 1) return;
@@ -1049,24 +1268,51 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     const idx = accountsWithCards.findIndex((p) => p.id === selectedProfileId);
     const next = accountsWithCards[(idx + 1) % accountsWithCards.length];
     setSelectedProfileId(next.id);
-    setFormError('');
+    if (next.id === destinationCard?.id) {
+      const alt = accountsWithCards.find((p) => p.id !== next.id);
+      if (alt) setToProfileId(alt.id);
+    }
+  };
+
+  const cycleDestinationAccount = () => {
+    if (accountsWithCards.length <= 1) return;
+    triggerHaptic();
+    const candidates = accountsWithCards.filter((p) => p.id !== selectedCard?.id);
+    if (candidates.length === 0) return;
+    const idx = candidates.findIndex((p) => p.id === destinationCard?.id);
+    const next = candidates[(idx + 1) % candidates.length];
+    setToProfileId(next.id);
+  };
+
+  const swapTransferAccounts = () => {
+    if (!selectedCard?.id || !destinationCard?.id || selectedCard.id === destinationCard.id) return;
+    triggerHaptic();
+    const prevSource = selectedCard.id;
+    const prevDest = destinationCard.id;
+    setSelectedProfileId(prevDest);
+    setToProfileId(prevSource);
   };
 
   const switchTransactionType = (nextType) => {
     if (nextType === type) return;
     triggerHaptic();
+    setFormError('');
     setType(nextType);
-    const nextList = Array.from(new Set([
-      ...(nextType === 'Ingreso' ? incomeCategories : expenseCategories),
-      ...(allCategories?.[nextType] || []),
-    ]));
-    if (!nextList.includes(category)) {
-      setCategory(nextList[0] || '');
+    if (nextType !== 'Transferencia') {
+      const nextIsIncome = nextType === 'Ingreso';
+      const nextList = Array.from(new Set([
+        ...(nextIsIncome ? incomeCategories : expenseCategories),
+        ...(allCategories?.[nextIsIncome ? 'Ingreso' : 'Gasto'] || []),
+      ]));
+      if (!nextList.includes(category)) {
+        setCategory(nextList[0] || '');
+      }
     }
   };
 
   const handleKey = (key) => {
     triggerHaptic();
+    setFormError('');
     setAmount((prev) => {
       const base = resetNextDigit ? '0' : prev;
       if (resetNextDigit) setResetNextDigit(false);
@@ -1083,14 +1329,60 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     });
   };
 
-  const goToDetails = () => {
+  const executeDirectTransfer = async () => {
     if (!isValidAmount) return;
-    if (isAddingBlocked) {
+    setFormError('');
+    if (!canTransfer) {
+      setFormError(
+        accountsWithCards.length <= 1
+          ? 'Necesitas al menos dos cuentas para transferir.'
+          : isSourceFrozen || isDestFrozen
+            ? 'Una de las cuentas está congelada.'
+            : 'Selecciona cuentas de origen y destino distintas.',
+      );
       triggerHaptic('error');
-      setFormError('Esta tarjeta está congelada. Descongélala para añadir movimientos.');
       return;
     }
-    setFormError('');
+
+    const note = description.trim();
+    const transferDate = date || getToday();
+
+    try {
+      await addTransaction({
+        amount: numAmount,
+        type: 'Gasto',
+        description: note || `Transferencia a ${destinationCard.name}`,
+        category: 'Transferencias',
+        paymentMethod: 'Transferencia',
+        date: transferDate,
+        targetProfileId: selectedCard.id,
+      });
+
+      await addTransaction({
+        amount: numAmount,
+        type: 'Ingreso',
+        description: note || `Transferencia desde ${selectedCard.name}`,
+        category: 'Transferencias',
+        paymentMethod: 'Transferencia',
+        date: transferDate,
+        targetProfileId: destinationCard.id,
+      });
+
+      triggerHaptic('success');
+      setIsClosing(true);
+      window.setTimeout(() => onClose?.(), 260);
+    } catch (err) {
+      setFormError(err.message);
+      triggerHaptic('error');
+    }
+  };
+
+  const goToDetails = () => {
+    if (!isValidAmount) return;
+    if (isTransfer) {
+      executeDirectTransfer();
+      return;
+    }
     triggerHaptic();
     if (!categoriesForType.includes(category)) {
       setCategory(categoriesForType[0] || '');
@@ -1118,12 +1410,14 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!isValidAmount || !category) return;
-    if (isAddingBlocked) {
-      triggerHaptic('error');
-      setFormError('Esta tarjeta está congelada. Descongélala para añadir movimientos.');
+    if (!isValidAmount) return;
+
+    if (isTransfer) {
+      await executeDirectTransfer();
       return;
     }
+
+    if (!category) return;
 
     const txData = {
       amount: numAmount,
@@ -1155,7 +1449,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
 
   const existingInvoiceName = !removeExistingInvoice ? transaction?.invoice?.name : null;
   const categoryVisuals = getCategoryVisuals(category, type, 15);
-  const isInstallmentEnabled = !isIncome && Number(installments) > 1;
+  const isInstallmentEnabled = !isIncome && !isTransfer && Number(installments) > 1;
 
   const sheetClasses = [
     'nx-apple-sheet',
@@ -1164,6 +1458,14 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
     isSnapping ? 'snapping' : '',
     isClosing ? 'closing' : '',
   ].filter(Boolean).join(' ');
+
+  const headerTitle = isTransfer
+    ? 'Añadir transferencia'
+    : transaction
+      ? `Editar ${type.toLowerCase()}`
+      : isIncome
+        ? 'Añadir ingreso'
+        : 'Añadir gasto';
 
   return createPortal(
     <>
@@ -1194,7 +1496,6 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
           <span className="nx-sheet-grabber-pill" />
         </div>
 
-        {/* PASO 1: TECLADO + SELECTOR CON CARTERA */}
         {step === 1 && (
           <div key="step-1" className="nx-step-body">
             <div className="nx-kp-header">
@@ -1208,13 +1509,13 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               </button>
 
               <span style={{ fontSize: '15px', fontWeight: 600 }}>
-                {transaction ? `Editar ${type.toLowerCase()}` : isIncome ? 'Añadir ingreso' : 'Añadir gasto'}
+                {headerTitle}
               </span>
 
               <span style={{ width: '38px' }} />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
               <div className="nx-kp-seg">
                 <button
                   type="button"
@@ -1230,34 +1531,89 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                 >
                   Ingreso
                 </button>
+                {!transaction && (
+                  <button
+                    type="button"
+                    className={type === 'Transferencia' ? 'active' : ''}
+                    onClick={() => switchTransactionType('Transferencia')}
+                  >
+                    Transferencia
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="nx-kp-display">
-              <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: isTransfer ? '14px' : '20px' }}>
                 <span
                   style={{
-                    fontSize: '52px',
+                    fontSize: isTransfer ? '46px' : '52px',
                     fontWeight: 700,
                     letterSpacing: '-0.03em',
                     fontVariantNumeric: 'tabular-nums',
-                    color: isIncome && isValidAmount ? '#10B981' : !isIncome && isValidAmount ? '#D93829' : 'inherit',
+                    color: isIncome && isValidAmount
+                      ? '#10B981'
+                      : type === 'Gasto' && isValidAmount
+                        ? '#D93829'
+                        : 'inherit',
                   }}
                 >
-                  {isValidAmount ? (isIncome ? '+ ' : '- ') : ''}€{displayAmountStr}
+                  {isValidAmount && !isTransfer ? (isIncome ? '+ ' : '- ') : ''}€{displayAmountStr}
                 </span>
               </div>
 
-              <WalletAccountSelectorRow
-                selectedCard={selectedCard}
-                backCard={backCard}
-                isFrozen={isSelectedFrozen}
-                onClick={cycleTargetAccount}
-              />
+              {isTransfer ? (
+                <>
+                  <div className="nx-tf-duo-row">
+                    <TransferEndpointBox
+                      label="Desde (Origen)"
+                      card={selectedCard}
+                      backCard={backCard}
+                      isFrozen={isSourceFrozen}
+                      disabled={accountsWithCards.length <= 1}
+                      onClick={cycleTargetAccount}
+                    />
 
-              {isAddingBlocked && (
-                <p style={{ color: '#D93829', fontSize: '12px', fontWeight: 500, margin: '8px 0 0', textAlign: 'center' }}>
-                  Esta tarjeta está congelada y no admite nuevos movimientos.
+                    <button
+                      type="button"
+                      className="nx-tf-swap-btn"
+                      onClick={swapTransferAccounts}
+                      disabled={!canTransfer}
+                      aria-label="Intercambiar cuentas"
+                    >
+                      <ArrowLeftRight size={13} strokeWidth={2.2} />
+                    </button>
+
+                    <TransferEndpointBox
+                      label="Hacia (Destino)"
+                      card={destinationCard}
+                      backCard={destBackCard}
+                      isFrozen={isDestFrozen}
+                      disabled={accountsWithCards.length <= 1}
+                      onClick={cycleDestinationAccount}
+                    />
+                  </div>
+
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Concepto (opcional)..."
+                    className="nx-tf-note-inline"
+                  />
+                </>
+              ) : (
+                <WalletAccountSelectorRow
+                  selectedCard={selectedCard}
+                  backCard={backCard}
+                  isFrozen={isSourceFrozen}
+                  onClick={cycleTargetAccount}
+                />
+              )}
+
+              {formError && (
+                <p style={{ color: '#D93829', fontSize: '12px', fontWeight: 500, margin: '8px 0 0' }}>
+                  {formError}
                 </p>
               )}
             </div>
@@ -1266,10 +1622,10 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
               <button
                 type="button"
                 className="nx-kp-cta"
-                disabled={!isValidAmount || isAddingBlocked}
+                disabled={!isValidAmount || (isTransfer && !canTransfer)}
                 onClick={goToDetails}
               >
-                {isAddingBlocked ? 'Tarjeta congelada' : 'Continuar'}
+                {isTransfer ? 'Transferir' : 'Continuar'}
               </button>
             </div>
 
@@ -1291,8 +1647,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
           </div>
         )}
 
-        {/* PASO 2: DETALLES */}
-        {step === 2 && (
+        {step === 2 && !isTransfer && (
           <div key="step-2" className="nx-step-body nx-detail-scroll">
             <div className="nx-detail-inner">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
@@ -1370,7 +1725,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   <WalletAccountSelectorRow
                     selectedCard={selectedCard}
                     backCard={backCard}
-                    isFrozen={isSelectedFrozen}
+                    isFrozen={isSourceFrozen}
                     isExpanded={openDrawer === 'account'}
                     onClick={() => {
                       triggerHaptic();
@@ -1392,15 +1747,11 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                               triggerHaptic();
                               setSelectedProfileId(acc.id);
                               setOpenDrawer(null);
-                              setFormError('');
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                               <div className="nx-account-swatch" style={{ background: acc.bg }}>
-                                {isFrozen && <div className="nx-mini-frost-overlay" />}
-                                <span style={{ position: 'relative', zIndex: 2 }}>
-                                  <MiniCardNetworkBadge net={acc.net} small />
-                                </span>
+                                <MiniCardNetworkBadge net={acc.net} small />
                               </div>
 
                               <div style={{ minWidth: 0 }}>
@@ -1409,7 +1760,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                                   {isFrozen && <Snowflake size={12} style={{ color: '#38BDF8' }} />}
                                 </div>
                                 <span style={{ fontSize: '12px', color: '#9CA3AF', fontVariantNumeric: 'tabular-nums' }}>
-                                  **{acc.digits} · {formatEuro(acc.balance)}
+                                  **{acc.digits} · Disponible · {formatEuro(acc.balance)}
                                 </span>
                               </div>
                             </div>
@@ -1731,14 +2082,8 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </p>
                 )}
 
-                <button type="submit" className="nx-kp-cta" disabled={isAddingBlocked} style={{ marginTop: '6px' }}>
-                  {isAddingBlocked
-                    ? 'Tarjeta congelada'
-                    : transaction
-                      ? 'Guardar cambios'
-                      : isIncome
-                        ? 'Guardar ingreso'
-                        : 'Guardar gasto'}
+                <button type="submit" className="nx-kp-cta" style={{ marginTop: '6px' }}>
+                  {transaction ? 'Guardar cambios' : isIncome ? 'Guardar ingreso' : 'Guardar gasto'}
                 </button>
               </form>
             </div>

@@ -159,14 +159,6 @@ const CardThemeStackSlider = ({
         onPointerCancel={handlePointerUp}
         style={{ touchAction: "none" }}
       >
-        <button
-          type="button"
-          className="nx-stack-nav-btn prev"
-          onClick={() => goToIndex(activeIdx - 1)}
-          aria-label="Color anterior"
-        >
-          <ChevronRight size={16} style={{ transform: "rotate(180deg)" }} />
-        </button>
 
         <div className="nx-card-stack-stage">
           {themes.map((t, idx) => {
@@ -248,15 +240,6 @@ const CardThemeStackSlider = ({
             );
           })}
         </div>
-
-        <button
-          type="button"
-          className="nx-stack-nav-btn next"
-          onClick={() => goToIndex(activeIdx + 1)}
-          aria-label="Siguiente color"
-        >
-          <ChevronRight size={16} />
-        </button>
       </div>
 
       <div className="nx-card-theme-caption">
@@ -1280,6 +1263,7 @@ const HOME_WALLET_CSS = `
     justify-content: space-between;
     gap: 10px;
     padding: 0 4px 12px;
+    margin-top: 26px;
   }
   .nx-card-dots {
     display: flex;
@@ -1330,10 +1314,11 @@ const HomeOverview = ({
   onLongPressAvatar,
   onOpenMovements,
 }) => {
-  const {
+const {
     transactions,
     investmentRecords = [],
     monthlyCategoryCaps = {},
+    accountsVersion = 0,
     filters,
     activeProfile,
     activeProfileId,
@@ -1388,6 +1373,14 @@ const HomeOverview = ({
   const longPressRef = useRef(null);
   const didLongPressRef = useRef(false);
 
+  const [txSyncTick, setTxSyncTick] = useState(0);
+
+  useEffect(() => {
+    const handleTxUpdated = () => setTxSyncTick((t) => t + 1);
+    window.addEventListener("finance:transactions-updated", handleTxUpdated);
+    return () => window.removeEventListener("finance:transactions-updated", handleTxUpdated);
+  }, []);
+  
   const { pullY, isSnapping, onTouchStart, onTouchMove, onTouchEnd } =
     useElasticScroll(75, 0.35);
 
@@ -1468,11 +1461,16 @@ const HomeOverview = ({
     const list = profiles.length > 0 ? profiles : activeProfile ? [activeProfile] : [];
 
     return list.map((p, idx) => {
+      const storedTxs = getFromLocalStorage(`finance:${p.id}:transactions`);
       const pTxs = p.id === activeProfileId
         ? transactions
-        : (getTransactionsForProfile ? getTransactionsForProfile(p.id) : []);
+        : (Array.isArray(storedTxs)
+          ? storedTxs
+          : (getTransactionsForProfile ? getTransactionsForProfile(p.id) : []));
+
       const bal = (Array.isArray(pTxs) ? pTxs : []).reduce((acc, tx) => {
-        const amt = Number(tx.amount) || 0;
+        const amt = Number(tx?.amount) || 0;
+        if (!Number.isFinite(amt)) return acc;
         return tx.type === "Ingreso" ? acc + amt : tx.type === "Gasto" ? acc - amt : acc;
       }, 0);
       const themeId = savedThemes[p.id] || themeKeys[idx % themeKeys.length];
@@ -1486,7 +1484,8 @@ const HomeOverview = ({
         net: savedNets[p.id] || (idx % 2 === 0 ? "mastercard" : "visa"),
       };
     });
-  }, [profiles, activeProfile, activeProfileId, transactions, getTransactionsForProfile, metaVersion]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles, activeProfile, activeProfileId, transactions, getTransactionsForProfile, metaVersion, accountsVersion, txSyncTick]);
 
   const isActiveFrozen = Boolean(frozenMap[activeProfileId]);
 
@@ -1647,13 +1646,14 @@ const HomeOverview = ({
     let monthlyDelta = 0;
 
     accountList.forEach((profile) => {
-      const pTxs = profile.id === activeProfileId
-        ? transactions
+      const storedTxs = getFromLocalStorage(`finance:${profile.id}:transactions`);
+      const pTxs = Array.isArray(storedTxs)
+        ? storedTxs
         : (getTransactionsForProfile ? getTransactionsForProfile(profile.id) : []);
 
       (Array.isArray(pTxs) ? pTxs : []).forEach((tx) => {
-        const amt = Number(tx.amount) || 0;
-        if (!Number.isFinite(amt) || amt <= 0) return;
+        const amt = Number(tx?.amount) || 0;
+        if (!Number.isFinite(amt)) return;
         if (tx.type === "Ingreso") {
           wealth += amt;
           if (typeof tx.date === "string" && tx.date.startsWith(monthPrefix)) monthlyDelta += amt;
@@ -1662,18 +1662,11 @@ const HomeOverview = ({
           if (typeof tx.date === "string" && tx.date.startsWith(monthPrefix)) monthlyDelta -= amt;
         }
       });
-
-      const pInvs = profile.id === activeProfileId
-        ? investmentRecords
-        : (getFromLocalStorage(`finance:${profile.id}:investments`) || []);
-
-      (Array.isArray(pInvs) ? pInvs : []).forEach((rec) => {
-        if (!rec?.soldAt) wealth += Number(rec?.currentValue) || 0;
-      });
     });
 
     return { totalWealth: wealth, allAccountsMonthlyDelta: monthlyDelta };
-  }, [profiles, activeProfile, activeProfileId, transactions, investmentRecords, getTransactionsForProfile, monthPrefix]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles, activeProfile, getTransactionsForProfile, monthPrefix, accountsVersion, txSyncTick]);
 
   const categoryDonut = useMemo(() => {
     const map = {};
@@ -2475,7 +2468,7 @@ const HomeOverview = ({
         <div className="sheet-layer" style={{ zIndex: 10040 }} onMouseDown={() => setIsPickerSettingsOpen(false)}>
           <section className="bottom-sheet" onMouseDown={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
               <div>
                 <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
                   Ajustes de tarjeta

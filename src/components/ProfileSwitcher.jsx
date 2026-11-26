@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { getFromLocalStorage } from '../utils/localStorage';
 import { getPushNotificationsEnabled, setPushNotificationsEnabled } from '../utils/pushNotifications';
 import { triggerHaptic } from '../utils/haptics';
 import HomeThemeModal from './HomeThemeModal';
@@ -434,12 +435,13 @@ const ProfileSwitcher = ({
   getTransactionsForProfile,
   onClose,
 }) => {
-  const {
+const {
     profiles,
     activeProfile,
     activeProfileId,
     transactions,
     investmentRecords = [],
+    accountsVersion = 0,
     isAmountsHidden,
     setIsAmountsHidden,
     syncUser,
@@ -508,17 +510,39 @@ const ProfileSwitcher = ({
     bronze: 'linear-gradient(135deg, #D6A89A 0%, #936D62 55%, #4A352F 100%)',
   };
 
-  const totalWealth = profiles.reduce((sum, p) => {
-    const pTxs = p.id === activeProfileId
-      ? transactions
-      : (getTransactionsForProfile ? getTransactionsForProfile(p.id) : []);
-    const txBal = (Array.isArray(pTxs) ? pTxs : []).reduce((acc, tx) => (
-      tx.type === 'Ingreso' ? acc + (Number(tx.amount) || 0) : tx.type === 'Gasto' ? acc - (Number(tx.amount) || 0) : acc
-    ), 0);
-    return sum + txBal;
-  }, 0) + investmentRecords.reduce((acc, rec) => (
-    rec.soldAt ? acc : acc + (Number(rec.currentValue) || 0)
-  ), 0);
+  const [txVersion, setTxVersion] = React.useState(0);
+
+  React.useEffect(() => {
+    const onTxUpdated = () => setTxVersion((v) => v + 1);
+    window.addEventListener('finance:transactions-updated', onTxUpdated);
+    return () => window.removeEventListener('finance:transactions-updated', onTxUpdated);
+  }, []);
+
+  const totalWealth = React.useMemo(() => {
+    const accountList = profiles.length > 0
+      ? profiles
+      : activeProfile
+        ? [activeProfile]
+        : [];
+
+    return accountList.reduce((totalSum, profile) => {
+      const storedTxs = getFromLocalStorage(`finance:${profile.id}:transactions`);
+      const pTxs = Array.isArray(storedTxs)
+        ? storedTxs
+        : (getTransactionsForProfile ? getTransactionsForProfile(profile.id) : []);
+
+      const accountAvailable = (Array.isArray(pTxs) ? pTxs : []).reduce((acc, tx) => {
+        const amt = Number(tx?.amount) || 0;
+        if (!Number.isFinite(amt)) return acc;
+        if (tx?.type === 'Ingreso') return acc + amt;
+        if (tx?.type === 'Gasto') return acc - amt;
+        return acc;
+      }, 0);
+
+      return totalSum + accountAvailable;
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles, activeProfile, getTransactionsForProfile, accountsVersion, txVersion]);
 
   const walletCards = (() => {
     let savedThemes = {};

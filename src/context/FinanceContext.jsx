@@ -173,6 +173,10 @@ export const FinanceProvider = ({ children }) => {
   const [customCategories, setCustomCategories] = useState(initialProfileSetup.customCategories);
   const [monthlyGoalsByMonth, setMonthlyGoalsByMonth] = useState(initialProfileSetup.monthlyGoalsByMonth);
   const [monthlyCategoryCapsByMonth, setMonthlyCategoryCapsByMonth] = useState(initialProfileSetup.monthlyCategoryCapsByMonth);
+  const [accountsVersion, setAccountsVersion] = useState(0);
+  const bumpAccountsVersion = useCallback(() => {
+    setAccountsVersion((v) => v + 1);
+  }, []);
   const [syncUser, setSyncUser] = useState(null);
   const [syncStatus, setSyncStatus] = useState(isFirebaseConfigured ? 'local' : 'unconfigured');
   const [syncError, setSyncError] = useState('');
@@ -790,7 +794,7 @@ export const FinanceProvider = ({ children }) => {
       await saveInvoice(entriesToAdd[0].id, invoiceFile, destinationProfileId);
     }
 
-    if (destinationProfileId === activeProfileId) {
+if (destinationProfileId === activeProfileId) {
       setTransactions((prevTransactions) => [...entriesToAdd, ...prevTransactions]);
     } else {
       const targetCurrent = getFromLocalStorage(profileStorageKey(destinationProfileId, 'transactions')) || [];
@@ -800,7 +804,14 @@ export const FinanceProvider = ({ children }) => {
       );
     }
 
-    // Vibración de confirmación al guardar el ingreso o gasto
+    bumpAccountsVersion();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('finance:transactions-updated', {
+        detail: { profileId: destinationProfileId },
+      }));
+    }
+
     triggerHaptic('success');
 
     if (syncUser && syncStatus === 'synced') {
@@ -1220,6 +1231,7 @@ export const FinanceProvider = ({ children }) => {
         allCategories,
         filteredTransactions,
         monthlyTransactions,
+        accountsVersion,
       }}
     >
       {children}
