@@ -63,6 +63,7 @@ const HOME_CARD_NETWORKS = [
 ];
 
 const WALLET_LEATHER_STORAGE_KEY = "balance-leather-wallet-color";
+const REVOLUT_INTRO_SESSION_KEY = "balance-revolut-home-intro-seen";
 
 const WALLET_LEATHER_THEMES = [
   {
@@ -415,6 +416,175 @@ const HOME_WALLET_CSS = `
     color: #FFFFFF;
   }
 
+  /* =========================================================
+     ANIMACIÓN DE ENTRADA ESTILO REVOLUT AL ABRIR LA APP
+     ========================================================= */
+  @keyframes nxRevLogoIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.76) translateY(8px);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: scale(1.04) translateY(0);
+      filter: blur(0px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0px);
+    }
+  }
+
+  @keyframes nxRevRingExpand {
+    0% {
+      transform: scale(0.75);
+      opacity: 0.55;
+    }
+    100% {
+      transform: scale(1.85);
+      opacity: 0;
+    }
+  }
+
+  @keyframes nxRevCurtainOut {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.06);
+      visibility: hidden;
+    }
+  }
+
+  @keyframes nxBootHeaderIn {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, -14px, 0);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes nxBootWalletHeroIn {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, 26px, 0) scale(0.93);
+    }
+    70% {
+      opacity: 1;
+      transform: translate3d(0, -3px, 0) scale(1.012);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes nxBootSectionUp {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, 24px, 0);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .nx-rev-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 10080;
+    background: #FAFAFB;
+    color: #111827;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+  .dark .nx-rev-splash {
+    background: #0B0C10;
+    color: #FFFFFF;
+  }
+  .nx-rev-splash.is-leaving {
+    animation: nxRevCurtainOut 0.46s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
+  .nx-rev-splash-mark-wrap {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: nxRevLogoIn 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .nx-rev-splash-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 22px;
+    border: 1.5px solid rgba(17, 24, 39, 0.16);
+    animation: nxRevRingExpand 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.18s forwards;
+  }
+  .dark .nx-rev-splash-ring {
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+
+  .nx-rev-splash-glyph {
+    width: 62px;
+    height: 62px;
+    border-radius: 20px;
+    background: #111827;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    box-shadow: 0 14px 32px rgba(17, 24, 39, 0.18);
+    position: relative;
+    overflow: hidden;
+  }
+  .dark .nx-rev-splash-glyph {
+    background: #FFFFFF;
+    color: #0B0C10;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+  }
+
+  .nx-rev-splash-word {
+    margin-top: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9CA3AF;
+    animation: nxRevLogoIn 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  }
+
+  /* Clases escalonadas al aterrizar en el Home */
+  .nx-wallet-home.is-boot-anim .nx-boot-header {
+    animation: nxBootHeaderIn 0.52s cubic-bezier(0.22, 1, 0.36, 1) var(--boot-offset, 0ms) backwards;
+  }
+  .nx-wallet-home.is-boot-anim .nx-boot-wallet {
+    animation: nxBootWalletHeroIn 0.68s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--boot-offset, 0ms) + 70ms) backwards;
+  }
+  .nx-wallet-home.is-boot-anim .nx-boot-feed {
+    animation: nxBootSectionUp 0.62s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--boot-offset, 0ms) + 170ms) backwards;
+  }
+  .nx-wallet-home.is-boot-anim .nx-boot-widgets {
+    animation: nxBootSectionUp 0.66s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--boot-offset, 0ms) + 260ms) backwards;
+  }
+
   .nx-wallet-home {
     padding: calc(var(--sp-lg) + env(safe-area-inset-top, 0px)) var(--sp-lg) var(--sp-xxl);
     position: relative;
@@ -570,9 +740,9 @@ const HOME_WALLET_CSS = `
   @keyframes nxCardTuckIn {
     0% {
       opacity: 0;
-      transform: translate3d(0, calc(var(--ty) - 50px), 0) scale(0.95);
+      transform: translate3d(0, calc(var(--ty) - 54px), 0) scale(0.94);
     }
-    25% {
+    30% {
       opacity: 1;
     }
     76% {
@@ -608,7 +778,7 @@ const HOME_WALLET_CSS = `
       inset 0 1px 0 rgba(255, 255, 255, 0.32);
     transform: translate3d(0, var(--ty), 0);
     transition: transform .98s cubic-bezier(0.16, 1, 0.3, 1);
-    animation: nxCardTuckIn 2.15s cubic-bezier(0.16, 1, 0.3, 1) 50ms backwards;
+    animation: nxCardTuckIn 1.35s cubic-bezier(0.16, 1, 0.3, 1) var(--card-delay, 120ms) backwards;
     will-change: transform, opacity;
   }
   .nx-leather-fan-card:hover {
@@ -1539,6 +1709,38 @@ const HomeOverview = ({
     deleteTransaction,
   } = useFinance();
 
+  // Control de animación de entrada estilo Revolut (splash en primera carga de sesión + cascada elástica)
+  const [introStage, setIntroStage] = useState(() => {
+    try {
+      return sessionStorage.getItem(REVOLUT_INTRO_SESSION_KEY) ? "done" : "hold";
+    } catch {
+      return "hold";
+    }
+  });
+  const [didHaveSplash] = useState(() => introStage === "hold");
+
+  useEffect(() => {
+    if (introStage === "done") return undefined;
+
+    try {
+      sessionStorage.setItem(REVOLUT_INTRO_SESSION_KEY, "1");
+    } catch {}
+
+    const leaveTimer = window.setTimeout(() => {
+      setIntroStage("leaving");
+    }, 520);
+
+    const doneTimer = window.setTimeout(() => {
+      setIntroStage("done");
+    }, 980);
+
+    return () => {
+      window.clearTimeout(leaveTimer);
+      window.clearTimeout(doneTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [, setBgConfig] = useState(() => getSavedHomeBackground());
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
@@ -1671,14 +1873,15 @@ const HomeOverview = ({
   }, []);
 
   useEffect(() => {
+    const settleDelay = didHaveSplash ? 1750 : 1250;
     const settleTimer = window.setTimeout(() => {
       if (!navigator.userActivation || navigator.userActivation.hasBeenActive) {
         triggerHaptic("cardSettle");
       }
-    }, 1680);
+    }, settleDelay);
 
     return () => window.clearTimeout(settleTimer);
-  }, []);
+  }, [didHaveSplash]);
 
   useEffect(() => () => {
     window.clearTimeout(pickerScrollTimerRef.current);
@@ -2044,6 +2247,8 @@ const HomeOverview = ({
     return transactions.filter((tx) => `${tx.description || ""} ${tx.category} ${tx.paymentMethod || ""}`.toLowerCase().includes(q)).length;
   }, [transactions, query]);
 
+  const bootOffsetMs = didHaveSplash ? "440ms" : "0ms";
+
   return (
     <div
       ref={scrollContainerRef}
@@ -2060,14 +2265,32 @@ const HomeOverview = ({
     >
       <style>{HOME_WALLET_CSS}</style>
 
+      {/* CORTINILLA DE APERTURA ESTILO REVOLUT */}
+      {introStage !== "done" && createPortal(
+        <div
+          className={`nx-rev-splash ${introStage === "leaving" ? "is-leaving" : ""}`}
+          aria-hidden="true"
+        >
+          <div className="nx-rev-splash-mark-wrap">
+            <span className="nx-rev-splash-ring" />
+            <div className="nx-rev-splash-glyph">W</div>
+          </div>
+          <span className="nx-rev-splash-word">Wallet</span>
+        </div>,
+        document.body,
+      )}
+
       {isMoreMenuOpen && createPortal(
         <div className="nx-more-backdrop" onClick={() => setIsMoreMenuOpen(false)} aria-hidden="true" />,
         document.body,
       )}
 
-      <div className="nx-wallet-home">
+      <div
+        className="nx-wallet-home is-boot-anim"
+        style={{ "--boot-offset": bootOffsetMs }}
+      >
         {/* CABECERA: MENÚ + WALLET + AÑADIR */}
-        <div className="nx-wh-header">
+        <div className="nx-wh-header nx-boot-header">
           <button
             type="button"
             className="nx-wh-circle-btn"
@@ -2145,7 +2368,7 @@ const HomeOverview = ({
 
         {/* CARTERA DE PIEL PERSONALIZABLE CON PULSACIÓN LARGA */}
         <div
-          className={`nx-leather-stage ${isPressingWallet ? "is-pressing" : ""} ${isWalletSlimBarOpen ? "is-customizing" : ""}`}
+          className={`nx-leather-stage nx-boot-wallet ${isPressingWallet ? "is-pressing" : ""} ${isWalletSlimBarOpen ? "is-customizing" : ""}`}
           style={leatherCssVars}
           onContextMenu={(e) => e.preventDefault()}
         >
@@ -2154,6 +2377,7 @@ const HomeOverview = ({
           <div className="nx-leather-fan">
             {fanCards.map((card, idx) => {
               const isCardFrozen = Boolean(frozenMap[card.id]);
+              const cardDelayMs = (didHaveSplash ? 520 : 80) + idx * 110;
               return (
                 <button
                   key={card.id}
@@ -2163,6 +2387,7 @@ const HomeOverview = ({
                   style={{
                     background: card.bg,
                     "--ty": `${idx * 13}px`,
+                    "--card-delay": `${cardDelayMs}ms`,
                     zIndex: idx + 1,
                   }}
                   aria-label={`Ver tarjeta ${card.name}`}
@@ -2400,246 +2625,250 @@ const HomeOverview = ({
         )}
 
         {/* MOVIMIENTOS AGRUPADOS POR MES */}
-        <h2 className="nx-wh-section-heading">Movimientos</h2>
+        <div className="nx-boot-feed">
+          <h2 className="nx-wh-section-heading">Movimientos</h2>
 
-        {groupedMonths.length > 0 ? (
-          <>
-            {groupedMonths.map((group) => (
-              <div key={group.ym}>
-                <div className="nx-wh-month-label">{group.label}</div>
-                <div className="nx-wh-tx-card">
-                  {group.items.map((tx) => (
-                    <TransactionItem key={tx.id} transaction={tx} />
-                  ))}
+          {groupedMonths.length > 0 ? (
+            <>
+              {groupedMonths.map((group) => (
+                <div key={group.ym}>
+                  <div className="nx-wh-month-label">{group.label}</div>
+                  <div className="nx-wh-tx-card">
+                    {group.items.map((tx) => (
+                      <TransactionItem key={tx.id} transaction={tx} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
-            {totalFilteredCount > 4 && (
-              <button
-                type="button"
-                onClick={() => setShowAllTx((prev) => !prev)}
-                style={{
-                  width: "100%",
-                  background: "transparent",
-                  border: 0,
-                  color: "#6B7280",
-                  fontFamily: "inherit",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  padding: "2px 0 18px",
-                  cursor: "pointer",
-                }}
-              >
-                {showAllTx ? "Mostrar menos" : "Ver todos los movimientos"}
-              </button>
-            )}
-          </>
-        ) : (
-          <div className="nx-wh-tx-card" style={{ padding: "22px 16px", textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-              Sin movimientos registrados todavía.
-            </p>
-          </div>
-        )}
+              {totalFilteredCount > 4 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllTx((prev) => !prev)}
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: 0,
+                    color: "#6B7280",
+                    fontFamily: "inherit",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    padding: "2px 0 18px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showAllTx ? "Mostrar menos" : "Ver todos los movimientos"}
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="nx-wh-tx-card" style={{ padding: "22px 16px", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
+                Sin movimientos registrados todavía.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* WIDGETS */}
-        <h2 className="nx-wh-section-heading">Resumen</h2>
+        <div className="nx-boot-widgets">
+          <h2 className="nx-wh-section-heading">Resumen</h2>
 
-        <div className="nx-wh-widgets-grid">
-          <div className="nx-wh-widget nx-wh-slider-widget">
-            <div
-              ref={metricSliderRef}
-              className="nx-wh-slider-track"
-              onScroll={(e) => {
-                const el = e.currentTarget;
-                const idx = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
-                if (idx !== metricSlide) setMetricSlide(idx);
-              }}
-            >
-              <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
-                <div>
-                  <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
-                    Gasto este mes
-                  </span>
-                  <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
-                    {displayMoney(totals.expenses)}
-                  </strong>
-                  <span
-                    className="privacy-sensitive"
-                    style={{
-                      fontSize: "11.5px",
-                      fontWeight: 600,
-                      display: "inline-block",
-                      marginTop: "6px",
-                      color: expenseDiff >= 0 ? "#D93829" : "#10B981",
-                    }}
-                  >
-                    {expenseDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(expenseDiff))}
-                  </span>
-                </div>
-
-                <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
-                  <defs>
-                    <linearGradient id="nxWhSpendFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#D93829" stopOpacity="0.18" />
-                      <stop offset="100%" stopColor="#D93829" stopOpacity="0.01" />
-                    </linearGradient>
-                  </defs>
-                  <path d={spendWidgetChart.actualArea} fill="url(#nxWhSpendFill)" />
-                  <path d={spendWidgetChart.actualPath} fill="none" stroke="#D93829" strokeWidth="2.2" strokeLinecap="round" />
-                </svg>
-              </button>
-
-              <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
-                <div>
-                  <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
-                    Ingresos este mes
-                  </span>
-                  <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
-                    {displayMoney(totals.income)}
-                  </strong>
-                  <span
-                    className="privacy-sensitive"
-                    style={{
-                      fontSize: "11.5px",
-                      fontWeight: 600,
-                      display: "inline-block",
-                      marginTop: "6px",
-                      color: incomeDiff >= 0 ? "#10B981" : "#D93829",
-                    }}
-                  >
-                    {incomeDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(incomeDiff))}
-                  </span>
-                </div>
-
-                <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
-                  <defs>
-                    <linearGradient id="nxWhIncomeFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10B981" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="#10B981" stopOpacity="0.01" />
-                    </linearGradient>
-                  </defs>
-                  <path d={incomeWidgetChart.actualArea} fill="url(#nxWhIncomeFill)" />
-                  <path d={incomeWidgetChart.actualPath} fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="nx-wh-slide-dots" aria-label="Cambiar entre gastos e ingresos">
-              {[0, 1].map((idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`nx-wh-slide-dot ${metricSlide === idx ? "active" : ""}`}
-                  onClick={() => {
-                    triggerHaptic();
-                    setMetricSlide(idx);
-                    const el = metricSliderRef.current;
-                    if (el) el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
-                  }}
-                  aria-label={idx === 0 ? "Ver gastos" : "Ver ingresos"}
-                />
-              ))}
-            </div>
-          </div>
-
-          <button type="button" className="nx-wh-widget" onClick={onOpenMovements}>
-            <div>
-              <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
-                Patrimonio total
-              </span>
-              <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
-                {displayCompactMoney(totalWealth)}
-              </strong>
-              <span
-                className="privacy-sensitive"
-                style={{
-                  fontSize: "11.5px",
-                  fontWeight: 600,
-                  display: "inline-block",
-                  marginTop: "6px",
-                  color: allAccountsMonthlyDelta >= 0 ? "#10B981" : "#D93829",
+          <div className="nx-wh-widgets-grid">
+            <div className="nx-wh-widget nx-wh-slider-widget">
+              <div
+                ref={metricSliderRef}
+                className="nx-wh-slider-track"
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  const idx = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+                  if (idx !== metricSlide) setMetricSlide(idx);
                 }}
               >
-                {allAccountsMonthlyDelta >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(allAccountsMonthlyDelta))}
-              </span>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "14px" }}>
-              <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
-                {accountsWithCards.length} {accountsWithCards.length === 1 ? "tarjeta" : "tarjetas"}
-              </span>
-              <ChevronRight size={14} style={{ color: "#9CA3AF" }} />
-            </div>
-          </button>
-
-          <div
-            className="nx-wh-widget"
-            style={{ gridColumn: "1 / -1", cursor: "default", padding: "14px 16px 8px" }}
-            onMouseLeave={() => setHoveredCat(null)}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "6px" }}>
-              <span style={{ fontSize: "12.5px", color: "#9CA3AF", fontWeight: 500 }}>Por categoría</span>
-              <button
-                type="button"
-                onClick={onOpenLimits}
-                style={{ background: "transparent", border: 0, padding: 0, fontSize: "12px", fontWeight: 600, color: "var(--primary)", cursor: "pointer", fontFamily: "inherit" }}
-              >
-                Topes
-              </button>
-            </div>
-
-            {categoryDonut.items.length > 0 ? (
-              <div style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
-                  <strong className="privacy-sensitive" style={{ fontSize: "19px", fontWeight: 700, letterSpacing: "-0.02em" }}>
-                    {hoveredCat ? displayCompactMoney(hoveredCat.amount) : formatDonutTotal(totals.expenses)}
-                  </strong>
-                  {hoveredCat && (
-                    <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
-                      {hoveredCat.name} · {hoveredCat.share}%
+                <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
+                  <div>
+                    <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
+                      Gasto este mes
                     </span>
-                  )}
-                </div>
-
-                <div>
-                  {categoryDonut.segments.slice(0, 4).map((cat) => (
-                    <button
-                      key={cat.name}
-                      type="button"
-                      className="nx-wh-cat-row"
-                      onMouseEnter={() => setHoveredCat(cat)}
-                      onClick={() => { triggerHaptic(); setHoveredCat((prev) => (prev?.name === cat.name ? null : cat)); }}
+                    <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
+                      {displayMoney(totals.expenses)}
+                    </strong>
+                    <span
+                      className="privacy-sensitive"
+                      style={{
+                        fontSize: "11.5px",
+                        fontWeight: 600,
+                        display: "inline-block",
+                        marginTop: "6px",
+                        color: expenseDiff >= 0 ? "#D93829" : "#10B981",
+                      }}
                     >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 500, minWidth: 0 }}>
-                        <i style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: cat.color, flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.name}</span>
-                      </span>
-                      <span
-                        className="privacy-sensitive"
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          color: cat.isOverLimit ? "#D93829" : "inherit",
-                          fontVariantNumeric: "tabular-nums",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {displayCompactMoney(cat.amount)}
-                        {cat.limit > 0 && (
-                          <span style={{ color: "#9CA3AF", fontWeight: 400 }}>
-                            /{displayCompactMoney(cat.limit)}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                      {expenseDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(expenseDiff))}
+                    </span>
+                  </div>
+
+                  <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
+                    <defs>
+                      <linearGradient id="nxWhSpendFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#D93829" stopOpacity="0.18" />
+                        <stop offset="100%" stopColor="#D93829" stopOpacity="0.01" />
+                      </linearGradient>
+                    </defs>
+                    <path d={spendWidgetChart.actualArea} fill="url(#nxWhSpendFill)" />
+                    <path d={spendWidgetChart.actualPath} fill="none" stroke="#D93829" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                </button>
+
+                <button type="button" className="nx-wh-slide" onClick={onOpenMovements}>
+                  <div>
+                    <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
+                      Ingresos este mes
+                    </span>
+                    <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
+                      {displayMoney(totals.income)}
+                    </strong>
+                    <span
+                      className="privacy-sensitive"
+                      style={{
+                        fontSize: "11.5px",
+                        fontWeight: 600,
+                        display: "inline-block",
+                        marginTop: "6px",
+                        color: incomeDiff >= 0 ? "#10B981" : "#D93829",
+                      }}
+                    >
+                      {incomeDiff >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(incomeDiff))}
+                    </span>
+                  </div>
+
+                  <svg viewBox="0 0 140 46" preserveAspectRatio="none" style={{ width: "100%", height: "38px", marginTop: "10px", overflow: "visible" }}>
+                    <defs>
+                      <linearGradient id="nxWhIncomeFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10B981" stopOpacity="0.2" />
+                        <stop offset="100%" stopColor="#10B981" stopOpacity="0.01" />
+                      </linearGradient>
+                    </defs>
+                    <path d={incomeWidgetChart.actualArea} fill="url(#nxWhIncomeFill)" />
+                    <path d={incomeWidgetChart.actualPath} fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                </button>
               </div>
-            ) : (
-              <span style={{ fontSize: "13px", color: "#9CA3AF", paddingBottom: "8px" }}>Sin gastos este mes.</span>
-            )}
+
+              <div className="nx-wh-slide-dots" aria-label="Cambiar entre gastos e ingresos">
+                {[0, 1].map((idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`nx-wh-slide-dot ${metricSlide === idx ? "active" : ""}`}
+                    onClick={() => {
+                      triggerHaptic();
+                      setMetricSlide(idx);
+                      const el = metricSliderRef.current;
+                      if (el) el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+                    }}
+                    aria-label={idx === 0 ? "Ver gastos" : "Ver ingresos"}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button type="button" className="nx-wh-widget" onClick={onOpenMovements}>
+              <div>
+                <span style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, display: "block" }}>
+                  Patrimonio total
+                </span>
+                <strong className="privacy-sensitive" style={{ fontSize: "20px", fontWeight: 700, display: "block", marginTop: "6px", letterSpacing: "-0.02em" }}>
+                  {displayCompactMoney(totalWealth)}
+                </strong>
+                <span
+                  className="privacy-sensitive"
+                  style={{
+                    fontSize: "11.5px",
+                    fontWeight: 600,
+                    display: "inline-block",
+                    marginTop: "6px",
+                    color: allAccountsMonthlyDelta >= 0 ? "#10B981" : "#D93829",
+                  }}
+                >
+                  {allAccountsMonthlyDelta >= 0 ? "▲ " : "▼ "}{displayCompactMoney(Math.abs(allAccountsMonthlyDelta))}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "14px" }}>
+                <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
+                  {accountsWithCards.length} {accountsWithCards.length === 1 ? "tarjeta" : "tarjetas"}
+                </span>
+                <ChevronRight size={14} style={{ color: "#9CA3AF" }} />
+              </div>
+            </button>
+
+            <div
+              className="nx-wh-widget"
+              style={{ gridColumn: "1 / -1", cursor: "default", padding: "14px 16px 8px" }}
+              onMouseLeave={() => setHoveredCat(null)}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "6px" }}>
+                <span style={{ fontSize: "12.5px", color: "#9CA3AF", fontWeight: 500 }}>Por categoría</span>
+                <button
+                  type="button"
+                  onClick={onOpenLimits}
+                  style={{ background: "transparent", border: 0, padding: 0, fontSize: "12px", fontWeight: 600, color: "var(--primary)", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Topes
+                </button>
+              </div>
+
+              {categoryDonut.items.length > 0 ? (
+                <div style={{ width: "100%" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
+                    <strong className="privacy-sensitive" style={{ fontSize: "19px", fontWeight: 700, letterSpacing: "-0.02em" }}>
+                      {hoveredCat ? displayCompactMoney(hoveredCat.amount) : formatDonutTotal(totals.expenses)}
+                    </strong>
+                    {hoveredCat && (
+                      <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
+                        {hoveredCat.name} · {hoveredCat.share}%
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    {categoryDonut.segments.slice(0, 4).map((cat) => (
+                      <button
+                        key={cat.name}
+                        type="button"
+                        className="nx-wh-cat-row"
+                        onMouseEnter={() => setHoveredCat(cat)}
+                        onClick={() => { triggerHaptic(); setHoveredCat((prev) => (prev?.name === cat.name ? null : cat)); }}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 500, minWidth: 0 }}>
+                          <i style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: cat.color, flexShrink: 0 }} />
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.name}</span>
+                        </span>
+                        <span
+                          className="privacy-sensitive"
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            color: cat.isOverLimit ? "#D93829" : "inherit",
+                            fontVariantNumeric: "tabular-nums",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {displayCompactMoney(cat.amount)}
+                          {cat.limit > 0 && (
+                            <span style={{ color: "#9CA3AF", fontWeight: 400 }}>
+                              /{displayCompactMoney(cat.limit)}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <span style={{ fontSize: "13px", color: "#9CA3AF", paddingBottom: "8px" }}>Sin gastos este mes.</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
