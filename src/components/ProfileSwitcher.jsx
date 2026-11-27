@@ -33,7 +33,6 @@ import { useFinance } from '../context/FinanceContext';
 import { getFromLocalStorage } from '../utils/localStorage';
 import { getPushNotificationsEnabled, setPushNotificationsEnabled } from '../utils/pushNotifications';
 import { triggerHaptic } from '../utils/haptics';
-import HomeThemeModal from './HomeThemeModal';
 import { getSavedHomeBackground, HOME_BACKGROUNDS } from '../utils/homeBackgrounds';
 
 const formatEuro = (val, { minDecimals = 2, maxDecimals = 2 } = {}) => {
@@ -1286,36 +1285,9 @@ const ProfileSwitcher = ({
           </div>
           <ChevronRight size={16} style={{ color: '#9CA3AF' }} />
         </button>
-
-        <button type="button" className="rev-list-row" onClick={() => setIsThemeModalOpen(true)}>
-          <div className="rev-list-left">
-            <span className="rev-list-icon"><Palette size={19} strokeWidth={2} /></span>
-            <span className="rev-list-label">Fondo de inicio</span>
-          </div>
-          <span className="rev-list-meta">{currentBgName}</span>
-        </button>
       </div>
 
       <div className="rev-list-group">
-        <div className="rev-list-row" style={{ cursor: 'default' }}>
-          <div className="rev-list-left">
-            <span className="rev-list-icon"><Shield size={19} strokeWidth={2} /></span>
-            <span className="rev-list-label">Bloqueo con PIN</span>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={pinEnabled}
-            className={`rev-switch ${pinEnabled ? 'on' : ''}`}
-            onClick={() => {
-              triggerHaptic();
-              if (pinEnabled) onRemovePin();
-              else onSetupPin();
-            }}
-          >
-            <span className="rev-switch-thumb" />
-          </button>
-        </div>
 
         {pinEnabled && (
           <button type="button" className="rev-list-row" onClick={onChangePin}>
@@ -1386,41 +1358,6 @@ const ProfileSwitcher = ({
           >
             <span className="rev-switch-thumb" />
           </button>
-        </div>
-
-        <div className="rev-list-row" style={{ cursor: 'default' }}>
-          <div className="rev-list-left">
-            <span className="rev-list-icon"><TrendingUp size={19} strokeWidth={2} /></span>
-            <span className="rev-list-label">Cartera de inversiones</span>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={investmentsEnabled}
-            className={`rev-switch ${investmentsEnabled ? 'on' : ''}`}
-            onClick={() => {
-              triggerHaptic();
-              onInvestmentsVisibilityChange(!investmentsEnabled);
-            }}
-          >
-            <span className="rev-switch-thumb" />
-          </button>
-        </div>
-
-        <div className="rev-list-row" style={{ cursor: 'default' }}>
-          <div className="rev-list-left">
-            <span className="rev-list-icon"><Home size={19} strokeWidth={2} /></span>
-            <span className="rev-list-label">Pantalla inicial</span>
-          </div>
-          <select
-            value={defaultHomeTab}
-            onChange={(e) => onDefaultHomeTabChange(e.target.value)}
-            className="rev-home-select"
-          >
-            <option value="expenses">Inicio</option>
-            <option value="movements">Cuentas</option>
-            {investmentsEnabled && <option value="investments">Cartera</option>}
-          </select>
         </div>
       </div>
 
@@ -1931,16 +1868,6 @@ const ProfileSwitcher = ({
         document.body,
       )}
 
-      <HomeThemeModal
-        open={isThemeModalOpen}
-        onClose={() => setIsThemeModalOpen(false)}
-        accountLabel={`${activeProfile?.name || 'Personal'} · EUR`}
-        balanceDisplay={displayMoney(totalWealth)}
-        onApplied={(nextConfig) => {
-          setBgConfig(nextConfig);
-          onColorfulHeroChange?.(nextConfig.id !== 'obsidian-pure');
-        }}
-      />
     </section>
   );
 };

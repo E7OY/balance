@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
 import TransactionItem, { getCategoryVisuals } from "./TransactionItem";
-import HomeThemeModal from "./HomeThemeModal";
 import {
   getSavedHomeBackground,
   HOME_BG_EVENT,
@@ -3771,13 +3770,6 @@ const HomeOverview = ({
         document.body,
       )}
 
-      <HomeThemeModal
-        open={isThemeModalOpen}
-        onClose={() => setIsThemeModalOpen(false)}
-        accountLabel={`${activeProfile?.name || "Personal"} · EUR`}
-        balanceDisplay={displayMoney(walletBalance)}
-        onApplied={(nextConfig) => setBgConfig(nextConfig)}
-      />
     </div>
   );
 };

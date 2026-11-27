@@ -550,16 +550,6 @@ const App = () => {
                   <span>{activeTab === 'investments' ? 'Invertir' : 'Añadir'}</span>
                 </button>
 
-                {investmentsEnabled && (
-                  <button
-                    type="button"
-                    className={`rev-nav-item ${!isProfileOpen && activeTab === 'investments' ? 'active' : ''}`}
-                    onClick={() => selectTab('investments')}
-                  >
-                    <TrendingUp size={20} strokeWidth={2} />
-                    <span>Cartera</span>
-                  </button>
-                )}
 
                 <button
                   type="button"
