@@ -1646,8 +1646,7 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
             </div>
           </div>
         )}
-
-        {step === 2 && !isTransfer && (
+{step === 2 && !isTransfer && (
           <div key="step-2" className="nx-step-body nx-detail-scroll">
             <div className="nx-detail-inner">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
@@ -1695,18 +1694,26 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                 </button>
               </div>
 
-              <div style={{ marginBottom: '16px', paddingLeft: '2px' }}>
+              <div style={{ margin: '20px 0 24px', textAlign: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  style={{ background: 'transparent', border: 0, padding: 0, textAlign: 'left', cursor: 'pointer', display: 'block' }}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    padding: 0,
+                    display: 'inline-block',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
                 >
                   <span
                     style={{
-                      display: 'block',
                       fontSize: '36px',
-                      fontWeight: 700,
-                      letterSpacing: '-0.03em',
+                      fontWeight: 600,
+                      fontStyle: 'normal',
+                      letterSpacing: '-0.02em',
                       fontVariantNumeric: 'tabular-nums',
                       color: isIncome ? '#10B981' : '#D93829',
                     }}
@@ -1715,7 +1722,16 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                   </span>
                 </button>
 
-                <span style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#6B7280', marginTop: '2px' }}>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    fontStyle: 'normal',
+                    color: '#6B7280',
+                    marginTop: '6px',
+                  }}
+                >
                   {description.trim() || category} · {formatReadableDate(date)}
                 </span>
               </div>
@@ -2068,16 +2084,13 @@ const TransactionForm = ({ transaction, defaultType = 'expense', onClose }) => {
                             );
                           })}
                         </div>
-                        <span style={{ display: 'block', fontSize: '12px', color: '#9CA3AF', marginTop: '8px', fontVariantNumeric: 'tabular-nums' }}>
-                          {installments} cuotas de {formatEuro(numAmount / Number(installments))} / mes
-                        </span>
                       </div>
                     )}
                   </div>
                 )}
 
                 {formError && (
-                  <p style={{ color: '#D93829', fontSize: '12px', fontWeight: 500, marginBottom: '12px' }}>
+                  <p style={{ color: '#D93829', fontSize: '12px', fontWeight: 500, margin: '0 0 10px' }}>
                     {formError}
                   </p>
                 )}
