@@ -800,6 +800,106 @@ const HOME_WALLET_CSS = `
     z-index: 2;
   }
 
+  /* EFECTO BRILLO / REFLEJO HOLOGRÁFICO EN TARJETA DEL DETALLE */
+  @keyframes nxCardSheenSweep {
+    0% {
+      transform: translateX(-140%) skewX(-22deg);
+      opacity: 0;
+    }
+    25% {
+      opacity: 0.7;
+    }
+    65% {
+      opacity: 0.35;
+    }
+    100% {
+      transform: translateX(220%) skewX(-22deg);
+      opacity: 0;
+    }
+  }
+
+  .nx-picker-card-shine {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      260px circle at var(--shine-x, 75%) var(--shine-y, 20%),
+      rgba(255, 255, 255, 0.34),
+      rgba(255, 255, 255, 0.08) 42%,
+      transparent 72%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.25s ease;
+  }
+
+  .nx-picker-card-sweep {
+    position: absolute;
+    top: -30%;
+    bottom: -30%;
+    width: 48%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.06) 35%,
+      rgba(255, 255, 255, 0.26) 50%,
+      rgba(255, 255, 255, 0.06) 65%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 2;
+    animation: nxCardSheenSweep 4.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  /* MÉTRICAS ESTILO WIDGET DEL HOME DENTRO DEL DETALLE DE TARJETA */
+  .nx-picker-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .nx-picker-metric-card {
+    background: #FFFFFF;
+    border: 1px solid #EAECEF;
+    border-radius: 18px;
+    padding: 13px 14px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .dark .nx-picker-metric-card {
+    background: #1B1E27;
+    border-color: rgba(255, 255, 255, 0.09);
+  }
+  .nx-picker-metric-card.is-wide {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .nx-picker-metric-lbl {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #9CA3AF;
+    display: block;
+  }
+  .nx-picker-metric-val {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .nx-picker-metric-sub {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
   .nx-leather-pouch {
     position: absolute;
     left: 0;
@@ -1838,6 +1938,7 @@ const HomeOverview = ({
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [previewAccountId, setPreviewAccountId] = useState(activeProfileId);
+  const [cardShine, setCardShine] = useState({ x: "75%", y: "20%" });
   const [frozenMap, setFrozenMap] = useState(() => {
     try { return JSON.parse(localStorage.getItem("balance-frozen-accounts") || "{}") || {}; } catch { return {}; }
   });
@@ -1977,6 +2078,7 @@ const HomeOverview = ({
     triggerHaptic();
     const targetId = profileId || activeProfileId;
     setPreviewAccountId(targetId);
+    setCardShine({ x: "75%", y: "20%" });
     setIsPickerOpen(true);
     window.requestAnimationFrame(() => {
       const el = pickerCarouselRef.current;
@@ -2039,6 +2141,29 @@ const HomeOverview = ({
     () => transactions.filter((tx) => typeof tx.date === "string" && tx.date.startsWith(monthPrefix)),
     [transactions, monthPrefix],
   );
+
+  const previewMonthMetrics = useMemo(() => {
+    if (!previewAccount) {
+      return { expenses: 0, income: 0, net: 0, count: 0 };
+    }
+    return (previewAccount.txs || []).reduce(
+      (acc, tx) => {
+        if (typeof tx?.date !== "string" || !tx.date.startsWith(monthPrefix)) return acc;
+        const amt = Math.abs(Number(tx.amount) || 0);
+        if (!Number.isFinite(amt)) return acc;
+        acc.count += 1;
+        if (tx.type === "Gasto") {
+          acc.expenses += amt;
+          acc.net -= amt;
+        } else if (tx.type === "Ingreso") {
+          acc.income += amt;
+          acc.net += amt;
+        }
+        return acc;
+      },
+      { expenses: 0, income: 0, net: 0, count: 0 },
+    );
+  }, [previewAccount, monthPrefix]);
 
   const [metricSlide, setMetricSlide] = useState(0);
   const metricSliderRef = useRef(null);
@@ -2214,7 +2339,7 @@ const HomeOverview = ({
     return displayCompactMoney(val);
   };
 
-  const groupedMonths = useMemo(() => {
+  const { groupedMonths, hasMoreToExpand } = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = transactions
       .filter((tx) => `${tx.description || ""} ${tx.category} ${tx.paymentMethod || ""}`.toLowerCase().includes(q))
@@ -2227,7 +2352,7 @@ const HomeOverview = ({
       map.get(key).push(tx);
     });
 
-    const groups = Array.from(map.entries()).map(([ym, list]) => {
+    const allGroups = Array.from(map.entries()).map(([ym, list]) => {
       const [yStr, mStr] = ym.split("-");
       const label = new Intl.DateTimeFormat("es-ES", { month: "long" }).format(
         new Date(Number(yStr) || filters.year, (Number(mStr) || 1) - 1, 1),
@@ -2235,17 +2360,30 @@ const HomeOverview = ({
       return { ym, label, items: list };
     });
 
-    if (showAllTx) return groups;
-    return groups.slice(0, 2).map((g, idx) => ({
-      ...g,
-      items: idx === 0 ? g.items.slice(0, 4) : g.items.slice(0, 2),
-    }));
-  }, [transactions, query, showAllTx, monthPrefix, filters.year]);
+    if (showAllTx) {
+      return { groupedMonths: allGroups, hasMoreToExpand: allGroups.length > 0 };
+    }
 
-  const totalFilteredCount = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return transactions.filter((tx) => `${tx.description || ""} ${tx.category} ${tx.paymentMethod || ""}`.toLowerCase().includes(q)).length;
-  }, [transactions, query]);
+    const currentMonthGroup = allGroups.find((g) => g.ym === monthPrefix);
+    const totalCount = filtered.length;
+
+    if (!currentMonthGroup) {
+      return {
+        groupedMonths: [],
+        hasMoreToExpand: totalCount > 0,
+      };
+    }
+
+    return {
+      groupedMonths: [
+        {
+          ...currentMonthGroup,
+          items: currentMonthGroup.items.slice(0, 5),
+        },
+      ],
+      hasMoreToExpand: totalCount > 5 || allGroups.length > 1,
+    };
+  }, [transactions, query, showAllTx, monthPrefix, filters.year]);
 
   const bootOffsetMs = didHaveSplash ? "440ms" : "0ms";
 
@@ -2641,10 +2779,13 @@ const HomeOverview = ({
                 </div>
               ))}
 
-              {totalFilteredCount > 4 && (
+              {hasMoreToExpand && (
                 <button
                   type="button"
-                  onClick={() => setShowAllTx((prev) => !prev)}
+                  onClick={() => {
+                    triggerHaptic();
+                    setShowAllTx((prev) => !prev);
+                  }}
                   style={{
                     width: "100%",
                     background: "transparent",
@@ -2664,8 +2805,29 @@ const HomeOverview = ({
           ) : (
             <div className="nx-wh-tx-card" style={{ padding: "22px 16px", textAlign: "center" }}>
               <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>
-                Sin movimientos registrados todavía.
+                Sin movimientos este mes.
               </p>
+              {hasMoreToExpand && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setShowAllTx(true);
+                  }}
+                  style={{
+                    marginTop: "10px",
+                    background: "transparent",
+                    border: 0,
+                    color: "var(--primary)",
+                    fontFamily: "inherit",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Ver movimientos anteriores
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -2988,7 +3150,23 @@ const HomeOverview = ({
                 const isFrozen = Boolean(frozenMap[acc.id]);
                 return (
                   <div key={acc.id} className="nx-picker-slide">
-                    <div className="nx-picker-card" style={{ background: acc.bg }}>
+                    <div
+                      className="nx-picker-card"
+                      style={{
+                        background: acc.bg,
+                        "--shine-x": cardShine.x,
+                        "--shine-y": cardShine.y,
+                      }}
+                      onPointerMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const px = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                        const py = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+                        setCardShine({ x: `${px.toFixed(0)}%`, y: `${py.toFixed(0)}%` });
+                      }}
+                      onPointerLeave={() => setCardShine({ x: "75%", y: "20%" })}
+                    >
+                      <div className="nx-picker-card-sweep" aria-hidden="true" />
+                      <div className="nx-picker-card-shine" aria-hidden="true" />
                       {isFrozen && <div className="nx-frost-overlay" />}
 
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 3 }}>
@@ -3064,34 +3242,6 @@ const HomeOverview = ({
               </button>
             </div>
 
-            {/* SELECTOR DE COLOR DE PIEL DE LA CARTERA */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "0 4px 6px" }}>
-              <span style={{ fontSize: "12.5px", fontWeight: 500, color: "#9CA3AF" }}>
-                Color de la cartera
-              </span>
-              <span style={{ fontSize: "12px", fontWeight: 600 }}>
-                {activeLeatherTheme.label}
-              </span>
-            </div>
-            <div className="nx-leather-swatches">
-              {WALLET_LEATHER_THEMES.map((item) => {
-                const active = item.id === walletColorId;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`nx-leather-swatch-btn ${active ? "active" : ""}`}
-                    style={{ backgroundColor: item.swatch }}
-                    onClick={() => handleSelectWalletColor(item.id)}
-                    aria-label={`Cartera ${item.label}`}
-                    title={item.label}
-                  >
-                    {active && <Check size={14} strokeWidth={2.8} />}
-                  </button>
-                );
-              })}
-            </div>
-
             <div style={{ fontSize: "12.5px", fontWeight: 500, color: "#9CA3AF", margin: "0 0 8px 4px" }}>
               Últimos movimientos · {previewAccount.name}
             </div>
@@ -3109,6 +3259,57 @@ const HomeOverview = ({
                   Sin movimientos en esta tarjeta.
                 </p>
               )}
+            </div>
+
+            {/* MÉTRICAS ESTILO WIDGET DEL HOME DE LA TARJETA */}
+            <div style={{ fontSize: "12.5px", fontWeight: 500, color: "#9CA3AF", margin: "0 0 8px 4px" }}>
+              Resumen de {capitalizedMonth.toLowerCase()} · {previewAccount.name}
+            </div>
+            <div className="nx-picker-metrics-grid">
+              <div className="nx-picker-metric-card">
+                <span className="nx-picker-metric-lbl">Gasto este mes</span>
+                <strong
+                  className="nx-picker-metric-val privacy-sensitive"
+                  style={{ color: "#D93829" }}
+                >
+                  {displayCompactMoney(previewMonthMetrics.expenses)}
+                </strong>
+                <span className="nx-picker-metric-sub" style={{ color: "#9CA3AF" }}>
+                  {previewAccount.name}
+                </span>
+              </div>
+
+              <div className="nx-picker-metric-card">
+                <span className="nx-picker-metric-lbl">Ingresos este mes</span>
+                <strong
+                  className="nx-picker-metric-val privacy-sensitive"
+                  style={{ color: "#10B981" }}
+                >
+                  {displayCompactMoney(previewMonthMetrics.income)}
+                </strong>
+                <span className="nx-picker-metric-sub" style={{ color: "#9CA3AF" }}>
+                  {capitalizedMonth}
+                </span>
+              </div>
+
+              <div className="nx-picker-metric-card is-wide">
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <span className="nx-picker-metric-lbl">Balance neto del mes</span>
+                  <strong className="nx-picker-metric-val privacy-sensitive">
+                    {displayMoney(previewMonthMetrics.net)}
+                  </strong>
+                </div>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "#9CA3AF",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {previewMonthMetrics.count} {previewMonthMetrics.count === 1 ? "operación" : "operaciones"}
+                </span>
+              </div>
             </div>
 
             <button
