@@ -1,34 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ArrowLeftRight, CreditCard, LayoutGrid, TrendingUp } from 'lucide-react';
+import { ArrowLeftRight, LayoutGrid } from 'lucide-react';
 import { useFinance } from './context/FinanceContext';
 import HomeOverview from './components/HomeOverview';
-import MovementsView from './components/MovementsView';
-import InvestmentsOverview from './components/InvestmentsOverview';
 import TransactionForm from './components/TransactionForm';
-import InvestmentForm from './components/InvestmentForm';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import CategoryLimitsForm from './components/CategoryLimitsForm';
 import NexoLogo from './components/NexoLogo';
 import { triggerHaptic } from './utils/haptics';
 import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage';
 
-const homeTabs = ['expenses', 'movements', 'investments'];
-const getPreferredHomeTab = (profileId) => {
-  const savedTab = getFromLocalStorage(`finance:${profileId}:defaultHomeTab`);
-  return homeTabs.includes(savedTab) ? savedTab : 'expenses';
-};
-const getInvestmentsEnabled = (profileId) => (
-  getFromLocalStorage(`finance:${profileId}:showInvestments`) === true
-);
 const getStoredProfileName = (profileId) => {
   const saved = getFromLocalStorage(`finance:${profileId}:displayName`);
   return typeof saved === 'string' ? saved.trim() : '';
-};
-const getStoredProfileAvatar = (profileId) => {
-  const saved = getFromLocalStorage(`finance:${profileId}:avatar`);
-  return typeof saved === 'string' && (saved.startsWith('https://') || saved.startsWith('data:image/'))
-    ? saved
-    : '';
 };
 
 const PIN_STORAGE_KEY = 'balance-pin';
@@ -287,9 +270,6 @@ const App = () => {
     isAmountsHidden,
   } = useFinance();
 
-  const [activeTab, setActiveTab] = useState(() => getPreferredHomeTab(activeProfileId));
-  const [defaultHomeTab, setDefaultHomeTab] = useState(() => getPreferredHomeTab(activeProfileId));
-  const [investmentsEnabled, setInvestmentsEnabled] = useState(() => getInvestmentsEnabled(activeProfileId));
   const [transactionType, setTransactionType] = useState('expense');
   const [theme, setTheme] = useState(() => localStorage.getItem('balance-theme') || 'light');
   const [colorfulHero, setColorfulHero] = useState(() => localStorage.getItem('nexo-colorful-hero') !== 'false');
@@ -301,11 +281,9 @@ const App = () => {
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLimitsOpen, setIsLimitsOpen] = useState(false);
-  const [isInvestmentFormOpen, setIsInvestmentFormOpen] = useState(false);
   const [query, setQuery] = useState('');
 
   const monthSwipeStart = useRef(null);
-  const isFirstProfileMount = useRef(true);
 
   const openForm = (type) => {
     setTransactionType(type);
@@ -342,34 +320,9 @@ const App = () => {
   };
 
   useEffect(() => {
-    const showInvestments = getInvestmentsEnabled(activeProfileId);
-    const savedPreferredTab = getPreferredHomeTab(activeProfileId);
-    const preferredTab = !showInvestments && savedPreferredTab === 'investments' ? 'expenses' : savedPreferredTab;
-
-    setInvestmentsEnabled(showInvestments);
     setProfileName(getStoredProfileName(activeProfileId));
-    setDefaultHomeTab(preferredTab);
     setQuery('');
-
-    if (isFirstProfileMount.current) {
-      isFirstProfileMount.current = false;
-      setActiveTab(preferredTab);
-    } else if (!showInvestments && activeTab === 'investments') {
-      setActiveTab('expenses');
-    }
   }, [activeProfileId]);
-
-  const handleDefaultHomeTabChange = (tab) => {
-    saveToLocalStorage(`finance:${activeProfileId}:defaultHomeTab`, tab);
-    setDefaultHomeTab(tab);
-    setActiveTab(tab);
-  };
-
-  const handleInvestmentsVisibilityChange = (enabled) => {
-    saveToLocalStorage(`finance:${activeProfileId}:showInvestments`, enabled);
-    setInvestmentsEnabled(enabled);
-    if (!enabled && activeTab === 'investments') setActiveTab('expenses');
-  };
 
   useEffect(() => {
     if (!pinData) return undefined;
@@ -407,14 +360,8 @@ const App = () => {
     window.setTimeout(() => setSwitchToast(''), 2000);
   };
 
-  const selectTab = (tab) => {
-    triggerHaptic();
-    setIsProfileOpen(false);
-    setActiveTab(tab);
-  };
-
   const handleMonthTouchStart = (event) => {
-    if (isProfileOpen || activeTab !== 'expenses' || event.touches.length !== 1) {
+    if (isProfileOpen || event.touches.length !== 1) {
       monthSwipeStart.current = null;
       return;
     }
@@ -447,8 +394,6 @@ const App = () => {
     triggerHaptic();
   };
 
-  const showBottomNav = isProfileOpen || activeTab !== 'movements';
-
   return (
     <div className={`stage ${theme === 'dark' ? 'dark' : ''}`}>
       {switchToast && <div className="account-toast">{switchToast}</div>}
@@ -470,10 +415,6 @@ const App = () => {
                   setTheme={setTheme}
                   colorfulHero={colorfulHero}
                   onColorfulHeroChange={handleColorfulHeroChange}
-                  defaultHomeTab={defaultHomeTab}
-                  onDefaultHomeTabChange={handleDefaultHomeTabChange}
-                  investmentsEnabled={investmentsEnabled}
-                  onInvestmentsVisibilityChange={handleInvestmentsVisibilityChange}
                   profileName={profileName || activeProfile?.name || ''}
                   onProfileNameChange={(name) => {
                     saveToLocalStorage(`finance:${activeProfileId}:displayName`, name);
@@ -486,87 +427,59 @@ const App = () => {
                   onClose={() => setIsProfileOpen(false)}
                 />
               ) : (
-                <>
-                  {(activeTab === 'expenses' || activeTab === 'movements') && (
-                    <HomeOverview
-                      initials={initials}
-                      colorfulHero={colorfulHero}
-                      query={query}
-                      onQueryChange={setQuery}
-                      onOpenLimits={() => setIsLimitsOpen(true)}
-                      onQuickAction={(type) => openForm(type)}
-                      onOpenProfile={() => {
-                        triggerHaptic();
-                        setIsProfileOpen(true);
-                      }}
-                      onLongPressAvatar={cycleAccount}
-                      onOpenMovements={() => selectTab('movements')}
-                    />
-                  )}
-                  {activeTab === 'movements' && (
-                    <MovementsView
-                      colorfulHero={colorfulHero}
-                      onClose={() => selectTab('expenses')}
-                      onOpenLimits={() => setIsLimitsOpen(true)}
-                    />
-                  )}
-                  {activeTab === 'investments' && (
-                    <InvestmentsOverview query={query} />
-                  )}
-                </>
+                <HomeOverview
+                  initials={initials}
+                  colorfulHero={colorfulHero}
+                  query={query}
+                  onQueryChange={setQuery}
+                  onOpenLimits={() => setIsLimitsOpen(true)}
+                  onQuickAction={(type) => openForm(type)}
+                  onOpenProfile={() => {
+                    triggerHaptic();
+                    setIsProfileOpen(true);
+                  }}
+                  onLongPressAvatar={cycleAccount}
+                />
               )}
             </main>
 
             {/* MENÚ INFERIOR CON EFECTO LIQUID GLASS */}
-            {showBottomNav && (
-              <nav className="rev-liquid-nav" aria-label="Navegación principal">
-                <button
-                  type="button"
-                  className={`rev-nav-item ${!isProfileOpen && activeTab === 'expenses' ? 'active' : ''}`}
-                  onClick={() => selectTab('expenses')}
-                >
-                  <NexoLogo size={19} />
-                  <span>Inicio</span>
-                </button>
-              {/*
-                <button 
-                  type="button"
-                  className={`rev-nav-item ${!isProfileOpen && activeTab === 'movements' ? 'active' : ''}`}
-                  onClick={() => selectTab('movements')}
-                >
-                  <CreditCard size={20} strokeWidth={2} />
-                  <span>Cuentas</span>
-                </button>
-                */}
-                <button
-                  type="button"
-                  className="rev-nav-item"
-                  onClick={() => {
-                    if (activeTab === 'investments') setIsInvestmentFormOpen(true);
-                    else openForm('expense');
-                  }}
-                >
-                  <ArrowLeftRight size={20} strokeWidth={2} />
-                  <span>{activeTab === 'investments' ? 'Invertir' : 'Añadir'}</span>
-                </button>
+            <nav className="rev-liquid-nav" aria-label="Navegación principal">
+              <button
+                type="button"
+                className={`rev-nav-item ${!isProfileOpen ? 'active' : ''}`}
+                onClick={() => {
+                  triggerHaptic();
+                  setIsProfileOpen(false);
+                }}
+              >
+                <NexoLogo size={19} />
+                <span>Inicio</span>
+              </button>
 
+              <button
+                type="button"
+                className="rev-nav-item"
+                onClick={() => openForm('expense')}
+              >
+                <ArrowLeftRight size={20} strokeWidth={2} />
+                <span>Añadir</span>
+              </button>
 
-                <button
-                  type="button"
-                  className={`rev-nav-item ${isProfileOpen ? 'active' : ''}`}
-                  onClick={() => {
-                    triggerHaptic();
-                    setIsProfileOpen(true);
-                  }}
-                >
-                  <LayoutGrid size={20} strokeWidth={2} />
-                  <span>Perfil</span>
-                </button>
-              </nav>
-            )}
+              <button
+                type="button"
+                className={`rev-nav-item ${isProfileOpen ? 'active' : ''}`}
+                onClick={() => {
+                  triggerHaptic();
+                  setIsProfileOpen(true);
+                }}
+              >
+                <LayoutGrid size={20} strokeWidth={2} />
+                <span>Perfil</span>
+              </button>
+            </nav>
 
             {isLimitsOpen && <CategoryLimitsForm onClose={() => setIsLimitsOpen(false)} />}
-            {isInvestmentFormOpen && <InvestmentForm onClose={() => setIsInvestmentFormOpen(false)} />}
           </div>
 
           {(isModalOpen || editingTransaction) && (
